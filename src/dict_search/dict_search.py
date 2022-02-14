@@ -1,12 +1,11 @@
+import logging
 import re
 import types
-import logging
 
 
 class DictSearch:
-    def __init__(self, operator_str=None):
-        if operator_str and not isinstance(operator_str, str):
-            raise TypeError(f"Operator chars must be 'str' not:\n{operator_str}|{type(operator_str)}")
+    def __init__(self, operator_str=None, **kwargs):
+        self._init_precondition(operator_str)
         self.operator_char = operator_str if operator_str else "$"
         self.lop_ne = f"{self.operator_char}ne"
         self.lop_lt = f"{self.operator_char}lt"
@@ -25,19 +24,29 @@ class DictSearch:
         self.hop_not = f"{self.operator_char}not"
         self.high_level_operators = [val for key, val in self.__dict__.items() if re.match(r"hop_.*?", key)]
 
+        self._init_logger(**kwargs)
+
+    @staticmethod
+    def _init_precondition(operator_str):
+        if operator_str and not isinstance(operator_str, str):
+            raise TypeError(f"Operator chars must be 'str' not:\n{operator_str}|{type(operator_str)}")
+        return True
+
+    @staticmethod
+    def _init_logger(**kwargs):
+        logging.basicConfig(**kwargs)
+
     def dict_search(self, data, search_dict):
-        if self._precondition(data, search_dict):
-            for data_point in data:
+        if self._search_precondition(data, search_dict):
+            for index, data_point in enumerate(data):
+                logging.info(f"Document: {index + 1}")
                 matches = self._search(search_dict, data_point)
-                results = []
-                for match in matches:
-                    logging.info(f"{match}")
-                    results.append(match)
-                if all(results):
+                if all(match for match in matches):
+                    logging.info(f"Document: {index + 1} matched")
                     yield data_point
 
     @staticmethod
-    def _precondition(data, search_dict):
+    def _search_precondition(data, search_dict):
         try:
             iter(data)
         except TypeError:
@@ -50,19 +59,25 @@ class DictSearch:
         matches = matches if matches else []
         if isinstance(search_dict, dict):
             for key, value in search_dict.items():
+                logging.debug(f"{key}")
                 if key in self.low_level_operators:
                     for match in self._search(key, data, matches + self._low_level_operator(key, data, value)):
+                        logging.debug(f"{data} {key} {value}: {match}")
                         yield match
                 elif key in self.high_level_operators:
                     for match in self._search(
-                            key, data, matches + [match for match in self._high_level_operator(key, search_dict[key], data)]
+                            key,
+                            data,
+                            matches + [match for match in self._high_level_operator(key, search_dict[key], data)]
                     ):
+                        logging.debug(f"{key}: {match}")
                         yield match
                 elif isinstance(value, dict):
                     for match in self._search(value, data.get(key, {}), matches):
                         yield match
                 else:
                     for match in self._search(key, data, matches + [True if data.get(key) == value else False]):
+                        logging.debug(f"{data.get(key)} == {value}: {match}")
                         yield match
         else:
             yield from matches
