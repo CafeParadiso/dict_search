@@ -1,9 +1,11 @@
 import re
+from datetime import datetime
+from pprint import pprint
 
 import pytest
 
 from src.dict_search.dict_search import DictSearch
-from test_data import data
+from test_data import data, complex_data
 
 
 class TestData:
@@ -24,12 +26,14 @@ class TestCommon:
     @staticmethod
     def test_operator_char():
         operator_str = "!"
-        data = [{
-            "$in": 1,
-        },
-         {
-            "$in": 0,
-        }]
+        data = [
+            {
+                "$in": 1,
+            },
+            {
+                "$in": 0,
+            },
+        ]
         values = DictSearch(operator_str=operator_str).dict_search(data, {"$in": 1})
         assert len([val for val in values]) == 1
 
@@ -117,16 +121,22 @@ class TestLowLevelOperators:
 
     @staticmethod
     def test_expr():
-        values = DictSearch().dict_search(data, {"liab": {"cur": {"$expr": (lambda x: x*2, 8518)}}})
+        # TODO test wrong inputs + more cases
+        values = DictSearch().dict_search(data, {"liab": {"cur": {"$expr": (lambda x: x * 2, 8518)}}})
         values = [val for val in values]
         assert len(values) == 1
         values = DictSearch().dict_search(data, {"liab": {"cur": {"$expr": (lambda x: x * 2, {"$lt": 6000})}}})
         values = [val for val in values]
         assert len(values) == 3
 
+    @staticmethod
+    def test_inst():
+        values = DictSearch().dict_search(data, {"special": {"$inst": list}})
+        values = [val for val in values]
+        assert len(values) == 2
+
 
 class TestHighLevelOperators:
-
     @staticmethod
     def test_and():
         values = DictSearch().dict_search(
@@ -160,6 +170,48 @@ class TestHighLevelOperators:
         assert len(values) == 5
 
 
+class TestArrayOperators:
+    @staticmethod
+    def test_all():
+        values = DictSearch().dict_search(
+            complex_data, {"posts": {"$match": {"1": {"interacted": {"text": "mdb"}}}}}
+        )
+        values = list(values)
+
+    @staticmethod
+    def test_any():
+        values = DictSearch().dict_search(
+            complex_data, {"posts": {"$match": {"1": {"interacted": {"text": "mdb"}}}}}
+        )
+        values = list(values)
+
+    @staticmethod
+    def test_match():
+        values = DictSearch().dict_search(
+            complex_data, {"posts": {"$match": {"1": {"interacted": {"text": "mdb"}}}}}
+        )
+        values = list(values)
+
+
+class TestArraySelectors:
+    @staticmethod
+    def test_index():
+        values = DictSearch().dict_search(
+            complex_data,
+            {"posts": {"$index": {"0": {"interacted": {"$last": {"type": "share"}}}}}},
+        )
+        pprint(list(values))
+
+    @staticmethod
+    def test_last():
+        values = DictSearch().dict_search(
+            complex_data, {"posts": {"$last": {"text": "gld"}}},
+        )
+        values = list(values)
+        assert len(values) == 1
+        assert [x["id"] for x in list(values)] == [0]
+
+
 class TestOperatorExtension:
     @staticmethod
     def test_low_level_operators():
@@ -169,8 +221,10 @@ class TestOperatorExtension:
                 [k for k in TestLowLevelOperators.__dict__.keys() if re.match("test_.*?", k)]
             )
         except AssertionError:
-            raise AssertionError("If you added a low level operator you must add a "
-                                 "corresponding test in the class 'TestLowLevelOperators'")
+            raise AssertionError(
+                "If you added a low level operator you must add a "
+                "corresponding test in the class 'TestLowLevelOperators'"
+            )
 
     @staticmethod
     def test_high_level_operators():
@@ -180,8 +234,10 @@ class TestOperatorExtension:
                 [k for k in TestHighLevelOperators.__dict__.keys() if re.match("test_.*?", k)]
             )
         except AssertionError:
-            raise AssertionError("If you added a high level operator you must add a "
-                                 "corresponding test in the class 'TestHighLevelOperators'")
+            raise AssertionError(
+                "If you added a high level operator you must add a "
+                "corresponding test in the class 'TestHighLevelOperators'"
+            )
 
 
 class TestExceptions:
@@ -205,10 +261,55 @@ class TestExceptions:
     @staticmethod
     def test_high_level_operator_exception():
         with pytest.raises(TypeError, match=r".*?operators should.*?"):
-            values = DictSearch().dict_search(
-                data, {"$and": {"assets": {"non_cur": {"$lt": 3922}}}}
-            )
+            values = DictSearch().dict_search(data, {"$and": {"assets": {"non_cur": {"$lt": 3922}}}})
             list(values)
+
+
+class TestComplex:
+    @staticmethod
+    def test_match_implicit_and():
+        expected_values = 2
+        expected_ids = [5, 6]
+
+        values = DictSearch().dict_search(
+            complex_data,
+            {
+                "$and": [
+                    {"posts": {"$match": {"1": {"interacted": {"$all": {"type": "post"}}}}}},
+                    {"posts": {"$match": {"1": {"text": "mdb"}}}},
+                ]
+            },
+        )
+        values = list(values)
+        assert len(values) == expected_values
+        assert [x["id"] for x in list(values)] == expected_ids
+
+        values = DictSearch().dict_search(
+            complex_data,
+            {"posts": {"$match": {"1": {"interacted": {"$all": {"type": "post"}}, "text": "mdb"}}}},
+        )
+        values = list(values)
+        assert len(values) == expected_values
+        assert [x["id"] for x in list(values)] == expected_ids
+
+    @staticmethod
+    def test_nested_high_operator():
+        values = DictSearch().dict_search(
+            complex_data,
+            {
+                "$or": [
+                    {"$and": [
+                            {"posts": {"$match": {"1": {"interacted": {"$all": {"type": "post"}}}}}},
+                            {"posts": {"$match": {"1": {"text": "mdb"}}}},
+                    ]},
+                    {"$or": [{"user": {"id": 141}}]},
+                ]
+            },
+        )
+        values = list(values)
+
+        assert len(values) == 4
+        assert [x["id"] for x in values] == [0, 1, 5, 6]
 
 
 class TestAll(
@@ -217,6 +318,9 @@ class TestAll(
     TestLowLevelOperators,
     TestHighLevelOperators,
     TestOperatorExtension,
-    TestExceptions
+    TestExceptions,
+    TestArraySelectors,
+    TestArrayOperators,
+    TestComplex,
 ):
     pass

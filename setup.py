@@ -6,14 +6,14 @@ with open("README.md", "r", encoding="utf-8") as fh:
 setuptools.setup(
     name="dict_search",
     version="1.0.0",
-    author="Example Author",
-    author_email="author@example.com",
+    author="Cafe Paradiso",
+    author_email="",
     description="Query an array of dictionaries in a style similar to mongo db",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/pypa/sampleproject",
+    url="https://github.com/CafeParadiso/dict_search",
     project_urls={
-        "Bug Tracker": "https://github.com/pypa/sampleproject/issues",
+        "Bug Tracker": "",
     },
     classifiers=[
         "Programming Language :: Python :: 3",

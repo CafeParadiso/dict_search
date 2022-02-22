@@ -1,6 +1,7 @@
 from pprint import pprint
 import random
 
+import datetime
 
 data = [
     {
@@ -67,8 +68,277 @@ data = [
     },
 ]
 
+complex_data = [
+    {
+        "id": 0,
+        "posts": [
+            {
+                "interacted": [
+                    {"date": datetime.datetime(2022, 1, 5, 0, 0), "type": "keep"},
+                    {"date": datetime.datetime(2022, 1, 1, 0, 0), "type": "post"},
+                    {"date": datetime.datetime(2022, 1, 1, 0, 0), "type": "post"},
+                    {"date": datetime.datetime(2022, 1, 20, 0, 0), "type": "share"},
+                ],
+                "post_id": 0,
+                "text": "tsm",
+            },
+            {
+                "interacted": [{"date": datetime.datetime(2022, 1, 19, 0, 0), "type": "post"}],
+                "post_id": 1,
+                "text": "gld",
+            },
+        ],
+        "user": {"id": 141},
+        "values": [-0.4554757888427883, 0.624596827960479],
+    },
+    {
+        "id": 1,
+        "posts": [
+            {
+                "interacted": [
+                    {"date": datetime.datetime(2022, 1, 31, 0, 0), "type": "share"},
+                    {"date": datetime.datetime(2022, 1, 1, 0, 0), "type": "post"},
+                    {"date": datetime.datetime(2022, 1, 28, 0, 0), "type": "post"},
+                ],
+                "post_id": 0,
+                "text": "aaoi",
+            }
+        ],
+        "user": {"id": 141},
+        "values": [
+            0.27584865512836887,
+            1.4732722258715452,
+            1.2109810927030629,
+            0.7939559412247775,
+            -0.5491601506745909,
+        ],
+    },
+    {
+        "id": 2,
+        "posts": [
+            {
+                "interacted": [
+                    {"date": datetime.datetime(2022, 1, 28, 0, 0), "type": "share"},
+                    {"date": datetime.datetime(2022, 1, 12, 0, 0), "type": "keep"},
+                    {"date": datetime.datetime(2022, 1, 13, 0, 0), "type": "share"},
+                    {"date": datetime.datetime(2022, 1, 21, 0, 0), "type": "share"},
+                    {"date": datetime.datetime(2022, 1, 23, 0, 0), "type": "post"},
+                ],
+                "post_id": 0,
+                "text": "gld",
+            },
+            {
+                "interacted": [
+                    {"date": datetime.datetime(2022, 1, 18, 0, 0), "type": "share"},
+                    {"date": datetime.datetime(2022, 1, 5, 0, 0), "type": "share"},
+                    {"date": datetime.datetime(2022, 1, 18, 0, 0), "type": "share"},
+                    {"date": datetime.datetime(2022, 1, 8, 0, 0), "type": "share"},
+                ],
+                "post_id": 1,
+                "text": "akam",
+            },
+            {
+                "interacted": [
+                    {"date": datetime.datetime(2022, 1, 8, 0, 0), "type": "post"},
+                    {"date": datetime.datetime(2022, 1, 17, 0, 0), "type": "post"},
+                    {"date": datetime.datetime(2022, 1, 9, 0, 0), "type": "share"},
+                    {"date": datetime.datetime(2022, 1, 28, 0, 0), "type": "keep"},
+                    {"date": datetime.datetime(2022, 1, 19, 0, 0), "type": "keep"},
+                ],
+                "post_id": 2,
+                "text": "gm",
+            },
+        ],
+        "user": {"id": 94},
+        "values": [1.557726481970398, -0.948670504350301, 1.4782528602442442],
+    },
+    {
+        "id": 3,
+        "posts": [
+            {
+                "interacted": [
+                    {"date": datetime.datetime(2022, 1, 8, 0, 0), "type": "share"},
+                    {"date": datetime.datetime(2022, 1, 14, 0, 0), "type": "keep"},
+                    {"date": datetime.datetime(2022, 1, 31, 0, 0), "type": "keep"},
+                    {"date": datetime.datetime(2022, 1, 14, 0, 0), "type": "keep"},
+                ],
+                "post_id": 0,
+                "text": "gm",
+            },
+            {
+                "interacted": [
+                    {"date": datetime.datetime(2022, 1, 23, 0, 0), "type": "share"},
+                    {"date": datetime.datetime(2022, 1, 17, 0, 0), "type": "keep"},
+                    {"date": datetime.datetime(2022, 1, 17, 0, 0), "type": "share"},
+                    {"date": datetime.datetime(2022, 1, 3, 0, 0), "type": "post"},
+                    {"date": datetime.datetime(2022, 1, 2, 0, 0), "type": "keep"},
+                ],
+                "post_id": 1,
+                "text": "msft",
+            },
+        ],
+        "user": {"id": 68},
+        "values": [1.4315910403254501, 0.9723804444991478, 0.11546180581964538],
+    },
+    {
+        "id": 4,
+        "posts": [
+            {
+                "interacted": [
+                    {"date": datetime.datetime(2022, 1, 2, 0, 0), "type": "keep"},
+                    {"date": datetime.datetime(2022, 1, 10, 0, 0), "type": "post"},
+                    {"date": datetime.datetime(2022, 1, 22, 0, 0), "type": "share"},
+                    {"date": datetime.datetime(2022, 1, 23, 0, 0), "type": "keep"},
+                    {"date": datetime.datetime(2022, 1, 18, 0, 0), "type": "keep"},
+                ],
+                "post_id": 0,
+                "text": "gld",
+            },
+            {
+                "interacted": [
+                    {"date": datetime.datetime(2022, 1, 5, 0, 0), "type": "share"},
+                    {"date": datetime.datetime(2022, 1, 15, 0, 0), "type": "keep"},
+                ],
+                "post_id": 1,
+                "text": "appl",
+            },
+            {
+                "interacted": [
+                    {"date": datetime.datetime(2022, 1, 29, 0, 0), "type": "post"},
+                    {"date": datetime.datetime(2022, 1, 27, 0, 0), "type": "post"},
+                    {"date": datetime.datetime(2022, 1, 13, 0, 0), "type": "post"},
+                ],
+                "post_id": 2,
+                "text": "aaoi",
+            },
+            {
+                "interacted": [
+                    {"date": datetime.datetime(2022, 1, 2, 0, 0), "type": "share"},
+                    {"date": datetime.datetime(2022, 1, 20, 0, 0), "type": "keep"},
+                    {"date": datetime.datetime(2022, 1, 2, 0, 0), "type": "keep"},
+                    {"date": datetime.datetime(2022, 1, 9, 0, 0), "type": "share"},
+                ],
+                "post_id": 3,
+                "text": "asml",
+            },
+        ],
+        "user": {"id": 176},
+        "values": [
+            -0.5432711348081195,
+            1.2479296758010348,
+            0.18648724503783387,
+            1.104727543041008,
+            -0.13609632624809476,
+        ],
+    },
+    {
+        "id": 5,
+        "posts": [
+            {
+                "interacted": [
+                    {"date": datetime.datetime(2022, 1, 13, 0, 0), "type": "post"},
+                    {"date": datetime.datetime(2022, 1, 5, 0, 0), "type": "share"},
+                    {"date": datetime.datetime(2022, 1, 28, 0, 0), "type": "post"},
+                    {"date": datetime.datetime(2022, 1, 10, 0, 0), "type": "post"},
+                    {"date": datetime.datetime(2022, 1, 7, 0, 0), "type": "share"},
+                ],
+                "post_id": 0,
+                "text": "akam",
+            },
+            {
+                "interacted": [
+                    {"date": datetime.datetime(2022, 1, 14, 0, 0), "type": "post"},
+                    {"date": datetime.datetime(2022, 1, 18, 0, 0), "type": "post"},
+                    {"date": datetime.datetime(2022, 1, 16, 0, 0), "type": "keep"},
+                ],
+                "post_id": 1,
+                "text": "mdb",
+            },
+            {
+                "interacted": [
+                    {"date": datetime.datetime(2022, 1, 2, 0, 0), "type": "post"},
+                    {"date": datetime.datetime(2022, 1, 10, 0, 0), "type": "post"},
+                ],
+                "post_id": 2,
+                "text": "mdb",
+            },
+        ],
+        "user": {"id": 143},
+        "values": [-0.509986019526338, 0.48027375218726875, 1.7508556683888716, 0.5473434127045574, 1.7692071208685431],
+    },
+    {
+        "id": 6,
+        "posts": [
+            {
+                "interacted": [{"date": datetime.datetime(2022, 1, 18, 0, 0), "type": "post"}],
+                "post_id": 0,
+                "text": "mdb",
+            },
+            {
+                "interacted": [
+                    {"date": datetime.datetime(2022, 1, 15, 0, 0), "type": "keep"},
+                    {"date": datetime.datetime(2022, 1, 19, 0, 0), "type": "post"},
+                ],
+                "post_id": 1,
+                "text": "appl",
+            },
+            {
+                "interacted": [{"date": datetime.datetime(2022, 1, 24, 0, 0), "type": "share"}],
+                "post_id": 2,
+                "text": "mdb",
+            },
+        ],
+        "user": {"id": 478},
+        "values": [0.17672849905498556, 1.158563924131046],
+    },
+    {
+        "id": 7,
+        "posts": [
+            {
+                "interacted": [
+                    {"date": datetime.datetime(2022, 1, 3, 0, 0), "type": "post"},
+                    {"date": datetime.datetime(2022, 1, 22, 0, 0), "type": "post"},
+                    {"date": datetime.datetime(2022, 1, 25, 0, 0), "type": "keep"},
+                    {"date": datetime.datetime(2022, 1, 12, 0, 0), "type": "post"},
+                    {"date": datetime.datetime(2022, 1, 11, 0, 0), "type": "share"},
+                ],
+                "post_id": 0,
+                "text": "mdb",
+            },
+            {
+                "interacted": [
+                    {"date": datetime.datetime(2022, 1, 24, 0, 0), "type": "keep"},
+                    {"date": datetime.datetime(2022, 1, 11, 0, 0), "type": "keep"},
+                    {"date": datetime.datetime(2022, 1, 8, 0, 0), "type": "share"},
+                    {"date": datetime.datetime(2022, 1, 9, 0, 0), "type": "post"},
+                ],
+                "post_id": 1,
+                "text": "asml",
+            },
+            {
+                "interacted": [
+                    {"date": datetime.datetime(2022, 1, 7, 0, 0), "type": "share"},
+                    {"date": datetime.datetime(2022, 1, 12, 0, 0), "type": "share"},
+                ],
+                "post_id": 2,
+                "text": "aaoi",
+            },
+            {
+                "interacted": [
+                    {"date": datetime.datetime(2022, 1, 22, 0, 0), "type": "share"},
+                    {"date": datetime.datetime(2022, 1, 8, 0, 0), "type": "post"},
+                ],
+                "post_id": 3,
+                "text": "msft",
+            },
+        ],
+        "user": {"id": 7},
+        "values": [-0.9795149399926325, 0.4925599211086731, -0.6872335333848887],
+    },
+]
 
-def build_test_data():
+
+def test_build_simple_data():
     name = ["mdb", "akam", "goog", "appl", "msft", "gld", "ibm", "tsm", "asml", "estc", "gm"]
     for _ in range(8):
         d = {
@@ -94,5 +364,29 @@ def build_test_data():
         pprint(d)
 
 
-if __name__ == "__main__":
-    build_test_data()
+def test_build_complex_data():
+    name = ["mdb", "akam", "goog", "appl", "msft", "gld", "ibm", "tsm", "asml", "estc", "gm", "aaoi", "akam"]
+    values = []
+    for _ in range(8):
+        d = {
+            "id": _,
+            "posts": [
+                {
+                    "post_id": idx,
+                    "text": random.choice(name),
+                    "interacted": [
+                        {
+                            "type": random.choice(["share", "post", "keep"]),
+                            "date": datetime(2022, 1, random.randint(1, 31)),
+                        }
+                        for i in range(random.randint(1, 5))
+                    ],
+                }
+                for idx in range(random.randint(1, 5))
+            ],
+            "user": {"id": hash(random.choice(name)) % random.randint(1, 1000)},
+            "values": [random.random() + random.randint(-1, 1) for x in range(random.randint(2, 5))],
+        }
+
+        values.append(d)
+    pprint(values)

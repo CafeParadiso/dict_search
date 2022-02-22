@@ -145,6 +145,25 @@ data = [
  'name': 'Ajame'}
 ````
 ####Expr - $expr:
+Through $expr we can pass a function that will be applied to the value we are comparing.
+
+````python 
+    query = {"classes": {"$expr": (lambda x: sum(x.values()), 26)}}
+````
+````python
+    {'classes': {'english': 6, 'maths': 10, 'pe': 10},
+     'courses': {'C': True},
+     'name': 'Ajame'}
+````
+Any low level operation can be passed too
+````python 
+    query = {"classes": {"$expr": (lambda x: sum(x.values()), {"$lte": 20})}}
+````
+````python
+    {'classes': {'english': 10, 'maths': 7, 'pe': 3},
+    'courses': {'A': True, 'B': {'A': True}},
+    'name': 'Akira'}
+````
 
 ###High level operators
 These operators let us aggregate the logic of several low level operators into one
@@ -165,8 +184,7 @@ values = DictSearch(
 ```
 
 TODO
-- document high level ops (nested high level ops)
-- document operator char
-- array search
+- tests
+- document in tests
 - setup.py in detail
 - optional projection in query
