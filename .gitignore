@@ -1,5 +1,9 @@
+#PyCharm
 .idea/
+#pytest
 .pytest_cache/
+#build
 build/
 dist/
+src/dict_search.egg-info/
 tests/__pycache__/

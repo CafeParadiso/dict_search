@@ -187,4 +187,4 @@ TODO
 - tests
 - document in tests
 - setup.py in detail
-- optional projection in query
+- future optional projection in query

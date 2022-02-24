@@ -2,8 +2,8 @@ import logging
 import re
 import types
 
+from . import exceptions
 from pprint import pprint
-
 
 class DictSearch:
     def __init__(self, operator_str=None, **kwargs):
@@ -41,7 +41,7 @@ class DictSearch:
     @staticmethod
     def _init_precondition(operator_str):
         if operator_str and not isinstance(operator_str, str):
-            raise TypeError(f"Operator chars must be 'str' not:\n{operator_str}|{type(operator_str)}")
+            raise exceptions.OperatorCharError(operator_str)
         return True
 
     @staticmethod
@@ -62,9 +62,9 @@ class DictSearch:
         try:
             iter(data)
         except TypeError:
-            raise TypeError(f"\nData must be an iterable not:\n{data} {type(data)}")
+            raise exceptions.PreconditionIterableError(data)
         if not isinstance(search_dict, dict):
-            raise TypeError(f"\nProvide a dict to perform the search not:\n{search_dict} {type(search_dict)}")
+            raise exceptions.PreconditionSearchDictError(search_dict)
         return True
 
     def _search(self, data, search_dict, matches=None):
@@ -83,9 +83,10 @@ class DictSearch:
                         logging.debug(f"{key}: {match}")
                         yield match
                 elif key in self.array_operators:
+                    # using key as search dict in order to terminate
                     for match in self._search(
                         data,
-                        value,
+                        key,
                         matches + [m for m in self._array_operators(key, data, value)],
                     ):
                         if isinstance(match, list):
@@ -129,14 +130,14 @@ class DictSearch:
                 return [True if value == search_value[1] else False]
         try:
             return [operation_map[operator](value, search_value)] if operation_map.get(operator) else [False]
-        except TypeError:
+        except TypeError:  # in case arithmetic comparisons fail
             return [False]
 
     def _high_level_operator(self, operator, data, search_list):
         if not any(
             [True if isinstance(search_list, typ) else False for typ in [list, tuple, set, types.GeneratorType]]
         ):
-            raise TypeError("High level operators should be a list, tuple, set or generator")
+            raise exceptions.HighLevelOperatorListError
         operator_map = {
             self.hop_and: lambda mtchs: all(mtchs) if mtchs else False,
             self.hop_or: lambda mtchs: any(mtchs),

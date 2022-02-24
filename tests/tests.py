@@ -5,6 +5,7 @@ from pprint import pprint
 import pytest
 
 from src.dict_search.dict_search import DictSearch
+from src.dict_search.dict_search import exceptions
 from test_data import data, complex_data
 
 
@@ -121,13 +122,16 @@ class TestLowLevelOperators:
 
     @staticmethod
     def test_expr():
-        # TODO test wrong inputs + more cases
         values = DictSearch().dict_search(data, {"liab": {"cur": {"$expr": (lambda x: x * 2, 8518)}}})
         values = [val for val in values]
         assert len(values) == 1
         values = DictSearch().dict_search(data, {"liab": {"cur": {"$expr": (lambda x: x * 2, {"$lt": 6000})}}})
         values = [val for val in values]
         assert len(values) == 3
+        with pytest.raises(TypeError):
+            list(DictSearch().dict_search(
+                data, {"liab": {"cur": {"$expr": ("2", {"$lt": 6000})}}}
+            ))
 
     @staticmethod
     def test_inst():
@@ -174,23 +178,29 @@ class TestArrayOperators:
     @staticmethod
     def test_all():
         values = DictSearch().dict_search(
-            complex_data, {"posts": {"$match": {"1": {"interacted": {"text": "mdb"}}}}}
+            complex_data,
+            {"values": {"$all": {"$gt": 0.5}}}
         )
         values = list(values)
+        assert len(values) == 2
 
     @staticmethod
     def test_any():
         values = DictSearch().dict_search(
-            complex_data, {"posts": {"$match": {"1": {"interacted": {"text": "mdb"}}}}}
+            complex_data, {"posts": {"$any": {"text": "tsm"}}}
         )
         values = list(values)
+        assert len(values) == 1
+        assert values[0]["id"] == 0
 
     @staticmethod
     def test_match():
         values = DictSearch().dict_search(
-            complex_data, {"posts": {"$match": {"1": {"interacted": {"text": "mdb"}}}}}
+            complex_data, {"posts": {"$match": {"1": {"text": "mdb"}}}}
         )
         values = list(values)
+        assert len(values) == 3
+        assert [val["id"] for val in values] == [5, 6, 7]
 
 
 class TestArraySelectors:
@@ -240,31 +250,6 @@ class TestOperatorExtension:
             )
 
 
-class TestExceptions:
-    @staticmethod
-    def test_operator_str_exception():
-        with pytest.raises(TypeError, match=r".*?must be.*?"):
-            DictSearch(1)
-
-    @staticmethod
-    def test_data_precondition():
-        with pytest.raises(TypeError, match=r".*?iterable.*?"):
-            values = DictSearch().dict_search(1, {"assets": {"curr": {"a": 0}}})
-            list(values)
-
-    @staticmethod
-    def test_search_dict_precondition():
-        with pytest.raises(TypeError, match=r".*?dict.*?"):
-            values = DictSearch().dict_search(data, 1)
-            list(values)
-
-    @staticmethod
-    def test_high_level_operator_exception():
-        with pytest.raises(TypeError, match=r".*?operators should.*?"):
-            values = DictSearch().dict_search(data, {"$and": {"assets": {"non_cur": {"$lt": 3922}}}})
-            list(values)
-
-
 class TestComplex:
     @staticmethod
     def test_match_implicit_and():
@@ -310,6 +295,43 @@ class TestComplex:
 
         assert len(values) == 4
         assert [x["id"] for x in values] == [0, 1, 5, 6]
+
+    def test_array_selector_and_other(self):
+        values = DictSearch().dict_search(
+            complex_data,
+            {
+                "values": {"$all": {"$gt": 0.5}},
+                "user": {"id": {"$lt": 100}},
+            }
+        )
+        values = list(values)
+        assert len(values) == 2
+        assert [val["user"]["id"] for val in values] == [94, 68]
+
+
+class TestExceptions:
+    @staticmethod
+    def test_operator_str_exception():
+        with pytest.raises(TypeError, match=r".*?must be.*?"):
+            DictSearch(1)
+
+    @staticmethod
+    def test_precondition_iterable_exception():
+        with pytest.raises(exceptions.PreconditionIterableError, match=r".*?iterable.*?"):
+            values = DictSearch().dict_search(1, {"assets": {"curr": {"a": 0}}})
+            list(values)
+
+    @staticmethod
+    def test_search_dict_precondition():
+        with pytest.raises(exceptions.PreconditionSearchDictError, match=r".*?dict.*?"):
+            values = DictSearch().dict_search(data, 1)
+            list(values)
+
+    @staticmethod
+    def test_high_level_operator_exception():
+        with pytest.raises(exceptions.HighLevelOperatorListError, match=r".*?operators should.*?"):
+            values = DictSearch().dict_search(data, {"$and": {"assets": {"non_cur": {"$lt": 3922}}}})
+            list(values)
 
 
 class TestAll(
