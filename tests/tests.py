@@ -21,6 +21,19 @@ class TestData:
             "special": False,
         }
         assert data[2] == expected_data
+        values = DictSearch().dict_search("a2a2a2", {"$in": 1})
+        print(list(values))
+
+    @staticmethod
+    def test_non_iterable():
+        with pytest.raises(exceptions.PreconditionDataError):
+            values = list(DictSearch().dict_search(1, {}))
+
+    @staticmethod
+    def test_iterable_not_dict():
+        values = list(DictSearch().dict_search("a2a2a2", {}))
+        assert not values
+
 
 
 class TestCommon:
@@ -269,13 +282,12 @@ class TestComplex:
         assert len(values) == expected_values
         assert [x["id"] for x in list(values)] == expected_ids
 
-        values = DictSearch().dict_search(
+        implicit_values = DictSearch().dict_search(
             complex_data,
             {"posts": {"$match": {"1": {"interacted": {"$all": {"type": "post"}}, "text": "mdb"}}}},
         )
-        values = list(values)
-        assert len(values) == expected_values
-        assert [x["id"] for x in list(values)] == expected_ids
+        implicit_values = list(implicit_values)
+        assert values == implicit_values
 
     @staticmethod
     def test_nested_high_operator():
@@ -317,7 +329,7 @@ class TestExceptions:
 
     @staticmethod
     def test_precondition_iterable_exception():
-        with pytest.raises(exceptions.PreconditionIterableError, match=r".*?iterable.*?"):
+        with pytest.raises(exceptions.PreconditionDataError, match=r".*?iterable.*?"):
             values = DictSearch().dict_search(1, {"assets": {"curr": {"a": 0}}})
             list(values)
 
@@ -329,7 +341,7 @@ class TestExceptions:
 
     @staticmethod
     def test_high_level_operator_exception():
-        with pytest.raises(exceptions.HighLevelOperatorListError, match=r".*?operators should.*?"):
+        with pytest.raises(exceptions.HighLevelOperatorIteratorError, match=r".*?operators should.*?"):
             values = DictSearch().dict_search(data, {"$and": {"assets": {"non_cur": {"$lt": 3922}}}})
             list(values)
 

@@ -182,6 +182,8 @@ values = DictSearch(
         format="%(asctime)s [%(levelname)s] %(message)s",
         handlers=[logging.StreamHandler()]).dict_search(data, query)
 ```
+###match
+True if the condition is matched n times or more.
 
 TODO
 - tests
