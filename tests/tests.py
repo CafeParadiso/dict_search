@@ -1,12 +1,11 @@
 import re
-from datetime import datetime
 from pprint import pprint
 
 import pytest
 
 from src.dict_search.dict_search import DictSearch
 from src.dict_search.dict_search import exceptions
-from test_data import data, complex_data
+from test_data import data, complex_data, range_data
 
 
 class TestData:
@@ -35,20 +34,21 @@ class TestData:
         assert not values
 
 
-
 class TestCommon:
     @staticmethod
     def test_operator_char():
         operator_str = "!"
-        data = [
-            {
-                "$in": 1,
-            },
-            {
-                "$in": 0,
-            },
-        ]
-        values = DictSearch(operator_str=operator_str).dict_search(data, {"$in": 1})
+        values = DictSearch(operator_str=operator_str).dict_search(
+            [
+                {
+                    "$in": 1,
+                },
+                {
+                    "$in": 0,
+                },
+            ],
+            {"$in": 1},
+        )
         assert len([val for val in values]) == 1
 
     @staticmethod
@@ -135,16 +135,9 @@ class TestLowLevelOperators:
 
     @staticmethod
     def test_expr():
-        values = DictSearch().dict_search(data, {"liab": {"cur": {"$expr": (lambda x: x * 2, 8518)}}})
+        values = DictSearch().dict_search(data, {"liab": {"cur": {"$expr": lambda x: x * 2 == 8518}}})
         values = [val for val in values]
         assert len(values) == 1
-        values = DictSearch().dict_search(data, {"liab": {"cur": {"$expr": (lambda x: x * 2, {"$lt": 6000})}}})
-        values = [val for val in values]
-        assert len(values) == 3
-        with pytest.raises(TypeError):
-            list(DictSearch().dict_search(
-                data, {"liab": {"cur": {"$expr": ("2", {"$lt": 6000})}}}
-            ))
 
     @staticmethod
     def test_inst():
@@ -212,8 +205,44 @@ class TestArrayOperators:
             complex_data, {"posts": {"$match": {"1": {"text": "mdb"}}}}
         )
         values = list(values)
+        assert len(values) == 1
+        assert [val["id"] for val in values] == [7]
+
+    @staticmethod
+    def test_matchgt():
+        values = DictSearch().dict_search(
+            complex_data, {"posts": {"$matchgt": {"1": {"text": "mdb"}}}}
+        )
+        values = list(values)
+        assert len(values) == 2
+        assert [val["id"] for val in values] == [5, 6]
+
+    @staticmethod
+    def test_matchgte():
+        values = DictSearch().dict_search(
+            complex_data, {"posts": {"$matchgte": {"1": {"text": "mdb"}}}}
+        )
+        values = list(values)
         assert len(values) == 3
         assert [val["id"] for val in values] == [5, 6, 7]
+
+    @staticmethod
+    def test_matchlt():
+        values = DictSearch().dict_search(
+            complex_data, {"posts": {"$matchlt": {"1": {"text": "mdb"}}}}
+        )
+        values = list(values)
+        assert len(values) == 5
+        assert [val["id"] for val in values] == [0, 1, 2, 3, 4]
+
+    @staticmethod
+    def test_matchlte():
+        values = DictSearch().dict_search(
+            complex_data, {"posts": {"$matchlte": {"1": {"text": "mdb"}}}}
+        )
+        values = list(values)
+        assert len(values) == 6
+        assert [val["id"] for val in values] == [0, 1, 2, 3, 4, 7]
 
 
 class TestArraySelectors:
@@ -221,45 +250,55 @@ class TestArraySelectors:
     def test_index():
         values = DictSearch().dict_search(
             complex_data,
-            {"posts": {"$index": {"0": {"interacted": {"$last": {"type": "share"}}}}}},
+            {"posts": {"$index": {"0": {"interacted": {"$index": {"-1": {"type": "share"}}}}}}},
         )
         pprint(list(values))
 
     @staticmethod
-    def test_last():
-        values = DictSearch().dict_search(
-            complex_data, {"posts": {"$last": {"text": "gld"}}},
-        )
-        values = list(values)
-        assert len(values) == 1
-        assert [x["id"] for x in list(values)] == [0]
+    def test_range():
+        search_dict = {
+            "mixed": ""
+        }
+        for range_str, val, assert_val in [
+            ("2:", 3, 2),
+            ("2::", 3, 2),
+            (":2", 2, 1),
+            (":2:", 2, 1),
+            ("::2", 1, 1),
+            ("2:6", 3, 2),
+            ("2:4:", 2, 2),
+            ("2::2", 1, 3),
+            (":4:2", 2, 2),
+            ("2:5:2", 1, 3),
+        ]:
+            search_dict["mixed"] = {
+                "a": {"$range": {range_str: {"$expr": lambda x: x.count(2) == val}}}
+            }
+            values = DictSearch().dict_search(
+                range_data,
+                search_dict
+            )
+            assert len(list(values)) == assert_val
 
 
 class TestOperatorExtension:
     @staticmethod
-    def test_low_level_operators():
+    def test_extension():
         dict_search = DictSearch()
         try:
-            assert len(dict_search.low_level_operators) == len(
-                [k for k in TestLowLevelOperators.__dict__.keys() if re.match("test_.*?", k)]
-            )
+            for operator_type, test_type in [
+                (dict_search.low_level_operators, TestLowLevelOperators),
+                (dict_search.high_level_operators, TestHighLevelOperators),
+                (dict_search.array_operators, TestArrayOperators),
+                (dict_search.array_selectors, TestArraySelectors),
+            ]:
+                assert len(operator_type) == len(
+                    [k for k in test_type.__dict__.keys() if re.match("test_.*?", k)]
+                )
         except AssertionError:
             raise AssertionError(
-                "If you added a low level operator you must add a "
-                "corresponding test in the class 'TestLowLevelOperators'"
-            )
-
-    @staticmethod
-    def test_high_level_operators():
-        dict_search = DictSearch()
-        try:
-            assert len(dict_search.high_level_operators) == len(
-                [k for k in TestHighLevelOperators.__dict__.keys() if re.match("test_.*?", k)]
-            )
-        except AssertionError:
-            raise AssertionError(
-                "If you added a high level operator you must add a "
-                "corresponding test in the class 'TestHighLevelOperators'"
+                f"If you added new '{test_type.__name__.replace('Test', '')}' you must add a "
+                f"corresponding test in the class '{test_type.__name__}'"
             )
 
 
@@ -273,8 +312,8 @@ class TestComplex:
             complex_data,
             {
                 "$and": [
-                    {"posts": {"$match": {"1": {"interacted": {"$all": {"type": "post"}}}}}},
-                    {"posts": {"$match": {"1": {"text": "mdb"}}}},
+                    {"posts": {"$matchgte": {"1": {"interacted": {"$all": {"type": "post"}}}}}},
+                    {"posts": {"$matchgte": {"1": {"text": "mdb"}}}},
                 ]
             },
         )
@@ -284,7 +323,7 @@ class TestComplex:
 
         implicit_values = DictSearch().dict_search(
             complex_data,
-            {"posts": {"$match": {"1": {"interacted": {"$all": {"type": "post"}}, "text": "mdb"}}}},
+            {"posts": {"$matchgte": {"1": {"interacted": {"$all": {"type": "post"}}, "text": "mdb"}}}},
         )
         implicit_values = list(implicit_values)
         assert values == implicit_values
@@ -297,7 +336,7 @@ class TestComplex:
                 "$or": [
                     {"$and": [
                             {"posts": {"$match": {"1": {"interacted": {"$all": {"type": "post"}}}}}},
-                            {"posts": {"$match": {"1": {"text": "mdb"}}}},
+                            {"posts": {"$matchgte": {"1": {"text": "mdb"}}}},
                     ]},
                     {"$or": [{"user": {"id": 141}}]},
                 ]

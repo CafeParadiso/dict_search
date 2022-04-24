@@ -337,8 +337,31 @@ complex_data = [
     },
 ]
 
+range_data = [
+    {
+        "mixed": {
+            "a": [0, 1, 2, 0, 1, 2],
+        }
+    },
+    {
+        "mixed": {
+            "a": [2, 2, 2, 2, 1, 2],
+        }
+    },
+    {
+        "mixed": {
+            "a": [2, 0, 2, 2, 1, 2],
+        }
+    },
+    {
+        "mixed": {
+            "a": 1
+        }
+    },
+]
 
-def test_build_simple_data():
+
+def test_build_simple_data():  # pragma: no cover
     name = ["mdb", "akam", "goog", "appl", "msft", "gld", "ibm", "tsm", "asml", "estc", "gm"]
     for _ in range(8):
         d = {
@@ -364,7 +387,7 @@ def test_build_simple_data():
         pprint(d)
 
 
-def test_build_complex_data():
+def test_build_complex_data():    # pragma: no cover
     name = ["mdb", "akam", "goog", "appl", "msft", "gld", "ibm", "tsm", "asml", "estc", "gm", "aaoi", "akam"]
     values = []
     for _ in range(8):

@@ -1,5 +1,6 @@
 #PyCharm
 .idea/
+src/dict_search/__pycache__/
 #pytest
 .pytest_cache/
 #build
@@ -7,3 +8,5 @@ build/
 dist/
 src/dict_search.egg-info/
 tests/__pycache__/
+# coverage
+.coverage
