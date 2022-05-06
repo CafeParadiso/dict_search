@@ -114,7 +114,7 @@ class DictSearch:
         }
         try:
             return operation_map[operator](value, search_value)
-        except TypeError:  # in case arithmetic comparisons fail
+        except TypeError:
             return False
 
     def _high_level_operator(self, operator, data, search_iterator):
@@ -199,7 +199,7 @@ class DictSearch:
             re.compile(rf"^(?P<{s}>-?\d+)::(?P<{st}>-?\d+)$"):
                 lambda mtch_dict, dta: dta[int(mtch_dict[s])::int(mtch_dict[st])],  # [s::st]
             re.compile(rf"^:(?P<{e}>-?\d+):(?P<{st}>-?\d+)$"):
-                lambda mtch_dict, dta: dta[:int(mtch_dict[e]):int(mtch_dict[st])],  # [:e:st]63
+                lambda mtch_dict, dta: dta[:int(mtch_dict[e]):int(mtch_dict[st])],  # [:e:st]
             re.compile(rf"^(?P<{s}>-?\d+):(?P<{e}>-?\d+):(?P<{st}>-?\d+)$"):
                 lambda mtch_dict, dta: dta[int(mtch_dict[s]):int(mtch_dict[e]):int(mtch_dict[st])],  # [s:e:st]
         }

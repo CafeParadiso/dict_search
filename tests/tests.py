@@ -12,26 +12,17 @@ class TestData:
     @staticmethod
     def test_data():
         assert len(data) == 8
-        expected_data = {
-            "assets": {"curr": {"a": 0, "b": 0}, "non_cur": 2545},
-            "fy": 2014,
-            "liab": {"cur": 2830, "non_cur": {"a": 14914}},
-            "name": "estc",
-            "special": False,
-        }
-        assert data[2] == expected_data
-        values = DictSearch().dict_search("a2a2a2", {"$in": 1})
-        print(list(values))
+        all(["assets", "fy", "liab", "name", "special"] == list(d.keys()) for d in data)
 
     @staticmethod
-    def test_non_iterable():
-        with pytest.raises(exceptions.PreconditionDataError):
-            values = list(DictSearch().dict_search(1, {}))
+    def test_complex_data():
+        assert len(data) == 8
+        assert all(["id", "posts", "user", "values"] == list(d.keys()) for d in complex_data)
 
     @staticmethod
-    def test_iterable_not_dict():
-        values = list(DictSearch().dict_search("a2a2a2", {}))
-        assert not values
+    def test_range_data():
+        assert len(range_data) == 4
+        assert all(d["mixed"]["a"] for d in range_data)
 
 
 class TestCommon:
@@ -52,7 +43,15 @@ class TestCommon:
         assert len([val for val in values]) == 1
 
     @staticmethod
-    def test_multi_type_field():
+    def test_mixed_type_data():
+        values = DictSearch().dict_search(
+            [{"demo": 1}, "not_a_dict", 123, {"demo": 2}],
+            {"demo": {"$gte": 1}},
+        )
+        assert len(list(values)) == 2
+
+    @staticmethod
+    def test_mixed_type_field():
         values = DictSearch().dict_search(data, {"special": False})
         assert len([val for val in values]) == 5
 
@@ -256,9 +255,6 @@ class TestArraySelectors:
 
     @staticmethod
     def test_range():
-        search_dict = {
-            "mixed": ""
-        }
         for range_str, val, assert_val in [
             ("2:", 3, 2),
             ("2::", 3, 2),
@@ -271,12 +267,11 @@ class TestArraySelectors:
             (":4:2", 2, 2),
             ("2:5:2", 1, 3),
         ]:
-            search_dict["mixed"] = {
-                "a": {"$range": {range_str: {"$expr": lambda x: x.count(2) == val}}}
-            }
             values = DictSearch().dict_search(
                 range_data,
-                search_dict
+                {
+                    "mixed": {"a": {"$range": {range_str: {"$expr": lambda x: x.count(2) == val}}}}
+                }
             )
             assert len(list(values)) == assert_val
 
