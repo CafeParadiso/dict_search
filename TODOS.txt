@@ -1,7 +1,10 @@
-TODOS
+DOING
 - ultimate testing
+- check style
+TODOS
+- add $where in array selectorsn
+- eager search
 - document properly in README
-- read all for stylistic improvements
 - check license
 - set setup.py in detail
 UPCOMING FEATURES

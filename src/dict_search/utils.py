@@ -45,3 +45,13 @@ def _deep_pop(data, key_list):
     data = data.get(key_list[0])
     key_list.pop(0)
     return _deep_pop(data, key_list)
+
+
+def all_custom(generator):
+    """Custom implementation for all() treating an empty generator as False"""
+    matches = False
+    for val in generator:
+        matches = True
+        if not val:
+            return False
+    return True if matches else False

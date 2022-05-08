@@ -361,7 +361,7 @@ range_data = [
 ]
 
 
-def test_build_simple_data():  # pragma: no cover
+def build_simple_data():  # pragma: no cover
     name = ["mdb", "akam", "goog", "appl", "msft", "gld", "ibm", "tsm", "asml", "estc", "gm"]
     for _ in range(8):
         d = {
@@ -387,7 +387,7 @@ def test_build_simple_data():  # pragma: no cover
         pprint(d)
 
 
-def test_build_complex_data():    # pragma: no cover
+def build_complex_data():    # pragma: no cover
     name = ["mdb", "akam", "goog", "appl", "msft", "gld", "ibm", "tsm", "asml", "estc", "gm", "aaoi", "akam"]
     values = []
     for _ in range(8):
@@ -400,7 +400,7 @@ def test_build_complex_data():    # pragma: no cover
                     "interacted": [
                         {
                             "type": random.choice(["share", "post", "keep"]),
-                            "date": datetime(2022, 1, random.randint(1, 31)),
+                            "date": datetime.datetime(2022, 1, random.randint(1, 31)),
                         }
                         for i in range(random.randint(1, 5))
                     ],
@@ -413,3 +413,10 @@ def test_build_complex_data():    # pragma: no cover
 
         values.append(d)
     pprint(values)
+
+
+if __name__ == "__main__":
+    def t(x):
+        for _ in range(x):
+            yield None
+    print(all(0))

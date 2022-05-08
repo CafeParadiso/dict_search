@@ -2,12 +2,12 @@ import re
 import types
 
 from . import exceptions
+from pprint import pprint
 
 
 class DictSearch:
     def __init__(self, operator_str=None):
-        self._init_precondition(operator_str)
-        self.operator_char = operator_str or "$"
+        self.operator_char = operator_str if isinstance(operator_str, str) else None or "$"
 
         self.lop_ne = f"{self.operator_char}ne"
         self.lop_gt = f"{self.operator_char}gt"
@@ -40,18 +40,12 @@ class DictSearch:
         self.sel_range = f"{self.operator_char}range"
         self.array_selectors = [val for key, val in self.__dict__.items() if re.match(r"^sel_.*$", key)]
 
-    @staticmethod
-    def _init_precondition(operator_str):
-        if operator_str and not isinstance(operator_str, str):
-            raise exceptions.OperatorCharError(operator_str)
-
     def dict_search(self, data, search_dict):
         self._search_precondition(data, search_dict)
-        for index, data_point in enumerate(data):
+        for data_point in data:
             if not isinstance(data_point, dict):
                 continue
-            matches = list(self._search(data_point, search_dict))
-            if matches and all(matches):
+            if all(match for match in self._search(data_point, search_dict)):
                 yield data_point
 
     @staticmethod
@@ -63,41 +57,25 @@ class DictSearch:
         if not isinstance(search_dict, dict):
             raise exceptions.PreconditionSearchDictError(search_dict)
 
-    def _search(self, data, search_dict, matches=None):
-        matches = matches if isinstance(matches, list) else []
-        if isinstance(search_dict, dict):
+    def _search(self, data, search_dict):
+        if isinstance(search_dict, dict) and search_dict:
             for key, value in search_dict.items():
                 if key in self.low_level_operators:
-                    for match in self._search(data, key, matches + [self._low_level_operator(key, data, value)]):
-                        yield match
+                    yield self._low_level_operator(key, data, value)
                 elif key in self.high_level_operators:
-                    for match in self._search(
-                        data, key, matches + list(self._high_level_operator(key, data, search_dict[key]))
-                    ):
-                        yield match
+                    yield self._high_level_operator(key, data, search_dict[key])
                 elif key in self.array_operators:
-                    # using key as search dict in order to terminate
-                    for match in self._search(
-                        data,
-                        key,
-                        matches + list(self._array_operators(key, data, value)),
-                    ):
-                        yield match
+                    yield self._array_operators(key, data, value)
                 elif key in self.array_selectors:
-                    for match in self._search(*self._array_selector(key, data, value), matches):
+                    for match in self._search(*self._array_selector(key, data, value)):
                         yield match
                 elif all(isinstance(obj, dict) for obj in [value, data]):
-                    for match in self._search(data.get(key), value, matches):
+                    for match in self._search(data.get(key), value):
                         yield match
                 elif isinstance(data, dict):
-                    for match in self._search(
-                        data.get(key), key, matches + [True if data.get(key) == value else False]
-                    ):
-                        yield match
-                else:
-                    yield matches
+                    yield self._compare(data.get(key), value)
         else:
-            yield from matches
+            yield False
 
     def _low_level_operator(self, operator, value, search_value):
         operation_map = {
@@ -123,13 +101,24 @@ class DictSearch:
         ):
             raise exceptions.HighLevelOperatorIteratorError
         operator_map = {
-            self.hop_and: lambda mtchs: all(mtchs) if mtchs else False,
+            self.hop_and: lambda mtchs: all(mtchs),
             self.hop_or: lambda mtchs: any(mtchs),
-            self.hop_xor: lambda mtchs: True if mtchs.count(True) == 1 else False,
-            self.hop_not: lambda mtchs: False if all(mtchs) or not mtchs else True,
+            self.hop_xor: lambda mtchs: self._operator_xor(mtchs),
+            self.hop_not: lambda mtchs: False if all(mtchs) else True,
         }
-        matches = [match for search_dict in search_iterator for match in self._search(data, search_dict)]
-        yield operator_map[operator](matches)
+        return operator_map[operator](
+            match for search_dict in search_iterator for match in self._search(data, search_dict)
+        )
+
+    @staticmethod
+    def _operator_xor(generator):
+        matches = 0
+        for match in generator:
+            if match:
+                matches += 1
+            if matches > 1:
+                return False
+        return True if matches else False
 
     def _array_operators(self, operator, data, search_value):
         if not any(True if isinstance(data, typ) else False for typ in [list, tuple]):
@@ -148,28 +137,29 @@ class DictSearch:
         if operator in operator_match_map.keys():
             count, search_value = list(search_value.items())[0]
             try:
-                yield operator_match_map[operator](self._match_count(data, search_value), int(count))
+                return operator_match_map[operator](self._match_count(data, search_value), int(count))
             except TypeError:
                 return False
         else:
-            yield operator_generic_map[operator](data, search_value)
+            return operator_generic_map[operator](data, search_value)
 
     def _operator_all(self, data, search_value):
-        matches = [match for d_point in data for match in self._search(d_point, search_value)]
-        return True if matches and all(matches) else False
+        if isinstance(search_value, dict):
+            return all(match for d_point in data for match in self._search(d_point, search_value))
+        else:
+            return all(self._compare(d_point, search_value) for d_point in data)
 
     def _operator_any(self, data, search_value):
-        return any(match for d_point in data for match in self._search(d_point, search_value))
+        if isinstance(search_value, dict):
+            return any(match for d_point in data for match in self._search(d_point, search_value))
+        return any(self._compare(d_point, search_value) for d_point in data)
 
     def _match_count(self, data, search_value):
         if len(search_value.keys()) > 1:  # implicit $and
             search_list = [{key: search_value[key]} for key in search_value]
-            matches = [
-                    match for d_point in data for match in self._high_level_operator(self.hop_and, d_point, search_list)
-                ]
+            return [self._high_level_operator(self.hop_and, data_point, search_list) for data_point in data].count(True)
         else:
-            matches = [match for d_point in data for match in self._search(d_point, search_value)]
-        return matches.count(True)
+            return [match for d_point in data for match in self._search(d_point, search_value)].count(True)
 
     def _array_selector(self, operator, data, search_value):
         operator_map = {
@@ -208,3 +198,10 @@ class DictSearch:
             if match:
                 return value(match.groupdict(), data), search_value
         return [], {}
+
+    @staticmethod
+    def _compare(data, search_value):
+        try:
+            return data == search_value
+        except ValueError:
+            return False

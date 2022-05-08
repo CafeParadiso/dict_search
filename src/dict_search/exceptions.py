@@ -1,8 +1,3 @@
-class OperatorCharError(TypeError):
-    def __init__(self, operator_str):
-        super().__init__(f"Operator chars must be 'str' not:\n{operator_str}|{type(operator_str)}")
-
-
 class PreconditionDataError(Exception):
     def __init__(self, data):
         super().__init__(f"\nData must be an iterable not:\n{data} {type(data)}")
