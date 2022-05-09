@@ -2,11 +2,11 @@ DOING
 - ultimate testing
 - check style
 TODOS
-- add $where in array selectorsn
-- eager search
 - document properly in README
 - check license
 - set setup.py in detail
 UPCOMING FEATURES
+- add $where in array selectors
+- eager search
 - rework utils deep GET, SET, REMOVE
 - optional projection in query

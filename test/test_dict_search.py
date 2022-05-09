@@ -242,6 +242,14 @@ class TestArrayOperators:
         assert [val["id"] for val in values] == [7]
 
     @staticmethod
+    def test_match_eq():
+        values = DictSearch().dict_search(
+            [{"a": [1, 0]}, {"a": [0, 0]}], {"a": {"$match": {"1": 1}}}
+        )
+        values = list(values)
+        assert len(values) == 1
+
+    @staticmethod
     def test_matchgt():
         values = DictSearch().dict_search(
             complex_data, {"posts": {"$matchgt": {"1": {"text": "mdb"}}}}
