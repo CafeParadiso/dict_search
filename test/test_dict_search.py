@@ -171,14 +171,6 @@ class TestHighLevelOperators:
         assert len(values) == 5
 
     @staticmethod
-    def test_xor():
-        values = DictSearch().dict_search(
-            data, {"$xor": [{"liab": {"non_cur": {"a": {"$gt": 10000}}}}, {"assets": {"curr": {"a": 1}}}]}
-        )
-        values = [val for val in values]
-        assert len(values) == 2
-
-    @staticmethod
     def test_not():
         values = DictSearch().dict_search(
             data, {"$not": [
@@ -189,11 +181,6 @@ class TestHighLevelOperators:
         values = [val for val in values]
         assert len(values) == 5
 
-    def test_empty(self):
-        values = DictSearch().dict_search(
-            data, {}
-        )
-        values = [val for val in values]
 
 class TestArrayOperators:
     @staticmethod
@@ -286,6 +273,28 @@ class TestArrayOperators:
         assert [val["id"] for val in values] == [0, 1, 2, 3, 4, 7]
 
 
+class TestMatchOperators:
+    @staticmethod
+    def test_match():
+        # match as array operator
+        results_aop = DictSearch().dict_search(
+            [{"a": [0, 1, 1], "b": 1, "c": 1}, {"a": [0, 0, 1], "b": 1, "c": 1}],
+            {"a": {"$match": {"2": 1}}}
+        )
+        assert len(list(results_aop)) == 1
+        # match as high level operator
+        results_hop = DictSearch().dict_search(
+            [{"a": [0, 1, 1], "b": 1, "c": 1}, {"a": [0, 0, 1], "b": 1, "c": 1}],
+            {"$match": {"2": [
+                    {"b": 1},
+                    {"b": {"$expr": lambda x: isinstance(x, str)}},
+                    {"b": {"$expr": lambda x: isinstance(x, int)}},
+                ]}
+            }
+        )
+        assert len(list(results_hop)) == 2
+
+
 class TestArraySelectors:
     @staticmethod
     def test_index():
@@ -319,27 +328,6 @@ class TestArraySelectors:
             assert len(list(values)) == assert_val
 
 
-# class TestOperatorExtension:
-#     @staticmethod
-#     def test_extension():
-#         dict_search = DictSearch()
-#         try:
-#             for operator_type, test_type in [
-#                 (dict_search.low_level_operators, TestLowLevelOperators),
-#                 (dict_search.high_level_operators, TestHighLevelOperators),
-#                 (dict_search.array_operators, TestArrayOperators),
-#                 (dict_search.array_selectors, TestArraySelectors),
-#             ]:
-#                 assert len(operator_type) == len(
-#                     [k for k in test_type.__dict__.keys() if re.match("test_.*?", k)]
-#                 )
-#         except AssertionError:  # pragma: no cover
-#             raise AssertionError(
-#                 f"If you added new '{test_type.__name__.replace('Test', '')}' you must add a "
-#                 f"corresponding test in the class '{test_type.__name__}'"
-#             )
-
-
 class TestComplex:
     @staticmethod
     def test_match_implicit_and():
@@ -361,7 +349,13 @@ class TestComplex:
 
         implicit_values = DictSearch().dict_search(
             complex_data,
-            {"posts": {"$matchgte": {"1": {"interacted": {"$all": {"type": "post"}}, "text": "mdb"}}}},
+            {
+                "posts": {
+                    "$matchgte": {"1": {
+                        "interacted": {"$all": {"type": "post"}},
+                        "text": "mdb"}}
+                        }
+            },
         )
         implicit_values = list(implicit_values)
         assert values == implicit_values

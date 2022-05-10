@@ -1,5 +1,5 @@
+from collections import abc
 import re
-import types
 
 from . import exceptions
 from pprint import pprint
@@ -16,6 +16,7 @@ class DictSearch:
         self.lop_lte = f"{self.operator_char}lte"
         self.lop_in = f"{self.operator_char}in"
         self.lop_nin = f"{self.operator_char}nin"
+        self.lop_cont = f"{self.operator_char}cont"
         self.lop_regex = f"{self.operator_char}regex"
         self.lop_expr = f"{self.operator_char}expr"
         self.lop_inst = f"{self.operator_char}inst"
@@ -23,30 +24,23 @@ class DictSearch:
 
         self.hop_and = f"{self.operator_char}and"
         self.hop_or = f"{self.operator_char}or"
-        self.hop_xor = f"{self.operator_char}xor"
         self.hop_not = f"{self.operator_char}not"
         self.high_level_operators = [val for key, val in self.__dict__.items() if re.match(r"^hop_.*$", key)]
 
         self.aop_all = f"{self.operator_char}all"
         self.aop_any = f"{self.operator_char}any"
-        self.aop_match = f"{self.operator_char}match"
-        self.aop_matchgt = f"{self.operator_char}matchgt"
-        self.aop_matchgte = f"{self.operator_char}matchgte"
-        self.aop_matchlt = f"{self.operator_char}matchlt"
-        self.aop_matchlte = f"{self.operator_char}matchlte"
         self.array_operators = [val for key, val in self.__dict__.items() if re.match(r"^aop_.*$", key)]
+
+        self.mop_match = f"{self.operator_char}match"
+        self.mop_matchgt = f"{self.operator_char}matchgt"
+        self.mop_matchgte = f"{self.operator_char}matchgte"
+        self.mop_matchlt = f"{self.operator_char}matchlt"
+        self.mop_matchlte = f"{self.operator_char}matchlte"
+        self.match_operators = [val for key, val in self.__dict__.items() if re.match(r"^mop_.*$", key)]
 
         self.sel_index = f"{self.operator_char}index"
         self.sel_range = f"{self.operator_char}range"
         self.array_selectors = [val for key, val in self.__dict__.items() if re.match(r"^sel_.*$", key)]
-
-    def dict_search(self, data, search_dict):
-        self._search_precondition(data, search_dict)
-        for data_point in data:
-            if not isinstance(data_point, dict):
-                continue
-            if all(match for match in self._search(data_point, search_dict)):
-                yield data_point
 
     @staticmethod
     def _isiter(data):
@@ -55,6 +49,38 @@ class DictSearch:
             return True
         except TypeError:
             return False
+
+    @staticmethod
+    def _iscontainer(data):
+        if isinstance(data, (abc.Container, abc.Generator)) and not isinstance(data, abc.Mapping):
+            return True
+        return False
+
+    @staticmethod
+    def _shortcircuit_counter(generator, counter, eager_check, eager_value, check):
+        matches = 0
+        for match in generator:
+            if match:
+                matches += 1
+                if eager_check(matches, counter):
+                    return eager_value
+        return check(matches, counter)
+
+    @staticmethod
+    def _compare(data, search_value):
+        """Some objects like numpy.Series will raise ValueError when evaluated for truth"""
+        try:
+            return data == search_value
+        except ValueError:
+            return False
+
+    def dict_search(self, data, search_dict):
+        self._search_precondition(data, search_dict)
+        for data_point in data:
+            if not isinstance(data_point, dict):
+                continue
+            if all(match for match in self._search(data_point, search_dict)):
+                yield data_point
 
     def _search_precondition(self, data, search_dict):
         if not self._isiter(data):
@@ -71,6 +97,9 @@ class DictSearch:
                     yield self._high_level_operator(key, data, search_dict[key])
                 elif key in self.array_operators:
                     yield self._array_operators(key, data, value)
+                elif key in self.match_operators and isinstance(value, dict):
+                    count, value = list(value.items())[0]
+                    yield self._match_operators(key, data, value, count)
                 elif key in self.array_selectors:
                     for match in self._search(*self._array_selector(key, data, value)):
                         yield match
@@ -84,13 +113,14 @@ class DictSearch:
 
     def _low_level_operator(self, operator, value, search_value):
         operation_map = {
-            self.lop_ne: lambda val, search_val: val != search_value,
+            self.lop_ne: lambda val, search_val: val != search_val,
             self.lop_gt: lambda val, search_val: val > search_val,
             self.lop_gte: lambda val, search_val: val >= search_val,
             self.lop_lt: lambda val, search_val: val < search_val,
             self.lop_lte: lambda val, search_val: val <= search_val,
-            self.lop_in: lambda val, search_val: val in search_value,
-            self.lop_nin: lambda val, search_val: val not in search_value,
+            self.lop_in: lambda val, search_val: val in search_val,
+            self.lop_nin: lambda val, search_val: val not in search_val,
+            self.lop_cont: lambda val, search_val: search_val in val,
             self.lop_regex: lambda val, search_patt: True if re.compile(search_patt).search(val) else False,
             self.lop_expr: lambda val, func: func(val) if isinstance(func(val), bool) else False,
             self.lop_inst: lambda val, search_type: isinstance(val, search_type),
@@ -101,29 +131,16 @@ class DictSearch:
             return False
 
     def _high_level_operator(self, operator, data, search_iterator):
-        if not any(
-            [True if isinstance(search_iterator, typ) else False for typ in [list, tuple, set, types.GeneratorType]]
-        ):
+        if not self._iscontainer(search_iterator):
             raise exceptions.HighLevelOperatorIteratorError
         operator_map = {
             self.hop_and: lambda mtchs: all(mtchs),
             self.hop_or: lambda mtchs: any(mtchs),
-            self.hop_xor: lambda mtchs: self._operator_xor(mtchs),
             self.hop_not: lambda mtchs: False if all(mtchs) else True,
         }
         return operator_map[operator](
             match for search_dict in search_iterator for match in self._search(data, search_dict)
         )
-
-    @staticmethod
-    def _operator_xor(generator):
-        matches = 0
-        for match in generator:
-            if match:
-                matches += 1
-            if matches > 1:
-                return False
-        return True if matches else False
 
     def _array_operators(self, operator, data, search_value):
         if not self._isiter(data):
@@ -132,10 +149,7 @@ class DictSearch:
             self.aop_all: self._operator_all,
             self.aop_any: self._operator_any,
         }
-        if operator in operator_map:
-            return operator_map[operator](data, search_value)
-        count, search_value = list(search_value.items())[0]
-        return self._operator_match(operator, data, search_value, count)
+        return operator_map[operator](data, search_value)
 
     def _operator_all(self, data, search_value):
         if isinstance(search_value, dict):
@@ -148,50 +162,32 @@ class DictSearch:
             return any(match for d_point in data for match in self._search(d_point, search_value))
         return any(self._compare(d_point, search_value) for d_point in data)
 
-    def _operator_match(self, operator, data, search_value, count):
+    def _match_operators(self, operator, data, search_value, count):
         try:
             count = int(count)
         except TypeError:
             return False
         operator_map = {
-            self.aop_match: [lambda m, c: True if m > c else False, False, lambda m, c: True if m == c else False],
-            self.aop_matchgt: [lambda m, c: True if m > c else False, True, lambda m, c: True if m > c else False],
-            self.aop_matchgte: [lambda m, c: True if m >= c else False, True, lambda m, c: True if m >= c else False],
-            self.aop_matchlt: [lambda m, c: True if m >= c else False, False, lambda m, c: True if m < c else False],
-            self.aop_matchlte: [lambda m, c: True if m > c else False, False, lambda m, c: True if m <= c else False]
+            self.mop_match: [lambda m, c: True if m > c else False, False, lambda m, c: True if m == c else False],
+            self.mop_matchgt: [lambda m, c: True if m > c else False, True, lambda m, c: True if m > c else False],
+            self.mop_matchgte: [lambda m, c: True if m >= c else False, True, lambda m, c: True if m >= c else False],
+            self.mop_matchlt: [lambda m, c: True if m >= c else False, False, lambda m, c: True if m < c else False],
+            self.mop_matchlte: [lambda m, c: True if m > c else False, False, lambda m, c: True if m <= c else False]
         }
-        if isinstance(search_value, dict):
-            if len(search_value.keys()) > 1:  # implicit $and
-                search_list = [{key: search_value[key]} for key in search_value]
-                return self._shortcircuit_match(
-                    iter(self._high_level_operator(self.hop_and, data_point, search_list) for data_point in data),
-                    operator,
-                    operator_map,
-                    count,
+        default_args = count, operator_map[operator][0], operator_map[operator][1], operator_map[operator][2]
+        if self._iscontainer(data):  # match is being used as array operator
+            if isinstance(search_value, dict):
+                return self._shortcircuit_counter(
+                    iter(all([m for m in self._search(data_point, search_value)]) for data_point in data), *default_args
                 )
-            else:
-                return self._shortcircuit_match(
-                    iter(match for d_point in data for match in self._search(d_point, search_value)),
-                    operator,
-                    operator_map,
-                    count,
-                )
-        return self._shortcircuit_match(
-                    iter(self._compare(d_point, search_value) for d_point in data),
-                    operator,
-                    operator_map,
-                    count,
-                )
-
-    @staticmethod
-    def _shortcircuit_match(generator, operator, operator_map, count):
-        matches = 0
-        for match in generator:
-            if match:
-                matches += 1
-            if operator_map[operator][0](matches, count):  # eager check
-                return operator_map[operator][1]
-        return operator_map[operator][2](matches, count)
+            return self._shortcircuit_counter(
+                iter(self._compare(d_point, search_value) for d_point in data), *default_args
+            )
+        if not self._iscontainer(search_value):  # match is being used as high level operator
+            raise exceptions.HighLevelOperatorIteratorError
+        return self._shortcircuit_counter(
+            iter(match for search_dict in search_value for match in self._search(data, search_dict)), *default_args
+        )
 
     def _array_selector(self, operator, data, search_value):
         operator_map = {
@@ -230,10 +226,3 @@ class DictSearch:
             if match:
                 return value(match.groupdict(), data), search_value
         return [], {}
-
-    @staticmethod
-    def _compare(data, search_value):
-        try:
-            return data == search_value
-        except ValueError:
-            return False

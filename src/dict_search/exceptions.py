@@ -10,4 +10,4 @@ class PreconditionSearchDictError(Exception):
 
 class HighLevelOperatorIteratorError(TypeError):
     def __init__(self):
-        super().__init__("High level operators should be a list, tuple, set or generator")
+        super().__init__("The search value for a high level operator must be a container (but not a dict)")
