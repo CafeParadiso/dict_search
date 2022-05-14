@@ -355,11 +355,14 @@ class TestArraySelectors:  # TODO test with data being a generator
 class TestSelect:
     @staticmethod
     def test_select():
+        data = gene_data()["fitxes"]["gg"]["g"]
+        data[0]["tt"]["t"]["ff"]["f"][0]["calt"] = {"calt": {"gg": "Superfície"}}
         values = DictSearch().dict_search(
-            gene_data()["fitxes"]["gg"]["g"],
+            data,
             {"c": "Territori"},
-            {"tt": {"t": {"ff": {"f": {"$index": {"0": "calt"}}}}}},
-            #{"tt": {"t": {"ff": {"f": {"$index": 0}}}}},
+            #"tt"
+            {"tt": {"t": {"ff": {"f": {"$range": {"-3:": "calt"}}}}}},
+            #{"tt": {"t": {"ff": {"f": {"$index": -1}}}}},
             #{"tt": {"t": {"ff": "f"}}},
         )
         pprint(list(values))

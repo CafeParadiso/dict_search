@@ -1,8 +1,10 @@
 from collections import abc
 import re
 
+from . import constants
 from . import exceptions
 from pprint import pprint
+
 
 class DictSearch:
     def __init__(self, operator_str=None):
@@ -42,8 +44,11 @@ class DictSearch:
         self.sel_range = f"{self.operator_char}range"
         self.sel_where = f"{self.operator_char}where"
         self.array_selectors = [val for key, val in self.__dict__.items() if re.match(r"^sel_.*$", key)]
-
-        # selection operators
+        self._array_operator_map = {
+            self.sel_index: self._operator_index,
+            self.sel_range: self._operator_range,
+            self.sel_where: self._operator_where,
+        }
 
     @staticmethod
     def _isiter(data):
@@ -199,13 +204,8 @@ class DictSearch:
             operator, search_value = list(search_value.items())[0]
         except AttributeError:
             return [], {}
-        operator_map = {
-            self.sel_index: self._operator_index,
-            self.sel_range: self._operator_range,
-            self.sel_where: self._operator_where,
-        }
         try:
-            return operator_map[operator_type](data, search_value, operator)
+            return self._array_operator_map[operator_type](data, search_value, operator)
         except (TypeError, IndexError):
             return [], {}
 
@@ -215,23 +215,15 @@ class DictSearch:
 
     @staticmethod
     def _operator_range(data, search_value, range_str):
-        s, e, st = "start", "end", "step"
+        s, e, st = constants.S, constants.E, constants.ST
         range_map = {
-            re.compile(rf"^(?P<{s}>-?\d+)::?$"): lambda mtch_dict, dta: dta[int(mtch_dict[s]):],  # [s:] | [s::]
-            re.compile(rf"^:(?P<{e}>-?\d+):?$"): lambda mtch_dict, dta: dta[:int(mtch_dict[e])],  # [:e] | [:e:]
-            re.compile(rf"^::(?P<{st}>-?\d+)$"): lambda mtch_dict, dta: dta[::int(mtch_dict[st])],  # [::st]
-            re.compile(rf"^(?P<{s}>-?\d+):(?P<{e}>-?\d+):?$"): lambda mtch_dict, dta: dta[
-                int(mtch_dict[s]):int(mtch_dict[e])
-            ],  # [s:e] | [s:e:]
-            re.compile(rf"^(?P<{s}>-?\d+)::(?P<{st}>-?\d+)$"): lambda mtch_dict, dta: dta[
-                int(mtch_dict[s])::int(mtch_dict[st])
-            ],  # [s::st]
-            re.compile(rf"^:(?P<{e}>-?\d+):(?P<{st}>-?\d+)$"): lambda mtch_dict, dta: dta[
-                : int(mtch_dict[e]):int(mtch_dict[st])
-            ],  # [:e:st]
-            re.compile(rf"^(?P<{s}>-?\d+):(?P<{e}>-?\d+):(?P<{st}>-?\d+)$"): lambda mtch_dict, dta: dta[
-                int(mtch_dict[s]):int(mtch_dict[e]):int(mtch_dict[st])
-            ],  # [s:e:st]
+            constants.RE_RANGE_S: lambda mtch_dict, dta: dta[int(mtch_dict[s]):],
+            constants.RE_RANGE_E: lambda mtch_dict, dta: dta[:int(mtch_dict[e])],
+            constants.RE_RANGE_ST: lambda mtch_dict, dta: dta[::int(mtch_dict[st])],
+            constants.RE_RANGE_SE: lambda mtch_dict, dta: dta[int(mtch_dict[s]):int(mtch_dict[e])],
+            constants.RE_RANGE_SST: lambda mtch_dict, dta: dta[int(mtch_dict[s])::int(mtch_dict[st])],
+            constants.RE_RANGE_EST: lambda mtch_dict, dta: dta[:int(mtch_dict[e]):int(mtch_dict[st])],
+            constants.RE_RANGE_SEST: lambda mtch_dict, dta: dta[int(mtch_dict[s]):int(mtch_dict[e]):int(mtch_dict[st])],
         }
         for key, value in range_map.items():
             match = key.match(range_str)
@@ -247,21 +239,24 @@ class DictSearch:
         if isinstance(search_val, dict):
             for key, val in search_val.items():
                 if key in self.array_selectors:
-                    yield self._from_array_selector(key, data, val)
+                    yield from self._from_array_selector(key, data, val)
                 else:
                     yield from self._select(data.get(key), val)
         elif isinstance(search_val, abc.Hashable):
-            yield data.get(search_val)
-        # else: yield data ?
+            if self._isiter(data):
+                for data_point in data:
+                    yield data_point.get(search_val, data)
+            else:
+                yield data.get(search_val, data)
+        else:
+            yield data
 
-    def _from_array_selector(self, operator, data, search_val):
-        try:
-            operator, search_value = list(search_value.items())[0]
-        except AttributeError:
-            return [], {}
-        operator_map = {
-            self.sel_index: self._operator_index,
-            self.sel_range: self._operator_range,
-            self.sel_where: self._operator_where,
-        }
-        yield True
+    def _from_array_selector(self, operator_type, data, search_value):
+        if isinstance(search_value, dict):
+            try:
+                operator, search_value = list(search_value.items())[0]
+            except AttributeError:
+                yield data
+            yield from self._select(*self._array_operator_map[operator_type](data, search_value, operator))
+        else:
+            yield self._array_operator_map[operator_type](data, {}, search_value)[0]
