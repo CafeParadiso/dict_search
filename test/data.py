@@ -1,3 +1,4 @@
+# pragma: no cover
 import json
 
 from pprint import pprint
@@ -370,7 +371,7 @@ def gene_data():
     return data
 
 
-def build_simple_data():  # pragma: no cover
+def build_simple_data():
     name = ["mdb", "akam", "goog", "appl", "msft", "gld", "ibm", "tsm", "asml", "estc", "gm"]
     for _ in range(8):
         d = {
@@ -396,7 +397,7 @@ def build_simple_data():  # pragma: no cover
         pprint(d)
 
 
-def build_complex_data():    # pragma: no cover
+def build_complex_data():
     name = ["mdb", "akam", "goog", "appl", "msft", "gld", "ibm", "tsm", "asml", "estc", "gm", "aaoi", "akam"]
     values = []
     for _ in range(8):

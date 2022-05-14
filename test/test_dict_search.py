@@ -361,9 +361,10 @@ class TestSelect:
             data,
             {"c": "Territori"},
             #"tt"
-            {"tt": {"t": {"ff": {"f": {"$range": {"-3:": "calt"}}}}}},
+            #{"tt": {"t": {"ff": {"f": {"$range": "-3:"}}}}},
+            #{"tt": {"t": {"ff": {"f": {"$range": {"-3:": "calt"}}}}}},
             #{"tt": {"t": {"ff": {"f": {"$index": -1}}}}},
-            #{"tt": {"t": {"ff": "f"}}},
+            {"tt": {"t": {"ff": "f"}}},
         )
         pprint(list(values))
 

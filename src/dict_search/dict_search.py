@@ -243,7 +243,7 @@ class DictSearch:
                 else:
                     yield from self._select(data.get(key), val)
         elif isinstance(search_val, abc.Hashable):
-            if self._isiter(data):
+            if self._iscontainer(data):
                 for data_point in data:
                     yield data_point.get(search_val, data)
             else:
@@ -255,8 +255,8 @@ class DictSearch:
         if isinstance(search_value, dict):
             try:
                 operator, search_value = list(search_value.items())[0]
+                yield from self._select(*self._array_operator_map[operator_type](data, search_value, operator))
             except AttributeError:
                 yield data
-            yield from self._select(*self._array_operator_map[operator_type](data, search_value, operator))
         else:
             yield self._array_operator_map[operator_type](data, {}, search_value)[0]
