@@ -1,3 +1,5 @@
+import json
+
 from pprint import pprint
 import random
 
@@ -359,6 +361,13 @@ range_data = [
         }
     },
 ]
+
+
+def gene_data():
+    data = None
+    with open(r"C:\Users\mike_\Desktop\house_search\raw_data\080018.json", encoding="utf-8") as file:
+        data = json.load(file)
+    return data
 
 
 def build_simple_data():  # pragma: no cover

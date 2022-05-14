@@ -4,7 +4,7 @@ import pytest
 
 from src.dict_search.dict_search import DictSearch
 from src.dict_search.dict_search import exceptions
-from data import data, complex_data, range_data
+from data import data, complex_data, range_data, gene_data  # TODO import data  (refactoring needed)
 
 
 class TestData:
@@ -81,8 +81,7 @@ class TestCommon:
     @staticmethod
     def test_malformed_high_level_operator():
         values = DictSearch().dict_search(
-            [{"assets": "a"}, {"assets": 2}, {"assets": [1, 32]}],
-            {"$and": [1, {"assets": "a"}], "missing": [1, 2]}
+            [{"assets": "a"}, {"assets": 2}, {"assets": [1, 32]}], {"$and": [1, {"assets": "a"}], "missing": [1, 2]}
         )
         results = [val for val in values]
         assert len(results) == 0
@@ -173,10 +172,13 @@ class TestHighLevelOperators:
     @staticmethod
     def test_not():
         values = DictSearch().dict_search(
-            data, {"$not": [
-                {"liab": {"non_cur": {"a": {"$gt": 10000}}}},
-                {"assets": {"curr": {"a": 1}}},
-            ]}
+            data,
+            {
+                "$not": [
+                    {"liab": {"non_cur": {"a": {"$gt": 10000}}}},
+                    {"assets": {"curr": {"a": 1}}},
+                ]
+            },
         )
         values = [val for val in values]
         assert len(values) == 5
@@ -185,27 +187,19 @@ class TestHighLevelOperators:
 class TestArrayOperators:
     @staticmethod
     def test_all():
-        values = DictSearch().dict_search(
-            complex_data,
-            {"values": {"$all": {"$gt": 0.5}}}
-        )
+        values = DictSearch().dict_search(complex_data, {"values": {"$all": {"$gt": 0.5}}})
         values = list(values)
         assert len(values) == 2
 
     @staticmethod
     def test_all_eq():
-        values = DictSearch().dict_search(
-            [{"values": [2, 1, 1]}, {"values": [1, 1, 1]}],
-            {"values": {"$all": 1}}
-        )
+        values = DictSearch().dict_search([{"values": [2, 1, 1]}, {"values": [1, 1, 1]}], {"values": {"$all": 1}})
         values = list(values)
         assert len(values) == 1
 
     @staticmethod
     def test_any():
-        values = DictSearch().dict_search(
-            complex_data, {"posts": {"$any": {"text": "tsm"}}}
-        )
+        values = DictSearch().dict_search(complex_data, {"posts": {"$any": {"text": "tsm"}}})
         values = list(values)
         assert len(values) == 1
         assert values[0]["id"] == 0
@@ -213,89 +207,114 @@ class TestArrayOperators:
     @staticmethod
     def test_any_eq():
         values = DictSearch().dict_search(
-            [{"values": [1, 1, 2]}, {"values": [1, 1, 1]}],
-            {"values": {"$any": 1}}
+            [{"values": [0, 1, 1]}, {"values": [1, 1, 1]}, {"values": [0, 0, 1]}, {"values": [0, 0, 2]}],
+            {"values": {"$any": 1}},
         )
         values = list(values)
-        assert len(values) == 2
+        assert len(values) == 3
+
+
+class TestMatchOperators:
+    @staticmethod
+    def test_match_malformed_query():
+        # match as array operator
+        results_aop = DictSearch().dict_search(
+            [{"a": [0, 1, 1], "b": 1, "c": 1}, {"a": [0, 0, 1], "b": 1, "c": 1}],
+            {"a": {"$match": [0, 1, 1]}},
+        )
+        assert not list(results_aop)
+
+    @staticmethod
+    def test_match_malformed_count():
+        # match as array operator
+        results_aop = DictSearch().dict_search(
+            [{"a": {1: "2", 2: "3"}, "b": 1, "c": 1}, {"a": [0, 0, 1], "b": 1, "c": 1}], {"a": {"$match": {"s": 1}}}
+        )
+        assert not list(results_aop)
 
     @staticmethod
     def test_match():
-        values = DictSearch().dict_search(
-            complex_data, {"posts": {"$match": {"1": {"text": "mdb"}}}}
+        # match as array operator
+        results_aop = DictSearch().dict_search(
+            [{"a": [0, 1, 1], "b": 1, "c": 1}, {"a": [0, 0, 1], "b": 1, "c": 1}], {"a": {"$match": {"1": 1}}}
         )
-        values = list(values)
-        assert len(values) == 1
-        assert [val["id"] for val in values] == [7]
+        assert len(list(results_aop)) == 1
+        # match as high level operator
+        results_hop = DictSearch().dict_search(
+            [{"a": [0, 1, 1], "b": 1, "c": 1}, {"a": [0, 0, 1], "b": 1, "c": 1}],
+            {
+                "$match": {
+                    "2": [
+                        {"b": 1},
+                        {"b": {"$expr": lambda x: isinstance(x, str)}},
+                        {"b": {"$expr": lambda x: isinstance(x, int)}},
+                    ]
+                }
+            },
+        )
+        assert len(list(results_hop)) == 2
 
     @staticmethod
-    def test_match_eq():
-        values = DictSearch().dict_search(
-            [{"a": [1, 0]}, {"a": [0, 0]}], {"a": {"$match": {"1": 1}}}
-        )
+    def test_match_compare():
+        values = DictSearch().dict_search([{"a": [1, 0]}, {"a": [0, 0]}], {"a": {"$match": {"1": 1}}})
         values = list(values)
         assert len(values) == 1
 
     @staticmethod
     def test_matchgt():
-        values = DictSearch().dict_search(
-            complex_data, {"posts": {"$matchgt": {"1": {"text": "mdb"}}}}
-        )
+        values = DictSearch().dict_search(complex_data, {"posts": {"$matchgt": {"1": {"text": "mdb"}}}})
         values = list(values)
         assert len(values) == 2
         assert [val["id"] for val in values] == [5, 6]
 
     @staticmethod
     def test_matchgte():
-        values = DictSearch().dict_search(
-            complex_data, {"posts": {"$matchgte": {"1": {"text": "mdb"}}}}
-        )
+        values = DictSearch().dict_search(complex_data, {"posts": {"$matchgte": {"1": {"text": "mdb"}}}})
         values = list(values)
         assert len(values) == 3
         assert [val["id"] for val in values] == [5, 6, 7]
 
     @staticmethod
     def test_matchlt():
-        values = DictSearch().dict_search(
-            complex_data, {"posts": {"$matchlt": {"1": {"text": "mdb"}}}}
-        )
+        values = DictSearch().dict_search(complex_data, {"posts": {"$matchlt": {"1": {"text": "mdb"}}}})
         values = list(values)
         assert len(values) == 5
         assert [val["id"] for val in values] == [0, 1, 2, 3, 4]
 
     @staticmethod
     def test_matchlte():
-        values = DictSearch().dict_search(
-            complex_data, {"posts": {"$matchlte": {"1": {"text": "mdb"}}}}
-        )
+        values = DictSearch().dict_search(complex_data, {"posts": {"$matchlte": {"1": {"text": "mdb"}}}})
         values = list(values)
         assert len(values) == 6
         assert [val["id"] for val in values] == [0, 1, 2, 3, 4, 7]
 
-
-class TestMatchOperators:
     @staticmethod
-    def test_match():
-        # match as array operator
-        results_aop = DictSearch().dict_search(
-            [{"a": [0, 1, 1], "b": 1, "c": 1}, {"a": [0, 0, 1], "b": 1, "c": 1}],
-            {"a": {"$match": {"2": 1}}}
+    def test_match_implicit_and():
+        expected_values = 2
+        expected_ids = [5, 6]
+
+        values = DictSearch().dict_search(
+            complex_data,
+            {
+                "$and": [
+                    {"posts": {"$matchgte": {"1": {"interacted": {"$all": {"type": "post"}}}}}},
+                    {"posts": {"$matchgte": {"1": {"text": "mdb"}}}},
+                ]
+            },
         )
-        assert len(list(results_aop)) == 1
-        # match as high level operator
-        results_hop = DictSearch().dict_search(
-            [{"a": [0, 1, 1], "b": 1, "c": 1}, {"a": [0, 0, 1], "b": 1, "c": 1}],
-            {"$match": {"2": [
-                    {"b": 1},
-                    {"b": {"$expr": lambda x: isinstance(x, str)}},
-                    {"b": {"$expr": lambda x: isinstance(x, int)}},
-                ]}
-            }
+        values = list(values)
+        assert len(values) == expected_values
+        assert [x["id"] for x in list(values)] == expected_ids
+
+        implicit_values = DictSearch().dict_search(
+            complex_data,
+            {"posts": {"$matchgte": {"1": {"interacted": {"$all": {"type": "post"}}, "text": "mdb"}}}},
         )
-        assert len(list(results_hop)) == 2
+        implicit_values = list(implicit_values)
+        assert values == implicit_values
 
 
-class TestArraySelectors:
+class TestArraySelectors:  # TODO test with data being a generator
     @staticmethod
     def test_index():
         values = DictSearch().dict_search(
@@ -320,56 +339,45 @@ class TestArraySelectors:
         ]:
             print(range_str)
             values = DictSearch().dict_search(
-                range_data,
-                {
-                    "mixed": {"a": {"$range": {range_str: {"$expr": lambda x: x.count(2) == val}}}}
-                }
+                range_data, {"mixed": {"a": {"$range": {range_str: {"$expr": lambda x: x.count(2) == val}}}}}
             )
             assert len(list(values)) == assert_val
 
+    @staticmethod
+    def test_where():
+        values = DictSearch().dict_search(
+            gene_data()["fitxes"]["gg"]["g"],
+            {"c": "Territori", "tt": {"t": {"ff": {"f": {"$where": {"c": "Altitud"}}}}}},
+        )
+        pprint(list(values))
+
+
+class TestSelect:
+    @staticmethod
+    def test_select():
+        values = DictSearch().dict_search(
+            gene_data()["fitxes"]["gg"]["g"],
+            {"c": "Territori"},
+            {"tt": {"t": {"ff": {"f": {"$index": {"0": "calt"}}}}}},
+            #{"tt": {"t": {"ff": {"f": {"$index": 0}}}}},
+            #{"tt": {"t": {"ff": "f"}}},
+        )
+        pprint(list(values))
+
 
 class TestComplex:
-    @staticmethod
-    def test_match_implicit_and():
-        expected_values = 2
-        expected_ids = [5, 6]
-
-        values = DictSearch().dict_search(
-            complex_data,
-            {
-                "$and": [
-                    {"posts": {"$matchgte": {"1": {"interacted": {"$all": {"type": "post"}}}}}},
-                    {"posts": {"$matchgte": {"1": {"text": "mdb"}}}},
-                ]
-            },
-        )
-        values = list(values)
-        assert len(values) == expected_values
-        assert [x["id"] for x in list(values)] == expected_ids
-
-        implicit_values = DictSearch().dict_search(
-            complex_data,
-            {
-                "posts": {
-                    "$matchgte": {"1": {
-                        "interacted": {"$all": {"type": "post"}},
-                        "text": "mdb"}}
-                        }
-            },
-        )
-        implicit_values = list(implicit_values)
-        assert values == implicit_values
-
     @staticmethod
     def test_nested_high_operator():
         values = DictSearch().dict_search(
             complex_data,
             {
                 "$or": [
-                    {"$and": [
+                    {
+                        "$and": [
                             {"posts": {"$match": {"1": {"interacted": {"$all": {"type": "post"}}}}}},
                             {"posts": {"$matchgte": {"1": {"text": "mdb"}}}},
-                    ]},
+                        ]
+                    },
                     {"$or": [{"user": {"id": 141}}]},
                 ]
             },
@@ -385,7 +393,7 @@ class TestComplex:
             {
                 "values": {"$all": {"$gt": 0.5}},
                 "user": {"id": {"$lt": 100}},
-            }
+            },
         )
         values = list(values)
         assert len(values) == 2
@@ -395,19 +403,19 @@ class TestComplex:
 class TestExceptions:
     @staticmethod
     def test_precondition_iterable_exception():
-        with pytest.raises(exceptions.PreconditionDataError, match=r".*?iterable.*?"):
+        with pytest.raises(exceptions.PreconditionDataError):
             values = DictSearch().dict_search(1, {"assets": {"curr": {"a": 0}}})
             list(values)
 
     @staticmethod
     def test_search_dict_precondition():
-        with pytest.raises(exceptions.PreconditionSearchDictError, match=r".*?dict.*?"):
+        with pytest.raises(exceptions.PreconditionSearchDictError):
             values = DictSearch().dict_search(data, 1)
             list(values)
 
     @staticmethod
     def test_high_level_operator_exception():
-        with pytest.raises(exceptions.HighLevelOperatorIteratorError, match=r".*?operators should.*?"):
+        with pytest.raises(exceptions.HighLevelOperatorIteratorError):
             values = DictSearch().dict_search(data, {"$and": {"assets": {"non_cur": {"$lt": 3922}}}})
             list(values)
 
@@ -417,9 +425,10 @@ class TestAll(
     TestCommon,
     TestLowLevelOperators,
     TestHighLevelOperators,
-    TestExceptions,
-    TestArraySelectors,
     TestArrayOperators,
+    TestMatchOperators,
+    TestArraySelectors,
     TestComplex,
+    TestExceptions,
 ):
     pass

@@ -4,11 +4,11 @@ import re
 from . import exceptions
 from pprint import pprint
 
-
 class DictSearch:
     def __init__(self, operator_str=None):
         self.operator_char = operator_str if isinstance(operator_str, str) else None or "$"
 
+        # matching operators
         self.lop_ne = f"{self.operator_char}ne"
         self.lop_gt = f"{self.operator_char}gt"
         self.lop_gte = f"{self.operator_char}gte"
@@ -40,7 +40,10 @@ class DictSearch:
 
         self.sel_index = f"{self.operator_char}index"
         self.sel_range = f"{self.operator_char}range"
+        self.sel_where = f"{self.operator_char}where"
         self.array_selectors = [val for key, val in self.__dict__.items() if re.match(r"^sel_.*$", key)]
+
+        # selection operators
 
     @staticmethod
     def _isiter(data):
@@ -74,13 +77,15 @@ class DictSearch:
         except ValueError:
             return False
 
-    def dict_search(self, data, search_dict):
+    def dict_search(self, data, search_dict, select_dict=None):
         self._search_precondition(data, search_dict)
         for data_point in data:
-            if not isinstance(data_point, dict):
-                continue
-            if all(match for match in self._search(data_point, search_dict)):
-                yield data_point
+            if isinstance(data_point, dict):
+                if all(match for match in self._search(data_point, search_dict)):
+                    if select_dict:
+                        yield from self._select(data_point, select_dict)
+                    else:
+                        yield data_point
 
     def _search_precondition(self, data, search_dict):
         if not self._isiter(data):
@@ -97,15 +102,12 @@ class DictSearch:
                     yield self._high_level_operator(key, data, search_dict[key])
                 elif key in self.array_operators:
                     yield self._array_operators(key, data, value)
-                elif key in self.match_operators and isinstance(value, dict):
-                    count, value = list(value.items())[0]
-                    yield self._match_operators(key, data, value, count)
+                elif key in self.match_operators:
+                    yield self._match_operators(key, data, value)
                 elif key in self.array_selectors:
-                    for match in self._search(*self._array_selector(key, data, value)):
-                        yield match
+                    yield from self._search(*self._array_selector(key, data, value))
                 elif all(isinstance(obj, dict) for obj in [value, data]):
-                    for match in self._search(data.get(key), value):
-                        yield match
+                    yield from self._search(data.get(key), value)
                 elif isinstance(data, dict):
                     yield self._compare(data.get(key), value)
         else:
@@ -134,9 +136,9 @@ class DictSearch:
         if not self._iscontainer(search_iterator):
             raise exceptions.HighLevelOperatorIteratorError
         operator_map = {
-            self.hop_and: lambda mtchs: all(mtchs),
-            self.hop_or: lambda mtchs: any(mtchs),
-            self.hop_not: lambda mtchs: False if all(mtchs) else True,
+            self.hop_and: lambda matches: all(matches),
+            self.hop_or: lambda matches: any(matches),
+            self.hop_not: lambda matches: not all(matches),
         }
         return operator_map[operator](
             match for search_dict in search_iterator for match in self._search(data, search_dict)
@@ -162,67 +164,104 @@ class DictSearch:
             return any(match for d_point in data for match in self._search(d_point, search_value))
         return any(self._compare(d_point, search_value) for d_point in data)
 
-    def _match_operators(self, operator, data, search_value, count):
+    def _match_operators(self, operator, data, search_value):
+        try:
+            count, search_value = list(search_value.items())[0]
+        except AttributeError:
+            return False
         try:
             count = int(count)
-        except TypeError:
+        except (TypeError, ValueError):
             return False
         operator_map = {
             self.mop_match: [lambda m, c: True if m > c else False, False, lambda m, c: True if m == c else False],
             self.mop_matchgt: [lambda m, c: True if m > c else False, True, lambda m, c: True if m > c else False],
             self.mop_matchgte: [lambda m, c: True if m >= c else False, True, lambda m, c: True if m >= c else False],
             self.mop_matchlt: [lambda m, c: True if m >= c else False, False, lambda m, c: True if m < c else False],
-            self.mop_matchlte: [lambda m, c: True if m > c else False, False, lambda m, c: True if m <= c else False]
+            self.mop_matchlte: [lambda m, c: True if m > c else False, False, lambda m, c: True if m <= c else False],
         }
         default_args = count, operator_map[operator][0], operator_map[operator][1], operator_map[operator][2]
-        if self._iscontainer(data):  # match is being used as array operator
-            if isinstance(search_value, dict):
-                return self._shortcircuit_counter(
-                    iter(all([m for m in self._search(data_point, search_value)]) for data_point in data), *default_args
-                )
+
+        if self._iscontainer(search_value):  # match is being used as high level operator
             return self._shortcircuit_counter(
-                iter(self._compare(d_point, search_value) for d_point in data), *default_args
+                iter(match for search_dict in search_value for match in self._search(data, search_dict)), *default_args
             )
-        if not self._iscontainer(search_value):  # match is being used as high level operator
-            raise exceptions.HighLevelOperatorIteratorError
-        return self._shortcircuit_counter(
-            iter(match for search_dict in search_value for match in self._search(data, search_dict)), *default_args
+        elif isinstance(search_value, dict):  # match is being used as array operator
+            return self._shortcircuit_counter(
+                iter(all([m for m in self._search(data_point, search_value)]) for data_point in data), *default_args
+            )
+        return self._shortcircuit_counter(  # match is being used as array operator to compare
+            iter(self._compare(d_point, search_value) for d_point in data), *default_args
         )
 
-    def _array_selector(self, operator, data, search_value):
+    def _array_selector(self, operator_type, data, search_value):
+        try:
+            operator, search_value = list(search_value.items())[0]
+        except AttributeError:
+            return [], {}
         operator_map = {
             self.sel_index: self._operator_index,
             self.sel_range: self._operator_range,
+            self.sel_where: self._operator_where,
         }
         try:
-            return operator_map[operator](data, search_value)
+            return operator_map[operator_type](data, search_value, operator)
         except (TypeError, IndexError):
             return [], {}
 
     @staticmethod
-    def _operator_index(data, search_value):
-        index, search_value = list(search_value.items())[0]
+    def _operator_index(data, search_value, index):
         return data[int(index)], search_value
 
     @staticmethod
-    def _operator_range(data, search_value):
-        range_str, search_value = list(search_value.items())[0]
+    def _operator_range(data, search_value, range_str):
         s, e, st = "start", "end", "step"
         range_map = {
             re.compile(rf"^(?P<{s}>-?\d+)::?$"): lambda mtch_dict, dta: dta[int(mtch_dict[s]):],  # [s:] | [s::]
             re.compile(rf"^:(?P<{e}>-?\d+):?$"): lambda mtch_dict, dta: dta[:int(mtch_dict[e])],  # [:e] | [:e:]
             re.compile(rf"^::(?P<{st}>-?\d+)$"): lambda mtch_dict, dta: dta[::int(mtch_dict[st])],  # [::st]
-            re.compile(rf"^(?P<{s}>-?\d+):(?P<{e}>-?\d+):?$"):
-                lambda mtch_dict, dta: dta[int(mtch_dict[s]):int(mtch_dict[e])],  # [s:e] | [s:e:]
-            re.compile(rf"^(?P<{s}>-?\d+)::(?P<{st}>-?\d+)$"):
-                lambda mtch_dict, dta: dta[int(mtch_dict[s])::int(mtch_dict[st])],  # [s::st]
-            re.compile(rf"^:(?P<{e}>-?\d+):(?P<{st}>-?\d+)$"):
-                lambda mtch_dict, dta: dta[:int(mtch_dict[e]):int(mtch_dict[st])],  # [:e:st]
-            re.compile(rf"^(?P<{s}>-?\d+):(?P<{e}>-?\d+):(?P<{st}>-?\d+)$"):
-                lambda mtch_dict, dta: dta[int(mtch_dict[s]):int(mtch_dict[e]):int(mtch_dict[st])],  # [s:e:st]
+            re.compile(rf"^(?P<{s}>-?\d+):(?P<{e}>-?\d+):?$"): lambda mtch_dict, dta: dta[
+                int(mtch_dict[s]):int(mtch_dict[e])
+            ],  # [s:e] | [s:e:]
+            re.compile(rf"^(?P<{s}>-?\d+)::(?P<{st}>-?\d+)$"): lambda mtch_dict, dta: dta[
+                int(mtch_dict[s])::int(mtch_dict[st])
+            ],  # [s::st]
+            re.compile(rf"^:(?P<{e}>-?\d+):(?P<{st}>-?\d+)$"): lambda mtch_dict, dta: dta[
+                : int(mtch_dict[e]):int(mtch_dict[st])
+            ],  # [:e:st]
+            re.compile(rf"^(?P<{s}>-?\d+):(?P<{e}>-?\d+):(?P<{st}>-?\d+)$"): lambda mtch_dict, dta: dta[
+                int(mtch_dict[s]):int(mtch_dict[e]):int(mtch_dict[st])
+            ],  # [s:e:st]
         }
         for key, value in range_map.items():
             match = key.match(range_str)
             if match:
                 return value(match.groupdict(), data), search_value
         return [], {}
+
+    def _operator_where(self, data, search_value):
+        for sub_dict in self.dict_search(data, search_value):
+            yield
+
+    def _select(self, data, search_val):
+        if isinstance(search_val, dict):
+            for key, val in search_val.items():
+                if key in self.array_selectors:
+                    yield self._from_array_selector(key, data, val)
+                else:
+                    yield from self._select(data.get(key), val)
+        elif isinstance(search_val, abc.Hashable):
+            yield data.get(search_val)
+        # else: yield data ?
+
+    def _from_array_selector(self, operator, data, search_val):
+        try:
+            operator, search_value = list(search_value.items())[0]
+        except AttributeError:
+            return [], {}
+        operator_map = {
+            self.sel_index: self._operator_index,
+            self.sel_range: self._operator_range,
+            self.sel_where: self._operator_where,
+        }
+        yield True

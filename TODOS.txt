@@ -1,12 +1,11 @@
-DOING
-- ultimate testing
-- check style
 TODOS
 - document properly in README
 - check license
 - set setup.py in detail
+- ultimate testing
+- check style
 UPCOMING FEATURES
 - add $where in array selectors
+- $if $elif $else $anykey (use the key over which we are iterating)
 - eager search
-- rework utils deep GET, SET, REMOVE
 - optional projection in query
