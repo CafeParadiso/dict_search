@@ -360,11 +360,27 @@ class TestSelect:
         values = DictSearch().dict_search(
             data,
             {"c": "Territori"},
-            #"tt"
+            {"tt": 1}
+            #{"tt": {"t": {"ff": {"f": {"calt": 1, "r": 1}}}}},
+            #{"tt": {"t": {"ff": {"f": {"calt": 1, "r": 1}}}}},
             #{"tt": {"t": {"ff": {"f": {"$range": "-3:"}}}}},
             #{"tt": {"t": {"ff": {"f": {"$range": {"-3:": "calt"}}}}}},
             #{"tt": {"t": {"ff": {"f": {"$index": -1}}}}},
-            {"tt": {"t": {"ff": "f"}}},
+            #{"tt": {"t": {"ff": "f"}}},
+        )
+        pprint(list(values))
+
+    def test_select_simple(self):
+        data = [
+            {"a": 1, "b": {"c": 1, "d": 1}, "e": 1},
+            {"a": 0, "b": {"c": 1, "d": 1}, "e": 1},
+            {"a": 1, "b": {"c": 2, "d": 2}, "e": 2},
+        ]
+        values = DictSearch().dict_search(
+            data,
+            #{"a": 1},
+            {},
+            {"b": 1, "e": 1},
         )
         pprint(list(values))
 
