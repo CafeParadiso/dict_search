@@ -373,14 +373,14 @@ class TestSelect:
     def test_select_simple(self):
         data = [
             {"a": 1, "b": {"c": 1, "d": 1}, "e": 1},
-            {"a": 0, "b": {"c": 1, "d": 1}, "e": 1},
+            {"a": 0, "b": {"c": "char", "d": "char"}, "e": 1},
             {"a": 1, "b": {"c": 2, "d": 2}, "e": 2},
         ]
         values = DictSearch().dict_search(
             data,
             #{"a": 1},
-            {},
-            {"b": 1, "e": 1},
+            #{},
+            select_dict={"b": 1, "e": 1},
         )
         pprint(list(values))
 

@@ -83,15 +83,17 @@ class DictSearch:
         except ValueError:
             return False
 
-    def dict_search(self, data, match_dict, select_dict=None):
-        self._search_precondition(data, match_dict)
-        for data_point in data:
-            if isinstance(data_point, dict):
-                if all(match for match in self._search(data_point, match_dict)):
-                    if select_dict:
+    def dict_search(self, data, match_dict=None, select_dict=None):
+        if match_dict:
+            self._search_precondition(data, match_dict)
+            for data_point in data:
+                if isinstance(data_point, dict):
+                    if all(match for match in self._search(data_point, match_dict)):
                         yield from self._select(data_point, select_dict, dict())
-                    else:
-                        yield data_point
+        else:
+            for data_point in data:
+                if isinstance(data_point, dict):
+                    yield from self._select(data_point, select_dict, dict())
 
     def _search_precondition(self, data, search_dict):
         if not self._isiter(data):
