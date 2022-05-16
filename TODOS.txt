@@ -1,5 +1,5 @@
 DOING
-- select more then one key
+- select more than one key
 - selection should yield documents no list
 TODOS
 - document properly in README

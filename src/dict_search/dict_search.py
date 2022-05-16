@@ -43,7 +43,7 @@ class DictSearch:
 
         self.sel_index = f"{self.operator_char}index"
         self.sel_range = f"{self.operator_char}range"
-        self.sel_where = f"{self.operator_char}where"
+        self.sel_where = f"{self.operator_char}where"  # TODO start
         self.array_selectors = [val for key, val in self.__dict__.items() if re.match(r"^sel_.*$", key)]
         self._array_operator_map = {
             self.sel_index: self._operator_index,
@@ -89,11 +89,11 @@ class DictSearch:
             for data_point in data:
                 if isinstance(data_point, dict):
                     if all(match for match in self._search(data_point, match_dict)):
-                        yield from self._select(data_point, select_dict, dict())
+                        yield self._select(data_point, select_dict)
         else:
             for data_point in data:
                 if isinstance(data_point, dict):
-                    yield from self._select(data_point, select_dict, dict())
+                    yield self._select(data_point, select_dict)
 
     def _search_precondition(self, data, search_dict):
         if not self._isiter(data):
@@ -101,13 +101,13 @@ class DictSearch:
         if not isinstance(search_dict, dict):
             raise exceptions.PreconditionSearchDictError(search_dict)
 
-    def _search(self, data, search_dict):
-        if isinstance(search_dict, dict) and search_dict:
-            for key, value in search_dict.items():
+    def _search(self, data, match_dict):
+        if isinstance(match_dict, dict) and match_dict:
+            for key, value in match_dict.items():
                 if key in self.low_level_operators:
                     yield self._low_level_operator(key, data, value)
                 elif key in self.high_level_operators:
-                    yield self._high_level_operator(key, data, search_dict[key])
+                    yield self._high_level_operator(key, data, match_dict[key])
                 elif key in self.array_operators:
                     yield self._array_operators(key, data, value)
                 elif key in self.match_operators:
@@ -240,17 +240,20 @@ class DictSearch:
         for sub_dict in self.dict_search(data, search_value):
             yield
 
-    def _select(self, data, search_val, selection_dict):
+    def _select(self, data, selection_dict):
+        selected_dict = {}
+        self._apply_selection(data, selection_dict, selected_dict)
+        return selected_dict or data
+
+    def _apply_selection(self, data, search_val, selected_dict, prev_key=None):
         if isinstance(search_val, dict):
             for key, val in search_val.items():
                 if key in self.array_selectors:
-                    yield from self._from_array_selector(key, data, val, selection_dict)
+                    self._from_array_selector(key, data, val, selected_dict)
                 if val in [0, 1]:
-                    yield self._update_selection_dict(key, val, data, selection_dict)
+                    self._update_selected_dict(key, val, data, selected_dict, prev_key)
                 else:
-                    yield from self._select(data.get(key), val, selection_dict)
-        else:
-            yield selection_dict or data
+                    self._apply_selection(data.get(key), val, selected_dict, key)
 
     def _from_array_selector(self, operator_type, data, search_value, selection_dict):
         if isinstance(search_value, dict):
@@ -259,16 +262,24 @@ class DictSearch:
             except AttributeError:
                 yield data
             else:
-                yield from self._select(
+                yield from self._apply_selection(
                     *self._array_operator_map[operator_type](data, search_value, operator), selection_dict
                 )
         else:
             yield self._array_operator_map[operator_type](data, {}, search_value)[0]
 
     @staticmethod
-    def _update_selection_dict(key, operator, data, selection_dict):
+    def _update_selected_dict(key, operator, data, selected_dict, prev_key):
         if operator == 1:
-            selection_dict[key] = copy.deepcopy(data).pop(key)
+            value = copy.deepcopy(data).pop(key, None)
+            if value:
+                if key in selected_dict.keys():
+                    selected_dict[prev_key] = {key: value}
+                else:
+                    selected_dict[key] = value
         else:
-            selection_dict.pop(key)
-        return selection_dict
+            if selected_dict:
+                selected_dict.pop(key, None)
+            else:
+                selected_dict.update(copy.deepcopy(data))
+                selected_dict.pop(key, None)
