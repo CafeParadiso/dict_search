@@ -1,10 +1,8 @@
-# pragma: no cover
+import datetime
 import json
-
 from pprint import pprint
 import random
 
-import datetime
 
 data = [
     {
@@ -356,10 +354,63 @@ range_data = [
             "a": [2, 0, 2, 2, 1, 2],
         }
     },
+    {"mixed": {"a": 1}},
+]
+
+student_data = [
     {
-        "mixed": {
-            "a": 1
-        }
+        "id": 0,
+        "info": {
+            "full_name": {"first": "Jones", "last": "BigL"},
+            "h": 180,
+            "mentions": [{"score": 1, "type": "angry"}, {"score": 5, "type": "angry"}],
+            "w": 70,
+        },
+        "status": "graduating",
+        "subjects": ["Sports", "Spanish", "English", "Maths"],
+    },
+    {
+        "id": 1,
+        "info": {
+            "full_name": {"first": "Snoop", "last": "Soulja"},
+            "h": 204,
+            "mentions": [
+                {"score": 7, "type": "angry"},
+                {"score": 5, "type": "angry"},
+                {"score": 2, "type": "active"},
+                {"score": 2, "type": "active"},
+            ],
+            "w": 84,
+        },
+        "status": "expelled",
+        "subjects": ["English", "Chemistry", "Spanish", "Music"],
+    },
+    {
+        "id": 2,
+        "info": {
+            "full_name": {"first": "Dogg", "last": "Snoop"},
+            "h": 166,
+            "mentions": [
+                {"score": 5, "type": "active"},
+                {"score": 8, "type": "eloquent"},
+                {"score": 9, "type": "passive"},
+                {"score": 3, "type": "angry"},
+            ],
+            "w": 68,
+        },
+        "status": "graduated",
+        "subjects": ["Spanish", "Chemistry"],
+    },
+    {
+        "id": 3,
+        "info": {
+            "full_name": {"first": "Southside", "last": "Snoop"},
+            "h": 179,
+            "mentions": [{"score": 10, "type": "eloquent"}],
+            "w": 71,
+        },
+        "status": "graduating",
+        "subjects": ["English", "Music", "Spanish", "Sports"],
     },
 ]
 
@@ -425,8 +476,29 @@ def build_complex_data():
     pprint(values)
 
 
+def build_student_data(vals):
+    stats = ["graduated", "graduating", "expelled"]
+    subs = ["Maths", "English", "Sports", "Chemistry", "Spanish", "Music"]
+    names = ["Snoop", "BigL", "Gucc", "Lex", "Southside", "Fat", "Mike", "Joe", "Dogg", "Jones", "Montana", "Soulja"]
+    mentions = ["passive", "active", "angry", "eloquent"]
+    for _ in range(vals):
+        pprint(
+            {
+                "id": _,
+                "status": random.choice(stats),
+                "subjects": random.sample(subs, random.randint(2, 4)),
+                "info": {
+                    "full_name": {"first": random.choice(names), "last": random.choice(names)},
+                    "w": random.randint(55, 130),
+                    "h": random.randint(150, 210),
+                    "mentions": [
+                        {"type": random.choice(mentions), "score": random.randint(1, 10)}
+                        for _ in range(random.randint(1, 5))
+                    ],
+                },
+            }
+        )
+
+
 if __name__ == "__main__":
-    def t(x):
-        for _ in range(x):
-            yield None
-    print(all(0))
+    pass

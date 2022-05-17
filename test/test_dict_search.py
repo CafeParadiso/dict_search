@@ -352,38 +352,6 @@ class TestArraySelectors:  # TODO test with data being a generator
         pprint(list(values))
 
 
-class TestSelect:
-    @staticmethod
-    def test_select():
-        data = gene_data()["fitxes"]["gg"]["g"]
-        data[0]["tt"]["t"]["ff"]["f"][0]["calt"] = {"calt": {"gg": "Superfície"}}
-        values = DictSearch().dict_search(
-            data,
-            {"c": "Territori"},
-            {"tt": 1}
-            #{"tt": {"t": {"ff": {"f": {"calt": 1, "r": 1}}}}},
-            #{"tt": {"t": {"ff": {"f": {"calt": 1, "r": 1}}}}},
-            #{"tt": {"t": {"ff": {"f": {"$range": "-3:"}}}}},
-            #{"tt": {"t": {"ff": {"f": {"$range": {"-3:": "calt"}}}}}},
-            #{"tt": {"t": {"ff": {"f": {"$index": -1}}}}},
-            #{"tt": {"t": {"ff": "f"}}},
-        )
-        pprint(list(values))
-
-    def test_select_simple(self):
-        data = [
-            {"a": 1, "b": {"c": 1, "d": 1}, "c": "a", "e": 1},
-            {"a": 0, "b": {"c": "char", "d": "char"},"c": "b", "e": 1},
-            {"a": 1, "b": {"c": 2, "d": 2}, "c": "c", "e": 2},
-        ]
-        values = DictSearch().dict_search(
-            data,
-            {"a": 1},
-            {"c": 1, "b": {"c": 1}},
-        )
-        pprint(list(values))
-
-
 class TestComplex:
     @staticmethod
     def test_nested_high_operator():

@@ -1,6 +1,5 @@
-DOING
-- select more than one key
-- selection should yield documents no list
+DOING:
+- add $where in array selectors
 TODOS
 - document properly in README
 - check license
@@ -8,6 +7,5 @@ TODOS
 - ultimate testing
 - check style
 UPCOMING FEATURES
-- add $where in array selectors
 - $if $elif $else $anykey $anyval (use the key over which we are iterating)
 - eager search
