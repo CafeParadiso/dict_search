@@ -2,7 +2,7 @@ from pprint import pprint
 from unittest import mock
 
 from src.dict_search.dict_search import DictSearch
-import data
+from . import data
 
 
 def test_incomp_first_incl():

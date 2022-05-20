@@ -254,7 +254,7 @@ class DictSearch:
         if operator == self.sel_include and operator != self._forbid:
             self._forbid = self.sel_exclude
             self._include(key, data, selected_dict, prev_keys)
-        else:
+        elif operator == self.sel_exclude and operator != self._forbid:
             self._forbid = self.sel_include
             self._exclude(original_data, selected_dict, prev_keys)
 

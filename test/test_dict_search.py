@@ -4,7 +4,7 @@ import pytest
 
 from src.dict_search.dict_search import DictSearch
 from src.dict_search.dict_search import exceptions
-from data import data, complex_data, range_data, student_data
+from .data import data, complex_data, range_data, student_data
 
 
 class TestData:
@@ -271,15 +271,3 @@ class TestExceptions:
         with pytest.raises(exceptions.HighLevelOperatorIteratorError):
             values = DictSearch().dict_search(data, {"$and": {"assets": {"non_cur": {"$lt": 3922}}}})
             list(values)
-
-
-class TestAll(
-    TestData,
-    TestCommon,
-    TestLowLevelOperators,
-    TestHighLevelOperators,
-    TestArrayOperators,
-    TestComplex,
-    TestExceptions,
-):
-    pass
