@@ -103,13 +103,22 @@ class DictSearch:
             self.lop_nin: lambda val, search_val: val not in search_val,
             self.lop_cont: lambda val, search_val: search_val in val,
             self.lop_ncont: lambda val, search_val: search_val not in val,
-            self.lop_regex: lambda val, search_patt: True if re.compile(search_patt).search(val) else False,
+            self.lop_regex: lambda val, search_patt: self._operator_regex(val, search_patt),
             self.lop_expr: lambda val, func: func(val) if isinstance(func(val), bool) else False,
             self.lop_inst: lambda val, search_type: isinstance(val, search_type),
         }
         try:
             return operation_map[operator](value, search_value)
-        except (TypeError, ValueError):
+        except TypeError:
+            return False
+
+    @staticmethod
+    def _operator_regex(val, search_pattern):
+        if isinstance(search_pattern, re.Pattern):
+            return True if search_pattern.search(val) else False
+        elif isinstance(search_pattern, str):
+            return True if re.compile(search_pattern).search(val) else False
+        else:
             return False
 
     def _high_level_operator(self, operator, data, search_iterator):
@@ -126,7 +135,7 @@ class DictSearch:
         )
 
     def _array_operators(self, operator, data, search_value):
-        if not utils.isiter(data) or not data:  # TODO need safe way to check type (pd.Dataframe problems)
+        if not utils.isiter(data):
             return False
         operator_map = {
             self.aop_all: self._operator_all,
@@ -231,7 +240,7 @@ class DictSearch:
                 if key in self.array_selectors:
                     self._from_array_selector(key, data, val, selected_dict)
                 if val in [self.sel_include, self.sel_exclude]:
-                    self._build_selection(key, val, data, selected_dict, prev_keys, original_data)
+                    self._build_selected_dict(key, val, data, selected_dict, prev_keys, original_data)
                     prev_keys.pop(-1)
                 else:
                     self._apply_selection(data.get(key), val, selected_dict, prev_keys, original_data)
@@ -250,7 +259,7 @@ class DictSearch:
         else:
             yield self._array_selector_map[operator_type](data, {}, search_value)[0]
 
-    def _build_selection(self, key, operator, data, selected_dict, prev_keys, original_data):
+    def _build_selected_dict(self, key, operator, data, selected_dict, prev_keys, original_data):
         if operator == self.sel_include and operator != self._forbid:
             self._forbid = self.sel_exclude
             self._include(key, data, selected_dict, prev_keys)

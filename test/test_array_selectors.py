@@ -15,6 +15,14 @@ def test_index():
     pprint(list(values))
 
 
+def test_index_empty_container():
+    values = list(DictSearch().dict_search(
+        [{"a": []}, {"a": [1]}],
+        {"a": {"$index": {0: 1}}},
+    ))
+    pprint(values)
+
+
 def test_range():
     for range_str, val, assert_val in [
         ("2:", 3, 2),

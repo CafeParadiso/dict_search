@@ -91,6 +91,10 @@ class TestCommon:
         import pandas as pd
         values = list(DictSearch().dict_search({"df": pd.DataFrame()}, {"df": {"$gt": pd.DataFrame()}}))
         assert not values
+        # values = list(DictSearch().dict_search({"df": [pd.DataFrame()]}, {"df": {"$gt": pd.DataFrame()}}))
+        # assert not values
+        # values = list(DictSearch().dict_search({"df": [pd.DataFrame()]}, {"df": {"$gt": pd.DataFrame()}}))
+        # assert not values
 
     @staticmethod
     def test_search_else_branch():
