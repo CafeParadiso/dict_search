@@ -44,7 +44,7 @@ class DictSearch:
 
         self.as_index = f"{self.operator_char}index"
         self.as_range = f"{self.operator_char}range"
-        self.as_where = f"{self.operator_char}where"  # TODO start
+        self.as_where = f"{self.operator_char}where"
         self.array_selectors = [val for key, val in self.__dict__.items() if re.match(r"^as_.*$", key)]
         self._array_selector_map = {
             self.as_index: self._operator_index,
@@ -57,8 +57,10 @@ class DictSearch:
         self._forbid = None
 
     def dict_search(self, data, match_dict=None, select_dict=None):
+        data = [data] if not utils.iscontainer(data) else data
+        if not all(not arg or isinstance(arg, dict) for arg in [match_dict, select_dict]):
+            raise exceptions.PreconditionError()
         if match_dict:
-            self._search_precondition(data, match_dict)
             for data_point in data:
                 if isinstance(data_point, dict):
                     if all(match for match in self._search(data_point, match_dict)):
@@ -67,13 +69,6 @@ class DictSearch:
             for data_point in data:
                 if isinstance(data_point, dict):
                     yield self._select(data_point, select_dict)
-
-    @staticmethod
-    def _search_precondition(data, search_dict):
-        if not utils.isiter(data):
-            raise exceptions.PreconditionDataError(data)
-        if not isinstance(search_dict, dict):
-            raise exceptions.PreconditionSearchDictError(search_dict)
 
     def _search(self, data, match_dict):
         if isinstance(match_dict, dict) and match_dict:
@@ -114,10 +109,11 @@ class DictSearch:
         }
         try:
             return operation_map[operator](value, search_value)
-        except TypeError:
+        except (TypeError, ValueError):
             return False
 
     def _high_level_operator(self, operator, data, search_iterator):
+        # TODO check behaviour with empty list
         if not utils.iscontainer(search_iterator):
             raise exceptions.HighLevelOperatorIteratorError
         operator_map = {
@@ -130,7 +126,7 @@ class DictSearch:
         )
 
     def _array_operators(self, operator, data, search_value):
-        if not utils.isiter(data):
+        if not utils.isiter(data) or not data:  # TODO need safe way to check type (pd.Dataframe problems)
             return False
         operator_map = {
             self.aop_all: self._operator_all,
@@ -141,8 +137,7 @@ class DictSearch:
     def _operator_all(self, data, search_value):
         if isinstance(search_value, dict):
             return all(match for d_point in data for match in self._search(d_point, search_value))
-        else:
-            return all(utils.compare(d_point, search_value) for d_point in data)
+        return all(utils.compare(d_point, search_value) for d_point in data)
 
     def _operator_any(self, data, search_value):
         if isinstance(search_value, dict):
@@ -180,6 +175,9 @@ class DictSearch:
         )
 
     def _array_selector(self, operator_type, data, search_value):
+        # TODO check if data?
+        if operator_type == self.as_where:
+            return self._operator_where(data, search_value)
         try:
             operator, search_value = list(search_value.items())[0]
         except AttributeError:
@@ -188,6 +186,12 @@ class DictSearch:
             return self._array_selector_map[operator_type](data, search_value, operator)
         except (TypeError, IndexError):
             return [], {}
+
+    def _operator_where(self, data, search_value):
+        if not utils.iscontainer(search_value) or len(search_value) != 2:
+            raise exceptions.WhereOperatorError
+        array_match_dict, match_dict = search_value[0], search_value[1]
+        return [sub_dict for sub_dict in self.dict_search(data, array_match_dict)], match_dict
 
     @staticmethod
     def _operator_index(data, search_value, index):
@@ -204,7 +208,7 @@ class DictSearch:
             constants.RE_RANGE_SST: lambda mtch_dict, dta: dta[int(mtch_dict[s]) :: int(mtch_dict[st])],
             constants.RE_RANGE_EST: lambda mtch_dict, dta: dta[: int(mtch_dict[e]) : int(mtch_dict[st])],
             constants.RE_RANGE_SEST: lambda mtch_dict, dta: dta[
-                int(mtch_dict[s]) : int(mtch_dict[e]) : int(mtch_dict[st])
+                int(mtch_dict[s]):int(mtch_dict[e]):int(mtch_dict[st])
             ],
         }
         for key, value in range_map.items():
@@ -212,10 +216,6 @@ class DictSearch:
             if match:
                 return value(match.groupdict(), data), search_value
         return [], {}
-
-    def _operator_where(self, data, search_value):
-        for sub_dict in self.dict_search(data, search_value):
-            yield sub_dict
 
     def _select(self, data, selection_dict):
         selected_dict = {}
@@ -254,8 +254,7 @@ class DictSearch:
         if operator == self.sel_include and operator != self._forbid:
             self._forbid = self.sel_exclude
             self._include(key, data, selected_dict, prev_keys)
-            return
-        if operator != self._forbid:
+        else:
             self._forbid = self.sel_include
             self._exclude(original_data, selected_dict, prev_keys)
 

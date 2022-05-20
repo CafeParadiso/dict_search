@@ -1,11 +1,14 @@
 DOING:
 - add $where in array selectors
+- ultimate testing (split tests into several files)
 TODOS
 - document properly in README
 - check license
 - set setup.py in detail
-- ultimate testing
 - check style
+- uninstall six, pytz, numpy, pandas
+- required libraries for projec vs libraries for module
 UPCOMING FEATURES
 - $if $elif $else $anykey $anyval (use the key over which we are iterating)
 - eager search
+

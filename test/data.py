@@ -375,7 +375,7 @@ student_data = [
             "full_name": {"first": "Snoop", "last": "Soulja"},
             "h": 204,
             "mentions": [
-                {"score": 7, "type": "angry"},
+                {"score": 5, "type": "angry"},
                 {"score": 5, "type": "angry"},
                 {"score": 2, "type": "active"},
                 {"score": 2, "type": "active"},
@@ -415,11 +415,10 @@ student_data = [
 ]
 
 
-def gene_data():
-    data = None
-    with open(r"C:\Users\mike_\Desktop\house_search\raw_data\080018.json", encoding="utf-8") as file:
-        data = json.load(file)
-    return data
+class CursedData:
+    """Class to emulate bad behavioured objects found in the wild"""
+    def __bool__(self):
+        raise ValueError("Ambiguous truth value")
 
 
 def build_simple_data():
@@ -498,7 +497,3 @@ def build_student_data(vals):
                 },
             }
         )
-
-
-if __name__ == "__main__":
-    pass
