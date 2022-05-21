@@ -29,3 +29,23 @@ def test_any_eq():
     )
     values = list(values)
     assert len(values) == 3
+
+
+def test_array_selector_not_container():
+    values = list(
+        DictSearch().dict_search(
+            [{"values": [0, 1, 1]}, {"values": [1, 1, 1]}, {"values": 1}],
+            {"values": {"$all": {"$inst": int}}},
+        )
+    )
+    assert len(values) == 2
+
+
+def test_emtpy_array_data():
+    values = list(
+        DictSearch().dict_search(
+            [{"values": [0, 1, 1]}, {"values": [1, 1, 1]}, {"values": []}, {"values": [0, 0, 2]}],
+            {"values": {"$all": {"$expr": lambda x: len(x) > 0}}},
+        )
+    )
+    assert not values

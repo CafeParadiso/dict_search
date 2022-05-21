@@ -129,22 +129,24 @@ class DictSearch:
         else:
             return False
 
-    def _high_level_operator(self, operator, data, search_iterator):
-        # TODO check behaviour with empty search_iterator
-        if not utils.iscontainer(search_iterator):
+    def _high_level_operator(self, operator, data, search_container):
+        if not utils.iscontainer(search_container):
             raise exceptions.HighLevelOperatorIteratorError
-
+        if not hasattr(search_container, "__len__") or len(search_container) == 0:
+            return False
         operator_map = {
             self.hop_and: lambda matches: all(matches),
             self.hop_or: lambda matches: any(matches),
             self.hop_not: lambda matches: not all(matches),
         }
         return operator_map[operator](
-            match for search_dict in search_iterator for match in self._search(data, search_dict)
+            match for search_dict in search_container for match in self._search(data, search_dict)
         )
 
     def _array_operators(self, operator, data, search_value):
         if not utils.isiter(data):
+            return False
+        if not hasattr(data, "__len__") or len(data) == 0:
             return False
         operator_map = {
             self.aop_all: self._operator_all,
@@ -163,6 +165,10 @@ class DictSearch:
         return any(utils.compare(d_point, search_value) for d_point in data)
 
     def _match_operators(self, operator, data, search_value):
+        # TODO check if data?
+        # TODO check if not operator?
+
+
         try:
             count, search_value = list(search_value.items())[0]
         except AttributeError:
@@ -246,8 +252,8 @@ class DictSearch:
         if isinstance(selection_dict, dict) and data:
             for key, val in selection_dict.items():
                 prev_keys.append(key)
-                if key in self.array_selectors:
-                    self._from_array_selector(key, data, val, selected_dict)
+                # if key in self.array_selectors:
+                #     self._from_array_selector(key, data, val, selected_dict)
                 if val in [self.sel_include, self.sel_exclude]:
                     self._build_selected_dict(key, val, data, selected_dict, prev_keys, original_data)
                     prev_keys.pop(-1)
@@ -255,18 +261,18 @@ class DictSearch:
                     self._apply_selection(data.get(key), val, selected_dict, prev_keys, original_data)
                     prev_keys.pop(-1)
 
-    def _from_array_selector(self, operator_type, data, search_value, selection_dict):
-        if isinstance(search_value, dict):
-            try:
-                operator, search_value = list(search_value.items())[0]
-            except AttributeError:
-                yield data
-            else:
-                yield from self._apply_selection(
-                    *self._array_selector_map[operator_type](data, search_value, operator), selection_dict
-                )
-        else:
-            yield self._array_selector_map[operator_type](data, {}, search_value)[0]
+    # def _from_array_selector(self, operator_type, data, search_value, selection_dict):
+    #     if isinstance(search_value, dict):
+    #         try:
+    #             operator, search_value = list(search_value.items())[0]
+    #         except AttributeError:
+    #             yield data
+    #         else:
+    #             yield from self._apply_selection(
+    #                 *self._array_selector_map[operator_type](data, search_value, operator), selection_dict
+    #             )
+    #     else:
+    #         yield self._array_selector_map[operator_type](data, {}, search_value)[0]
 
     def _build_selected_dict(self, key, operator, data, selected_dict, prev_keys, original_data):
         if operator == self.sel_include and operator != self._forbid:

@@ -1,3 +1,5 @@
+import re
+
 from src.dict_search.dict_search import DictSearch
 
 from . import data
@@ -48,10 +50,19 @@ def test_nin():
     assert len(values) == 5
 
 
-def test_regex():
-    values = DictSearch().dict_search(data.data, {"name": {"$regex": ".*?sm.*?"}})
-    values = [val for val in values]
+def test_regex_str():
+    values = list(DictSearch().dict_search(data.data, {"name": {"$regex": ".*?sm.*?"}}))
     assert len(values) == 2
+
+
+def test_regex_pattern():
+    values = list(DictSearch().dict_search(data.data, {"name": {"$regex": re.compile(".*?sm.*?")}}))
+    assert len(values) == 2
+
+
+def test_regex_wrong():
+    values = list(DictSearch().dict_search(data.data, {"name": {"$regex": 1}}))
+    assert not values
 
 
 def test_expr():

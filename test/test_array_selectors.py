@@ -8,6 +8,16 @@ from . import data
 # TODO test with data being a generator
 
 
+def test_array_selector_malformed():
+    values = list(
+        DictSearch().dict_search(
+            data.complex_data,
+            {"posts": {"$index": 1}},
+        )
+    )
+    assert not values
+
+
 def test_index():
     values = DictSearch().dict_search(
         data.complex_data,
@@ -46,6 +56,15 @@ def test_range():
         assert len(list(values)) == assert_val
 
 
+def test_range_bad_format():
+    values = list(
+        DictSearch().dict_search(
+            data.range_data, {"mixed": {"a": {"$range": {"a": {"$expr": lambda x: x.count(2) == 1}}}}}
+        )
+    )
+    assert not values
+
+
 def test_where():
     values = DictSearch().dict_search(
         data.student_data,
@@ -54,14 +73,7 @@ def test_where():
     pprint(list(values))
 
 
-def test_where_eq():
-    values = DictSearch().dict_search(
-        data.student_data,
-        {"c": "Territori", "tt": {"t": {"ff": {"f": {"$where": {"c": "Altitud"}}}}}},
-    )
-    pprint(list(values))
-
-
+# def test_where_eq
 # def test_where_eq_type_error
 # def test_where_not_found
 # def test_where_complex

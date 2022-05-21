@@ -3,6 +3,12 @@ from src.dict_search.dict_search import DictSearch
 from . import data
 
 
+def test_emtpy_search_container():
+    for op in [DictSearch().hop_or, DictSearch().hop_and, DictSearch().hop_not]:
+        values = list(DictSearch().dict_search([{"a": 1, "b": 0}, {"a": 0, "b": 1}], {op: []}))
+        assert not values
+
+
 def test_and():
     values = DictSearch().dict_search(
         data.data, {"$and": [{"assets": {"non_cur": {"$lt": 3922}}}, {"fy": {"$in": [2011]}}]}

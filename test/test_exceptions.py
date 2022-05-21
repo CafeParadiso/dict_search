@@ -7,11 +7,19 @@ from . import data
 
 def test_search_dict_precondition():
     with pytest.raises(exceptions.PreconditionError):
-        values = DictSearch().dict_search(data.data, 1)
-        list(values)
+        list(DictSearch().dict_search(data.data, 1))
 
 
 def test_high_level_operator_exception():
     with pytest.raises(exceptions.HighLevelOperatorIteratorError):
-        values = DictSearch().dict_search(data.data, {"$and": {"assets": {"non_cur": {"$lt": 3922}}}})
-        list(values)
+        list(DictSearch().dict_search(data.data, {"$and": {"assets": {"non_cur": {"$lt": 3922}}}}))
+
+
+def test_where():
+    with pytest.raises(exceptions.WhereOperatorError):
+        list(
+            DictSearch().dict_search(
+                data.student_data,
+                {"info": {"mentions": {"$where": {"a": 1}}}},
+            )
+        )

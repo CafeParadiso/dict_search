@@ -3,45 +3,33 @@ from src.dict_search.dict_search import DictSearch
 from . import data
 
 
-def test_match_malformed_query():
-    # match as array operator
-    results_aop = DictSearch().dict_search(
-        [{"a": [0, 1, 1], "b": 1, "c": 1}, {"a": [0, 0, 1], "b": 1, "c": 1}],
-        {"a": {"$match": [0, 1, 1]}},
+def test_match_array_operator():
+    results = list(
+        (
+            DictSearch().dict_search(
+                [{"a": [0, 1, 1], "b": 1, "c": 1}, {"a": [0, 0, 1], "b": 1, "c": 1}], {"a": {"$match": {"1": 1}}}
+            ),
+        )
     )
-    assert not list(results_aop)
+    assert results == 1
 
 
-def test_match_malformed_count():
-    # match as array operator
-    results_aop = DictSearch().dict_search(
-        [{"a": {1: "2", 2: "3"}, "b": 1, "c": 1}, {"a": [0, 0, 1], "b": 1, "c": 1}], {"a": {"$match": {"s": 1}}}
-    )
-    assert not list(results_aop)
-
-
-def test_match():
-    # match as array operator
-    results_aop = (
+def test_match_high_level_operator():
+    results = list(
         DictSearch().dict_search(
-            [{"a": [0, 1, 1], "b": 1, "c": 1}, {"a": [0, 0, 1], "b": 1, "c": 1}], {"a": {"$match": {"1": 1}}}
-        ),
+            [{"a": [0, 1, 1], "b": 1, "c": 1}, {"a": [0, 0, 1], "b": "1", "c": 1}],
+            {
+                "$match": {
+                    "2": [
+                        {"b": {"$in": [1, "1"]}},
+                        {"b": {"$expr": lambda x: isinstance(x, str)}},
+                        {"b": {"$expr": lambda x: isinstance(x, int)}},
+                    ]
+                }
+            },
+        )
     )
-    assert len(list(results_aop)) == 1
-    # match as high level operator
-    results_hop = DictSearch().dict_search(
-        [{"a": [0, 1, 1], "b": 1, "c": 1}, {"a": [0, 0, 1], "b": "1", "c": 1}],
-        {
-            "$match": {
-                "2": [
-                    {"b": {"$in": [1, "1"]}},
-                    {"b": {"$expr": lambda x: isinstance(x, str)}},
-                    {"b": {"$expr": lambda x: isinstance(x, int)}},
-                ]
-            }
-        },
-    )
-    assert len(list(results_hop)) == 2
+    assert results == 2
 
 
 def test_match_compare():
@@ -101,3 +89,36 @@ def test_match_implicit_and():
     )
     implicit_values = list(implicit_values)
     assert values == implicit_values
+
+
+def test_match_malformed_query():
+    # match as array operator
+    results_aop = DictSearch().dict_search(
+        [{"a": [0, 1, 1], "b": 1, "c": 1}, {"a": [0, 0, 1], "b": 1, "c": 1}],
+        {"a": {"$match": [0, 1, 1]}},
+    )
+    assert not list(results_aop)
+
+
+def test_match_malformed_count():
+    # match as array operator
+    results_aop = DictSearch().dict_search(
+        [{"a": {1: "2", 2: "3"}, "b": 1, "c": 1}, {"a": [0, 0, 1], "b": 1, "c": 1}], {"a": {"$match": {"s": 1}}}
+    )
+    assert not list(results_aop)
+
+
+def test_match_emtpy_operator():
+    # match as array operator
+    results_aop = DictSearch().dict_search(
+        [{"a": {1: "2", 2: "3"}, "b": 1, "c": 1}, {"a": [0, 0, 1], "b": 1, "c": 1}], {"a": {"$match": {}}}
+    )
+    assert not list(results_aop)
+
+
+def test_match_empty_data():
+    # match as array operator
+    results_aop = DictSearch().dict_search(
+        [{"a": {1: "2", 2: "3"}, "b": 1, "c": 1}, {"a": [0, 0, 1], "b": 1, "c": 1}], {"a": {"$match": {"s": 1}}}
+    )
+    assert not list(results_aop)
