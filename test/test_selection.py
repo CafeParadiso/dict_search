@@ -124,13 +124,12 @@ def test_wrong_keys():
             {
                 "subjects": mock.ANY,
                 "status": mock.ANY,
-                "info":
-                    {
-                        "full_name": {"last": mock.ANY, "first": mock.ANY},
-                        "w": mock.ANY,
-                        "h": mock.ANY,
-                        "mentions": mock.ANY,
-                    },
+                "info": {
+                    "full_name": {"last": mock.ANY, "first": mock.ANY},
+                    "w": mock.ANY,
+                    "h": mock.ANY,
+                    "mentions": mock.ANY,
+                },
             }
             == v
             for v in values

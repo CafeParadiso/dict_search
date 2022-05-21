@@ -417,6 +417,7 @@ student_data = [
 
 class CursedData:
     """Class to emulate bad behavioured objects found in the wild"""
+
     def __bool__(self):
         raise ValueError("Ambiguous truth value")
 

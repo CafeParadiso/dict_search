@@ -22,9 +22,11 @@ def test_match_malformed_count():
 
 def test_match():
     # match as array operator
-    results_aop = DictSearch().dict_search(
-        [{"a": [0, 1, 1], "b": 1, "c": 1}, {"a": [0, 0, 1], "b": 1, "c": 1}], {"a": {"$match": {"1": 1}}}
-    ),
+    results_aop = (
+        DictSearch().dict_search(
+            [{"a": [0, 1, 1], "b": 1, "c": 1}, {"a": [0, 0, 1], "b": 1, "c": 1}], {"a": {"$match": {"1": 1}}}
+        ),
+    )
     assert len(list(results_aop)) == 1
     # match as high level operator
     results_hop = DictSearch().dict_search(

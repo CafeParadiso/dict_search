@@ -8,7 +8,7 @@ from pprint import pprint
 
 
 class DictSearch:
-    def __init__(self, operator_str=None):
+    def __init__(self, operator_str=None, comparison_exceptions=ValueError):
         self.operator_char = operator_str if isinstance(operator_str, str) else None or "$"
 
         # matching operators
@@ -24,6 +24,7 @@ class DictSearch:
         self.lop_regex = f"{self.operator_char}regex"
         self.lop_expr = f"{self.operator_char}expr"
         self.lop_inst = f"{self.operator_char}inst"
+        self._low_level_comparison_operators = [self.lop_ne, self.lop_gt, self.lop_gte, self.lop_lt, self.lop_lte]
         self.low_level_operators = [val for key, val in self.__dict__.items() if re.match(r"^lop_.*$", key)]
 
         self.hop_and = f"{self.operator_char}and"
@@ -107,6 +108,13 @@ class DictSearch:
             self.lop_expr: lambda val, func: func(val) if isinstance(func(val), bool) else False,
             self.lop_inst: lambda val, search_type: isinstance(val, search_type),
         }
+        if operator in self._low_level_comparison_operators:
+            # check if objects have implemented __bool__ in order to compare
+            try:
+                for v in [value, search_value]:
+                    bool(v)
+            except ValueError:
+                return False
         try:
             return operation_map[operator](value, search_value)
         except TypeError:
@@ -122,9 +130,10 @@ class DictSearch:
             return False
 
     def _high_level_operator(self, operator, data, search_iterator):
-        # TODO check behaviour with empty list
+        # TODO check behaviour with empty search_iterator
         if not utils.iscontainer(search_iterator):
             raise exceptions.HighLevelOperatorIteratorError
+
         operator_map = {
             self.hop_and: lambda matches: all(matches),
             self.hop_or: lambda matches: any(matches),
@@ -217,7 +226,7 @@ class DictSearch:
             constants.RE_RANGE_SST: lambda mtch_dict, dta: dta[int(mtch_dict[s]) :: int(mtch_dict[st])],
             constants.RE_RANGE_EST: lambda mtch_dict, dta: dta[: int(mtch_dict[e]) : int(mtch_dict[st])],
             constants.RE_RANGE_SEST: lambda mtch_dict, dta: dta[
-                int(mtch_dict[s]):int(mtch_dict[e]):int(mtch_dict[st])
+                int(mtch_dict[s]) : int(mtch_dict[e]) : int(mtch_dict[st])
             ],
         }
         for key, value in range_map.items():

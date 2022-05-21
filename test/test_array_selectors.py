@@ -7,6 +7,7 @@ from . import data
 
 # TODO test with data being a generator
 
+
 def test_index():
     values = DictSearch().dict_search(
         data.complex_data,
@@ -16,10 +17,12 @@ def test_index():
 
 
 def test_index_empty_container():
-    values = list(DictSearch().dict_search(
-        [{"a": []}, {"a": [1]}],
-        {"a": {"$index": {0: 1}}},
-    ))
+    values = list(
+        DictSearch().dict_search(
+            [{"a": []}, {"a": [1]}],
+            {"a": {"$index": {0: 1}}},
+        )
+    )
     pprint(values)
 
 
@@ -45,7 +48,8 @@ def test_range():
 
 def test_where():
     values = DictSearch().dict_search(
-       data.student_data, {"info": {"mentions": {"$where": [{"type": "angry"}, {"$all": {"score": 5}}]}}},
+        data.student_data,
+        {"info": {"mentions": {"$where": [{"type": "angry"}, {"$all": {"score": 5}}]}}},
     )
     pprint(list(values))
 
@@ -57,6 +61,7 @@ def test_where_eq():
     )
     pprint(list(values))
 
-#def test_where_eq_type_error
-#def test_where_not_found
-#def test_where_complex
+
+# def test_where_eq_type_error
+# def test_where_not_found
+# def test_where_complex
