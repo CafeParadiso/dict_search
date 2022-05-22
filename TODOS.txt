@@ -1,14 +1,18 @@
 DOING:
-- add $where in array selectors
-- ultimate testing (split tests into several files)
+- select to support array selectors
 TODOS
-- document properly in README
-- check license
-- set setup.py in detail
+- expected_exceptions argument
+- refactor all test names and variables
+- ultimate testing file by file
+- redo test data
 - check style
 - uninstall six, pytz, numpy, pandas
-- required libraries for projec vs libraries for module
+- set setup.py in detail (libraries for project vs libraries for module)
+- check license
+- document properly in README
 UPCOMING FEATURES
 - $if $elif $else $anykey $anyval (use the key over which we are iterating)
-- eager search
+- greedy search
+- turn exceptions into warnings and return false on warning ?
+
 

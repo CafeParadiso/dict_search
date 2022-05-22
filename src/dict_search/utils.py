@@ -15,7 +15,21 @@ def iscontainer(data):
     return False
 
 
+def isempty(data):
+    # TODO will malfunction if it is generator
+    # def peek(iterable):
+    #     try:
+    #         first = next(iterable)
+    #     except StopIteration:
+    #         return None
+    #     return first, itertools.chain([first], iterable)
+    if not hasattr(data, "__len__") or len(data) == 0:
+        return True
+    return False
+
+
 def compare(data, search_value):
+    # TODO refactor to class + add expected exceptions
     """Object like pandas.Dataframe will raise a value error when checking its truthness"""
     try:
         if data == search_value:

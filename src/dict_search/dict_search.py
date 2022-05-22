@@ -17,6 +17,7 @@ class DictSearch:
         self.lop_gte = f"{self.operator_char}gte"
         self.lop_lt = f"{self.operator_char}lt"
         self.lop_lte = f"{self.operator_char}lte"
+        self.lop_is = f"{self.operator_char}is"
         self.lop_in = f"{self.operator_char}in"
         self.lop_nin = f"{self.operator_char}nin"
         self.lop_cont = f"{self.operator_char}cont"
@@ -24,8 +25,8 @@ class DictSearch:
         self.lop_regex = f"{self.operator_char}regex"
         self.lop_expr = f"{self.operator_char}expr"
         self.lop_inst = f"{self.operator_char}inst"
-        self._low_level_comparison_operators = [self.lop_ne, self.lop_gt, self.lop_gte, self.lop_lt, self.lop_lte]
         self.low_level_operators = [val for key, val in self.__dict__.items() if re.match(r"^lop_.*$", key)]
+        self._low_level_comparison_operators = [self.lop_ne, self.lop_gt, self.lop_gte, self.lop_lt, self.lop_lte]
 
         self.hop_and = f"{self.operator_char}and"
         self.hop_or = f"{self.operator_char}or"
@@ -53,6 +54,7 @@ class DictSearch:
             self.as_where: self._operator_where,
         }
 
+        # select
         self.sel_include = 1
         self.sel_exclude = 0
         self._forbid = None
@@ -91,7 +93,7 @@ class DictSearch:
                 else:
                     yield False
         else:
-            yield False
+            yield utils.compare(data, match_dict)
 
     def _low_level_operator(self, operator, value, search_value):
         operation_map = {
@@ -100,6 +102,7 @@ class DictSearch:
             self.lop_gte: lambda val, search_val: val >= search_val,
             self.lop_lt: lambda val, search_val: val < search_val,
             self.lop_lte: lambda val, search_val: val <= search_val,
+            self.lop_is: lambda val, search_val: val is search_val,
             self.lop_in: lambda val, search_val: val in search_val,
             self.lop_nin: lambda val, search_val: val not in search_val,
             self.lop_cont: lambda val, search_val: search_val in val,
@@ -108,12 +111,11 @@ class DictSearch:
             self.lop_expr: lambda val, func: func(val) if isinstance(func(val), bool) else False,
             self.lop_inst: lambda val, search_type: isinstance(val, search_type),
         }
+        # check if objects have implemented __bool__ in order to compare
         if operator in self._low_level_comparison_operators:
-            # check if objects have implemented __bool__ in order to compare
             try:
-                for v in [value, search_value]:
-                    bool(v)
-            except ValueError:
+                bool(value)
+            except ValueError:  # TODO expected exceptions
                 return False
         try:
             return operation_map[operator](value, search_value)
@@ -132,7 +134,7 @@ class DictSearch:
     def _high_level_operator(self, operator, data, search_container):
         if not utils.iscontainer(search_container):
             raise exceptions.HighLevelOperatorIteratorError
-        if not hasattr(search_container, "__len__") or len(search_container) == 0:
+        if utils.isempty(search_container):
             return False
         operator_map = {
             self.hop_and: lambda matches: all(matches),
@@ -144,9 +146,7 @@ class DictSearch:
         )
 
     def _array_operators(self, operator, data, search_value):
-        if not utils.isiter(data):
-            return False
-        if not hasattr(data, "__len__") or len(data) == 0:
+        if not utils.isiter(data) or utils.isempty(data):
             return False
         operator_map = {
             self.aop_all: self._operator_all,
@@ -165,13 +165,9 @@ class DictSearch:
         return any(utils.compare(d_point, search_value) for d_point in data)
 
     def _match_operators(self, operator, data, search_value):
-        # TODO check if data?
-        # TODO check if not operator?
-
-
         try:
             count, search_value = list(search_value.items())[0]
-        except AttributeError:
+        except (AttributeError, IndexError):
             return False
         try:
             count = int(count)
@@ -199,7 +195,6 @@ class DictSearch:
         )
 
     def _array_selector(self, operator_type, data, search_value):
-        # TODO check if data?
         if operator_type == self.as_where:
             return self._operator_where(data, search_value)
         try:

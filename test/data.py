@@ -419,7 +419,7 @@ class CursedData:
     """Class to emulate bad behavioured objects found in the wild"""
 
     def __bool__(self):
-        raise ValueError("Ambiguous truth value")
+        raise ValueError("The truth value is ambiguous")
 
 
 def build_simple_data():

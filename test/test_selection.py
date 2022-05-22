@@ -139,6 +139,6 @@ def test_wrong_keys():
     )
 
 
-def test_only_select():
+def test_select_only():
     values = list(DictSearch().dict_search([{"a": 1, "b": 0}, {"a": 2, "b": 1}], select_dict={"a": 1}))
     assert all(v == {"a": mock.ANY} for v in values)
