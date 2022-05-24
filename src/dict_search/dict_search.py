@@ -51,13 +51,13 @@ class DictSearch:
         self._array_selector_map = {
             self.as_index: self._operator_index,
             self.as_range: self._operator_range,
-            self.as_where: self._operator_where,
         }
 
         # select
         self.sel_include = 1
         self.sel_exclude = 0
         self._forbid = None
+        self.selection_operators = [self.sel_include, self.sel_exclude]
 
     def dict_search(self, data, match_dict=None, select_dict=None):
         data = [data] if not utils.iscontainer(data) else data
@@ -200,7 +200,7 @@ class DictSearch:
         try:
             operator, search_value = list(search_value.items())[0]
         except AttributeError:
-            return [], {}
+            raise exceptions.ArraySelectorFormatException(operator_type)
         try:
             return self._array_selector_map[operator_type](data, search_value, operator)
         except (TypeError, IndexError):
@@ -246,34 +246,53 @@ class DictSearch:
         original_data = copy.deepcopy(data) if not original_data else original_data
         if isinstance(selection_dict, dict) and data:
             for key, val in selection_dict.items():
-                prev_keys.append(key)
-                # if key in self.array_selectors:
-                #     self._from_array_selector(key, data, val, selected_dict)
-                if val in [self.sel_include, self.sel_exclude]:
+                if key in self.array_selectors:
+                    self._from_array_selector(key, data, val, selected_dict, prev_keys, original_data)
+                elif val in self.selection_operators:
+                    prev_keys.append(key)
                     self._build_selected_dict(key, val, data, selected_dict, prev_keys, original_data)
                     prev_keys.pop(-1)
                 else:
+                    prev_keys.append(key)
                     self._apply_selection(data.get(key), val, selected_dict, prev_keys, original_data)
                     prev_keys.pop(-1)
 
-    # def _from_array_selector(self, operator_type, data, search_value, selection_dict):
-    #     if isinstance(search_value, dict):
-    #         try:
-    #             operator, search_value = list(search_value.items())[0]
-    #         except AttributeError:
-    #             yield data
-    #         else:
-    #             yield from self._apply_selection(
-    #                 *self._array_selector_map[operator_type](data, search_value, operator), selection_dict
-    #             )
-    #     else:
-    #         yield self._array_selector_map[operator_type](data, {}, search_value)[0]
+    def _from_array_selector(self, operator_type, data, search_value, selected_dict, prev_keys, original_data):
+        try:
+            operator, search_value = list(search_value.items())[0]
+        except AttributeError:
+            raise exceptions.ArraySelectorFormatException(operator_type)
+        if search_value in self.selection_operators:
+            operator_map = {
+                self.as_index: self._operator_index_select(),
+                self.as_range: self._operator_range_select(),
+                self.as_where: self._operator_where_select(),
+            }
+            operator_map[operator_type](data, search_value, operator)
+        else:
+            self._apply_selection(
+                *self._array_selector_map[operator_type](data, search_value, operator),
+                selected_dict,
+                prev_keys,
+                original_data,
+            )
+
+    def _operator_index_select(self, data, select_op, index):
+        return data[index]
+
+    def _operator_range_select(self):
+        pass
+
+    def _operator_where_select(self):
+        pass
 
     def _build_selected_dict(self, key, operator, data, selected_dict, prev_keys, original_data):
-        if operator == self.sel_include and operator != self._forbid:
+        if operator == self._forbid:
+            return
+        if operator == self.sel_include:
             self._forbid = self.sel_exclude
             self._include(key, data, selected_dict, prev_keys)
-        elif operator == self.sel_exclude and operator != self._forbid:
+        else:
             self._forbid = self.sel_include
             self._exclude(original_data, selected_dict, prev_keys)
 

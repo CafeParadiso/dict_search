@@ -13,3 +13,8 @@ class WhereOperatorError(TypeError):
         super().__init__(
             "The search value for 'where' must be a container of two elements: [{array_match_condition}, {match_dict}]"
         )
+
+
+class ArraySelectorFormatException(ValueError):
+    def __init__(self, operator):
+        super().__init__(f"Use a dict as {operator} operator")

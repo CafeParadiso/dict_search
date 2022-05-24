@@ -8,16 +8,6 @@ from . import data
 # TODO test with data being a generator
 
 
-def test_array_selector_malformed():
-    results = list(
-        DictSearch().dict_search(
-            data.complex_data,
-            {"posts": {"$index": 1}},
-        )
-    )
-    assert not results
-
-
 def test_index():
     results = DictSearch().dict_search(
         data.complex_data,

@@ -15,6 +15,16 @@ def test_high_level_operator_exception():
         list(DictSearch().dict_search(data.data, {"$and": {"assets": {"non_cur": {"$lt": 3922}}}}))
 
 
+def test_array_selector_exception():
+    with pytest.raises(exceptions.ArraySelectorFormatException):
+        list(
+            DictSearch().dict_search(
+                data.complex_data,
+                {"posts": {"$index": 1}},
+            )
+        )
+
+
 def test_where():
     with pytest.raises(exceptions.WhereOperatorError):
         list(

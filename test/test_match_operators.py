@@ -2,6 +2,7 @@ from src.dict_search.dict_search import DictSearch
 
 from . import data
 
+# TODO test array opereator emtpy data
 
 def test_match_array_operator():
     results = list(
