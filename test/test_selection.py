@@ -144,30 +144,57 @@ def test_select_only():
     assert all(v == {"a": mock.ANY} for v in values)
 
 
-# def test_select_index_include():
-#     values = list(
-#         DictSearch().dict_search(
-#             [
-#                 {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "damn"}, {"b": 1, "c": "skate"}]}},
-#                 {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "food"}, {"b": 1, "c": "sneeze "}]}},
-#             ],
-#             select_dict={"a": {"b": {"$index": {0: 1}}}},
-#         )
-#     )
-#     pprint(values)
+def test_select_index_include():
+    values = list(
+        DictSearch().dict_search(
+            [
+                {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "damn"}, {"b": 1, "c": "skate"}]}},
+                {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "food"}, {"b": 1, "c": "sneeze "}]}},
+            ],
+            select_dict={"a": {"b": {"$index": {0: 1}}}},
+        )
+    )
+    pprint(values)
 
 
-# def test_select_index_include_nested():
-#     values = list(
-#         DictSearch().dict_search(
-#             [
-#                 {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "ok"}, {"b": 1, "c": "ko"}]}},
-#                 {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "ok"}, {"b": 1, "c": "ok"}]}},
-#             ],
-#             select_dict={"a": {"b": {"$index": {0: {"c": 1}}}}},
-#         )
-#     )
-#     pprint(values)
+def test_select_index_exclude():
+    values = list(
+        DictSearch().dict_search(
+            [
+                {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "damn"}, {"b": 1, "c": "skate"}]}},
+                {"a": {"b": [{"b": 2, "c": "ok"}, {"b": 3, "c": "food"}, {"b": 4, "c": "sneeze "}]}},
+            ],
+            select_dict={"a": {"b": {"$index": {0: 0}}}},
+        )
+    )
+    pprint(values)
+
+
+def test_select_index_include_nested():
+    values = list(
+        DictSearch().dict_search(
+            [
+                {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "damn"}, {"b": 1, "c": "skate"}]}},
+                {"a": {"b": [{"b": 2, "c": "ok"}, {"b": 3, "c": "food"}, {"b": 4, "c": "sneeze "}]}},
+            ],
+            select_dict={"a": {"b": {"$index": {0: {"b": 1}}}}},
+        )
+    )
+    pprint(values)
+
+
+def test_select_index_include_nested_error():
+    # TODO index error
+    values = list(
+        DictSearch().dict_search(
+            [
+                {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "damn"}, {"b": 1, "c": "skate"}]}},
+                {"a": {"b": [{"b": 2, "c": "ok"}, {"b": 3, "c": "food"}, {"b": 4, "c": "sneeze "}]}},
+            ],
+            select_dict={"a": {"b": {"$index": {3: {"b": 1}}}}},
+        )
+    )
+    pprint(values)
 #
 #
 # def test_select_where():

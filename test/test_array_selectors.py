@@ -79,7 +79,7 @@ def test_range_empty():
 def test_range_bad_format():
     results = list(
         DictSearch().dict_search(
-            data.range_data, {"mixed": {"a": {"$range": {"a": {"$expr": lambda x: x.count(2) == 1}}}}}
+            data.range_data, {"mixed": {"a": {"$range": {"a": {"$expr": lambda x: isinstance(x, list)}}}}}
         )
     )
     assert not results

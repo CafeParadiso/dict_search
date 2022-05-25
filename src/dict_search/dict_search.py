@@ -202,22 +202,22 @@ class DictSearch:
         except AttributeError:
             raise exceptions.ArraySelectorFormatException(operator_type)
         try:
-            return self._array_selector_map[operator_type](data, search_value, operator)
+            return self._array_selector_map[operator_type](data, operator), search_value
         except (TypeError, IndexError):
             return [], {}
 
     def _operator_where(self, data, search_value):
         if not utils.iscontainer(search_value) or len(search_value) != 2:
             raise exceptions.WhereOperatorError
-        array_match_dict, match_dict = search_value[0], search_value[1]
+        array_match_dict, match_dict = search_value
         return [sub_dict for sub_dict in self.dict_search(data, array_match_dict)], match_dict
 
     @staticmethod
-    def _operator_index(data, search_value, index):
-        return data[int(index)], search_value
+    def _operator_index(data, index):
+        return data[int(index)]
 
     @staticmethod
-    def _operator_range(data, search_value, range_str):
+    def _operator_range(data, range_str):
         s, e, st = constants.S, constants.E, constants.ST
         range_map = {
             constants.RE_RANGE_S: lambda mtch_dict, dta: dta[int(mtch_dict[s]) :],
@@ -229,12 +229,12 @@ class DictSearch:
             constants.RE_RANGE_SEST: lambda mtch_dict, dta: dta[
                 int(mtch_dict[s]) : int(mtch_dict[e]) : int(mtch_dict[st])
             ],
+            constants.RE_RANGE_ALL: lambda mtch_dict, dta: dta[:],
         }
         for key, value in range_map.items():
             match = key.match(range_str)
             if match:
-                return value(match.groupdict(), data), search_value
-        return [], {}
+                return value(match.groupdict(), data)
 
     def _select(self, data, selection_dict):
         selected_dict = {}
@@ -258,27 +258,40 @@ class DictSearch:
                     prev_keys.pop(-1)
 
     def _from_array_selector(self, operator_type, data, search_value, selected_dict, prev_keys, original_data):
+        if utils.isempty(data):
+            return
         try:
             operator, search_value = list(search_value.items())[0]
         except AttributeError:
             raise exceptions.ArraySelectorFormatException(operator_type)
+        operator_map = {
+            self.as_index: self._operator_index_select,
+            self.as_range: self._operator_range_select,
+            self.as_where: self._operator_where_select,
+        }
         if search_value in self.selection_operators:
-            operator_map = {
-                self.as_index: self._operator_index_select(),
-                self.as_range: self._operator_range_select(),
-                self.as_where: self._operator_where_select(),
-            }
-            operator_map[operator_type](data, search_value, operator)
+            try:
+                value = operator_map[operator_type](data, operator, search_value)
+                utils.set_from_list(selected_dict, prev_keys, value)
+            except (TypeError, IndexError):
+                return
         else:
-            self._apply_selection(
-                *self._array_selector_map[operator_type](data, search_value, operator),
-                selected_dict,
-                prev_keys,
-                original_data,
-            )
+            values = self._array_selector_map[operator_type](data, operator)
+            values = [values] if not utils.iscontainer(values) else values
+            selected_values = []
+            for val in values:
+                selected_val = {}
+                self._apply_selection(val, search_value, selected_val)
+                selected_values.append(selected_val)
+            utils.set_from_list(selected_dict, prev_keys, selected_values)
 
-    def _operator_index_select(self, data, select_op, index):
-        return data[index]
+    def _operator_index_select(self, data, index, select_op):
+        if select_op == self.sel_include:
+            return copy.deepcopy(data)[int(index)]
+        elif select_op == self.sel_exclude:
+            data_copy = copy.deepcopy(data)
+            data_copy.pop(int(index))
+            return data_copy
 
     def _operator_range_select(self):
         pass
@@ -307,3 +320,12 @@ class DictSearch:
         if not selected_dict:
             selected_dict.update(copy.deepcopy(original_data))
         utils.pop_from_list(selected_dict, prev_keys)
+    #
+    # def _build_selected_dict_new(self, operator, func_map, *args):
+    #     if operator == self._forbid:
+    #         return
+    #     if operator == self.sel_include:
+    #         self._forbid = self.sel_exclude
+    #     elif operator == self.sel_exclude:
+    #         self._forbid = self.sel_include
+    #     func_map[operator](*args)
