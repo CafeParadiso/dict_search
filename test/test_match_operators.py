@@ -2,13 +2,14 @@ from src.dict_search.dict_search import DictSearch
 
 from . import data
 
-# TODO test array opereator emtpy data
+# TODO test data as generator
+
 
 def test_match_array_operator():
     results = list(
-            DictSearch().dict_search(
-                [{"a": [0, 1, 1], "b": 1, "c": 1}, {"a": [0, 0, 1], "b": 1, "c": 1}], {"a": {"$match": {"1": 1}}}
-            ),
+        DictSearch().dict_search(
+            [{"a": [0, 1, 1], "b": 1, "c": 1}, {"a": [0, 0, 1], "b": 1, "c": 1}], {"a": {"$match": {"1": 1}}}
+        ),
     )
     assert len(results) == 1
 
@@ -64,56 +65,58 @@ def test_match_implicit_and():
     expected_results = 2
     expected_ids = [5, 6]
 
-    results = list(DictSearch().dict_search(
-        data.complex_data,
-        {
-            "$and": [
-                {"posts": {"$matchgte": {"1": {"interacted": {"$all": {"type": "post"}}}}}},
-                {"posts": {"$matchgte": {"1": {"text": "mdb"}}}},
-            ]
-        },
-    ))
+    results = list(
+        DictSearch().dict_search(
+            data.complex_data,
+            {
+                "$and": [
+                    {"posts": {"$matchgte": {"1": {"interacted": {"$all": {"type": "post"}}}}}},
+                    {"posts": {"$matchgte": {"1": {"text": "mdb"}}}},
+                ]
+            },
+        )
+    )
     assert len(results) == expected_results
     assert [x["id"] for x in results] == expected_ids
 
-    implicit_results = list(DictSearch().dict_search(
-        data.complex_data,
-        {"posts": {"$matchgte": {"1": {"interacted": {"$all": {"type": "post"}}, "text": "mdb"}}}},
-    ))
+    implicit_results = list(
+        DictSearch().dict_search(
+            data.complex_data,
+            {"posts": {"$matchgte": {"1": {"interacted": {"$all": {"type": "post"}}, "text": "mdb"}}}},
+        )
+    )
     assert results == implicit_results
 
 
 def test_match_malformed_query():
-    results = list(DictSearch().dict_search(
-        [{"a": [0, 1, 1], "b": 1, "c": 1}, {"a": [0, 0, 1], "b": 1, "c": 1}],
-        {"a": {"$match": [0, 1, 1]}},
-    ))
+    results = list(
+        DictSearch().dict_search(
+            [{"a": [0, 1, 1], "b": 1, "c": 1}, {"a": [0, 0, 1], "b": 1, "c": 1}],
+            {"a": {"$match": [0, 1, 1]}},
+        )
+    )
     assert not results
 
 
 def test_match_malformed_count():
-    results = list(DictSearch().dict_search(
-        [{"a": {1: "2", 2: "3"}, "b": True}, {"a": []}], {"a": {"$match": {"s": 1}}}
-    ))
+    results = list(
+        DictSearch().dict_search([{"a": {1: "2", 2: "3"}, "b": True}, {"a": []}], {"a": {"$match": {"s": 1}}})
+    )
     assert not results
 
 
 def test_match_count_mistmatch():
-    results = list(DictSearch().dict_search(
-        [{"a": {1: "2", 2: "3"}}, {"a": []}], {"a": {"$match": {2: [{1: "2"}]}}}
-    ))
+    results = list(DictSearch().dict_search([{"a": {1: "2", 2: "3"}}, {"a": []}], {"a": {"$match": {2: [{1: "2"}]}}}))
     assert not results
 
 
 def test_match_emtpy_operator():
-    results = list(DictSearch().dict_search(
-        [{"a": {1: "2", 2: "3"}, "b": True}, {"a": []}], {"a": {"$match": {}}}
-    ))
+    results = list(DictSearch().dict_search([{"a": {1: "2", 2: "3"}, "b": True}, {"a": []}], {"a": {"$match": {}}}))
     assert not results
 
 
 def test_match_empty_data():
-    results = list(DictSearch().dict_search(
-        [{"a": {1: "2", 2: "3"}}, {"a": []}, {}], {"a": {"$match": {1: [{1: "2"}]}}}
-    ))
+    results = list(
+        DictSearch().dict_search([{"a": {1: "2", 2: "3"}}, {"a": []}, {}], {"a": {"$match": {1: [{1: "2"}]}}})
+    )
     assert len(results) == 1

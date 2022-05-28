@@ -1,5 +1,7 @@
 from collections import abc
 
+from . import constants
+
 
 def isiter(data):
     try:
@@ -26,6 +28,12 @@ def isempty(data):
     if not hasattr(data, "__len__") or len(data) == 0:
         return True
     return False
+
+
+def israngestr(range_str):
+    if not any(patt.match(range_str) for patt in constants.RANGE_PATTERNS):
+        return False
+    return True
 
 
 def compare(data, search_value):

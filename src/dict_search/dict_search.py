@@ -218,23 +218,9 @@ class DictSearch:
 
     @staticmethod
     def _operator_range(data, range_str):
-        s, e, st = constants.S, constants.E, constants.ST
-        range_map = {
-            constants.RE_RANGE_S: lambda mtch_dict, dta: dta[int(mtch_dict[s]) :],
-            constants.RE_RANGE_E: lambda mtch_dict, dta: dta[: int(mtch_dict[e])],
-            constants.RE_RANGE_ST: lambda mtch_dict, dta: dta[:: int(mtch_dict[st])],
-            constants.RE_RANGE_SE: lambda mtch_dict, dta: dta[int(mtch_dict[s]) : int(mtch_dict[e])],
-            constants.RE_RANGE_SST: lambda mtch_dict, dta: dta[int(mtch_dict[s]) :: int(mtch_dict[st])],
-            constants.RE_RANGE_EST: lambda mtch_dict, dta: dta[: int(mtch_dict[e]) : int(mtch_dict[st])],
-            constants.RE_RANGE_SEST: lambda mtch_dict, dta: dta[
-                int(mtch_dict[s]) : int(mtch_dict[e]) : int(mtch_dict[st])
-            ],
-            constants.RE_RANGE_ALL: lambda mtch_dict, dta: dta[:],
-        }
-        for key, value in range_map.items():
-            match = key.match(range_str)
-            if match:
-                return value(match.groupdict(), data)
+        if not utils.israngestr(range_str):
+            return
+        return eval(f"data[{range_str}]", {"data": data})
 
     def _select(self, data, selection_dict):
         selected_dict = {}
@@ -272,11 +258,15 @@ class DictSearch:
         if search_value in self.selection_operators:
             try:
                 value = operator_map[operator_type](data, operator, search_value)
-                utils.set_from_list(selected_dict, prev_keys, value)
+                if value:
+                    utils.set_from_list(selected_dict, prev_keys, value)
             except (TypeError, IndexError):
                 return
         else:
-            values = self._array_selector_map[operator_type](data, operator)
+            try:
+                values = self._array_selector_map[operator_type](data, operator)
+            except (TypeError, IndexError):
+                return
             values = [values] if not utils.iscontainer(values) else values
             selected_values = []
             for val in values:
@@ -293,8 +283,15 @@ class DictSearch:
             data_copy.pop(int(index))
             return data_copy
 
-    def _operator_range_select(self):
-        pass
+    def _operator_range_select(self, data, range_str, select_op):
+        if select_op == self.sel_include:
+            return self._operator_range(data, range_str)
+        elif select_op == self.sel_exclude:
+            if not utils.israngestr(range_str):
+                return
+            data_copy = copy.deepcopy(data)
+            exec(f"del data[{range_str}]", {"data": data_copy})
+            return data_copy
 
     def _operator_where_select(self):
         pass
@@ -320,12 +317,3 @@ class DictSearch:
         if not selected_dict:
             selected_dict.update(copy.deepcopy(original_data))
         utils.pop_from_list(selected_dict, prev_keys)
-    #
-    # def _build_selected_dict_new(self, operator, func_map, *args):
-    #     if operator == self._forbid:
-    #         return
-    #     if operator == self.sel_include:
-    #         self._forbid = self.sel_exclude
-    #     elif operator == self.sel_exclude:
-    #         self._forbid = self.sel_include
-    #     func_map[operator](*args)

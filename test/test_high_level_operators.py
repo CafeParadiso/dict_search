@@ -40,7 +40,10 @@ def test_emtpy_search_container():
 
 
 def test_high_level_op_empty_data():
-    values = list(DictSearch().dict_search(
-        [{"a": {"b": 1}}, {"a": None}], {"a": {"$and": [{"b": {"$inst": int}}, {"b": 0}]}})
+    values = list(
+        DictSearch().dict_search(
+            [{"a": {"b": 1}}, {"a": None}],
+            {"a": {"$and": [{"b": {"$inst": int}}, {"b": 0}]}},
+        )
     )
     assert not values

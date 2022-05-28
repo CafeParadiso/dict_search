@@ -167,7 +167,7 @@ def test_select_index_exclude():
             select_dict={"a": {"b": {"$index": {0: 0}}}},
         )
     )
-    pprint(values)
+    assert values
 
 
 def test_select_index_include_nested():
@@ -180,11 +180,10 @@ def test_select_index_include_nested():
             select_dict={"a": {"b": {"$index": {0: {"b": 1}}}}},
         )
     )
-    pprint(values)
+    assert values
 
 
-def test_select_index_include_nested_error():
-    # TODO index error
+def test_select_index_include_error():
     values = list(
         DictSearch().dict_search(
             [
@@ -195,16 +194,42 @@ def test_select_index_include_nested_error():
         )
     )
     pprint(values)
-#
-#
-# def test_select_where():
-#     values = list(
-#         DictSearch().dict_search(
-#             [
-#                 {"a": [{"b": 1, "c": "ok"}, {"b": 0, "c": "ok"}, {"b": 1, "c": "ko"}]},
-#                 {"a": [{"b": 1, "c": "ok"}, {"b": 0, "c": "ok"}, {"b": 1, "c": "ok"}]},
-#             ],
-#             select_dict={"a": 1},
-#         )
-#     )
-#     pprint(values)
+
+
+def test_range_exclude():
+    values = list(
+        DictSearch().dict_search(
+            [
+                {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "damn"}, {"b": 1, "c": "skate"}]}},
+                {"a": {"b": [{"b": 2, "c": "ok"}, {"b": 3, "c": "food"}, {"b": 4, "c": "sneeze "}]}},
+            ],
+            select_dict={"a": {"b": {"$range": {":2": 0}}}},
+        )
+    )
+    pprint(values)
+
+
+def test_range_include():
+    values = list(
+        DictSearch().dict_search(
+            [
+                {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "damn"}, {"b": 1, "c": "skate"}]}},
+                {"a": {"b": [{"b": 2, "c": "ok"}, {"b": 3, "c": "food"}, {"b": 4, "c": "sneeze "}]}},
+            ],
+            select_dict={"a": {"b": {"$range": {":2": 1}}}},
+        )
+    )
+    pprint(values)
+
+
+def test_range_include_nested():
+    values = list(
+        DictSearch().dict_search(
+            [
+                {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "damn"}, {"b": 1, "c": "skate"}]}},
+                {"a": {"b": [{"b": 2, "c": "ok"}, {"b": 3, "c": "food"}, {"b": 4, "c": "sneeze "}]}},
+            ],
+            select_dict={"a": {"b": {"$range": {":1": {"c": 1}}}}},
+        )
+    )
+    pprint(values)
