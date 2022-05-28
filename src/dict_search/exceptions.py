@@ -1,6 +1,6 @@
 class PreconditionError(Exception):
     def __init__(self):
-        super().__init__("Provide a dict to perform the matching and select")
+        super().__init__("Provide a dict to perform the matching or select")
 
 
 class HighLevelOperatorIteratorError(TypeError):
@@ -17,4 +17,4 @@ class WhereOperatorError(TypeError):
 
 class ArraySelectorFormatException(ValueError):
     def __init__(self, operator):
-        super().__init__(f"Use a dict as {operator} operator")
+        super().__init__(f"Use a dict as '{operator}' operator to match")

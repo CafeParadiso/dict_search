@@ -1,5 +1,14 @@
+from pytest import raises as pytest_raises
+
 from src.dict_search.dict_search import DictSearch
-from .data import data, complex_data, range_data, student_data
+from src.dict_search import exceptions
+
+from .data import data, complex_data
+
+
+def test_search_dict_precondition():
+    with pytest_raises(exceptions.PreconditionError):
+        list(DictSearch().dict_search(data, 1))
 
 
 def test_operator_char():
@@ -68,12 +77,6 @@ def test_wrong_type_value_error():
 
     values = list(DictSearch().dict_search({"df": pd.DataFrame()}, {"df": {"$gt": pd.DataFrame()}}))
     assert not values
-    # values = list(DictSearch().dict_search({"df": pd.DataFrame()}, {"df": {"$gt": pd.DataFrame()}}))
-    # assert not values
-    # values = list(DictSearch().dict_search({"df": [pd.DataFrame()]}, {"df": {"$gt": pd.DataFrame()}}))
-    # assert not values
-    # values = list(DictSearch().dict_search({"df": [pd.DataFrame()]}, {"df": {"$gt": pd.DataFrame()}}))
-    # assert not values
 
 
 def test_search_else_branch():

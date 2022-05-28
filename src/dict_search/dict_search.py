@@ -232,7 +232,9 @@ class DictSearch:
         original_data = copy.deepcopy(data) if not original_data else original_data
         if isinstance(selection_dict, dict) and data:
             for key, val in selection_dict.items():
-                if key in self.array_selectors:
+                if key == self.as_where:
+                    self._operator_sel_where()
+                elif key in [self.as_index, self.as_range]:
                     self._from_array_selector(key, data, val, selected_dict, prev_keys, original_data)
                 elif val in self.selection_operators:
                     prev_keys.append(key)
@@ -251,9 +253,8 @@ class DictSearch:
         except AttributeError:
             raise exceptions.ArraySelectorFormatException(operator_type)
         operator_map = {
-            self.as_index: self._operator_index_select,
-            self.as_range: self._operator_range_select,
-            self.as_where: self._operator_where_select,
+            self.as_index: self._operator_sel_index,
+            self.as_range: self._operator_sel_range,
         }
         if search_value in self.selection_operators:
             try:
@@ -275,7 +276,7 @@ class DictSearch:
                 selected_values.append(selected_val)
             utils.set_from_list(selected_dict, prev_keys, selected_values)
 
-    def _operator_index_select(self, data, index, select_op):
+    def _operator_sel_index(self, data, index, select_op):
         if select_op == self.sel_include:
             return copy.deepcopy(data)[int(index)]
         elif select_op == self.sel_exclude:
@@ -283,7 +284,7 @@ class DictSearch:
             data_copy.pop(int(index))
             return data_copy
 
-    def _operator_range_select(self, data, range_str, select_op):
+    def _operator_sel_range(self, data, range_str, select_op):
         if select_op == self.sel_include:
             return self._operator_range(data, range_str)
         elif select_op == self.sel_exclude:
@@ -293,7 +294,7 @@ class DictSearch:
             exec(f"del data[{range_str}]", {"data": data_copy})
             return data_copy
 
-    def _operator_where_select(self):
+    def _operator_sel_where(self):
         pass
 
     def _build_selected_dict(self, key, operator, data, selected_dict, prev_keys, original_data):

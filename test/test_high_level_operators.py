@@ -1,6 +1,14 @@
+from pytest import raises as pytest_raises
+
 from src.dict_search.dict_search import DictSearch
+from src.dict_search import exceptions
 
 from . import data
+
+
+def test_high_level_operator_exception():
+    with pytest_raises(exceptions.HighLevelOperatorIteratorError):
+        list(DictSearch().dict_search(data.data, {"$and": {"assets": {"non_cur": {"$lt": 3922}}}}))
 
 
 def test_and():

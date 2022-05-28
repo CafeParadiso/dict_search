@@ -1,11 +1,24 @@
 from pprint import pprint
 
+from pytest import raises as pytest_raises
+
 from src.dict_search.dict_search import DictSearch
+from src.dict_search import exceptions
 
 from . import data
 
 
 # TODO test with data being a generator
+
+
+def test_array_selector_exception():
+    with pytest_raises(exceptions.ArraySelectorFormatException):
+        list(
+            DictSearch().dict_search(
+                data.complex_data,
+                {"posts": {"$index": 1}},
+            )
+        )
 
 
 def test_index():
@@ -145,3 +158,35 @@ def test_where_empty():
         )
     )
     assert len(results) == 1
+
+
+def test_where_malformed_exceptions():
+    with pytest_raises(exceptions.PreconditionError):
+        values = list(
+                DictSearch().dict_search(
+                    data.student_data,
+                    {"info": {"mentions": {"$where": [1, 2]}}},
+                )
+            )
+        pprint(values)
+
+
+def test_where_malfored():
+    values = list(
+            DictSearch().dict_search(
+                data.student_data,
+                {"info": {"mentions": {"$where": [{}, 1]}}},
+            )
+        )
+    assert not values
+
+
+def test_where_exception():
+    with pytest_raises(exceptions.WhereOperatorError):
+        list(
+            DictSearch().dict_search(
+                data.student_data,
+                {"info": {"mentions": {"$where": {"a": 1}}}},
+            )
+        )
+
