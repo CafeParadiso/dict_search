@@ -1,0 +1,129 @@
+{
+    "id": 8,
+    "status": "Delivered",
+    "date": "2022-03-28 00:00:00",
+    "customer": {
+        "first": "Fat",
+        "last": "Soulja"
+    },
+    "info": {
+        "origin": "Peru",
+        "desination": "Zimbawe",
+        "suspicious": false,
+        "bulk": {
+            "w": 143,
+            "h": 386
+        }
+    },
+    "order": {
+        "products": [
+            {
+                "product": "Cars",
+                "types": [],
+                "due": "2022-05-05 00:00:00"
+            },
+            {
+                "product": "Furnitures",
+                "types": [
+                    {
+                        "type": "B",
+                        "qtty": 10,
+                        "price": 86
+                    },
+                    {
+                        "type": "A",
+                        "qtty": 16,
+                        "price": 32
+                    },
+                    {
+                        "type": "B",
+                        "qtty": 11,
+                        "price": 898
+                    }
+                ],
+                "uuid": "065c3f9d-529b-4300-9738-51c2c5db645f"
+            },
+            {
+                "product": "Coffe",
+                "types": [
+                    {
+                        "type": "B",
+                        "qtty": 10,
+                        "price": 699
+                    },
+                    {
+                        "type": "C",
+                        "qtty": 13,
+                        "price": 103
+                    },
+                    {
+                        "type": "C",
+                        "qtty": 3,
+                        "price": 646
+                    },
+                    {
+                        "type": "C",
+                        "qtty": 7,
+                        "price": 350
+                    },
+                    {
+                        "type": "A",
+                        "qtty": 10,
+                        "price": 5
+                    }
+                ],
+                "uuid": "308d1e0f-95f3-42f8-9ae6-7178ae718de5"
+            },
+            {
+                "product": "Sugar",
+                "types": [
+                    {
+                        "type": "C",
+                        "qtty": 9,
+                        "price": 189
+                    },
+                    {
+                        "type": "A",
+                        "qtty": 17,
+                        "price": 843
+                    },
+                    {
+                        "type": "A",
+                        "qtty": 11,
+                        "price": 201
+                    },
+                    {
+                        "type": "B",
+                        "qtty": 5,
+                        "price": 53
+                    },
+                    {
+                        "type": "C",
+                        "qtty": 17,
+                        "price": 750
+                    }
+                ]
+            }
+        ],
+        "incoterms": "CIP",
+        "paid": "NO"
+    },
+    "taxes": [
+        {
+            "type": "Exp_tariff",
+            "value": 10
+        },
+        {
+            "type": "Bribe",
+            "value": 35
+        },
+        {
+            "type": "Special Tax",
+            "value": 9
+        },
+        {
+            "type": "Imp_tariff",
+            "value": 10
+        }
+    ]
+}

@@ -1,0 +1,54 @@
+{
+    "id": 1,
+    "status": "Delivered",
+    "date": "2022-01-22 00:00:00",
+    "customer": {
+        "first": "Snoop",
+        "last": "Mike"
+    },
+    "info": {
+        "origin": "Zimbawe",
+        "desination": "Albania",
+        "suspicious": true,
+        "bulk": "179x470"
+    },
+    "order": {
+        "products": [
+            {
+                "product": "Guns",
+                "types": [
+                    {
+                        "type": "C",
+                        "qtty": 16,
+                        "price": 627
+                    }
+                ],
+                "due": "2022-10-04 00:00:00"
+            }
+        ],
+        "icoterms": "DPU",
+        "paid": "No"
+    },
+    "taxes": [
+        {
+            "type": "Bribe",
+            "value": 4
+        },
+        {
+            "type": "Special Tax",
+            "value": 31
+        },
+        {
+            "type": "Imp_tariff",
+            "value": 10
+        },
+        {
+            "type": "Exp_tariff",
+            "value": 10
+        },
+        {
+            "type": "VAT",
+            "value": 16
+        }
+    ]
+}

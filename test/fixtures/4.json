@@ -1,0 +1,100 @@
+{
+    "id": 4,
+    "status": "Preparing",
+    "date": "2022-02-09 00:00:00",
+    "customer": {
+        "first": "Montana",
+        "last": "Soulja"
+    },
+    "info": {
+        "origin": "Spain",
+        "desination": "Peru",
+        "suspicious": true,
+        "bulk": [
+            500,
+            286
+        ]
+    },
+    "order": {
+        "products": [
+            {
+                "product": "Cars",
+                "types": [],
+                "due": "2022-06-06 00:00:00"
+            },
+            {
+                "product": "Wooden",
+                "types": [
+                    {
+                        "type": "B",
+                        "qtty": 20,
+                        "price": 11
+                    }
+                ],
+                "due": "2022-07-13 00:00:00"
+            },
+            {
+                "product": "Guns",
+                "types": [
+                    {
+                        "type": "C",
+                        "qtty": 11,
+                        "price": 455
+                    },
+                    {
+                        "type": "B",
+                        "qtty": 16,
+                        "price": 909
+                    }
+                ],
+                "uuid": "b9e0b9e5-a4fd-443c-9408-6c84dfe4b662"
+            },
+            {
+                "product": "Cement",
+                "types": [
+                    {
+                        "type": "A",
+                        "qtty": 18,
+                        "price": 801
+                    },
+                    {
+                        "type": "B",
+                        "qtty": 10,
+                        "price": 338
+                    },
+                    {
+                        "type": "C",
+                        "qtty": 16,
+                        "price": 424
+                    },
+                    {
+                        "type": "B",
+                        "qtty": 4,
+                        "price": 671
+                    },
+                    {
+                        "type": "C",
+                        "qtty": 12,
+                        "price": 81
+                    }
+                ]
+            }
+        ],
+        "incoterms": "CIP",
+        "paid": "N"
+    },
+    "taxes": [
+        {
+            "type": "VAT",
+            "value": 15
+        },
+        {
+            "type": "Imp_tariff",
+            "value": 10
+        },
+        {
+            "type": "Special Tax",
+            "value": 1
+        }
+    ]
+}

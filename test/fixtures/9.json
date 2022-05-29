@@ -1,0 +1,69 @@
+{
+    "id": 9,
+    "status": "Stall",
+    "date": "2022-01-03 00:00:00",
+    "customer": {
+        "first": "Montana",
+        "last": "Mike"
+    },
+    "info": {
+        "origin": "Italy",
+        "desination": "Zimbawe",
+        "suspicious": false,
+        "bulk": "337x324"
+    },
+    "order": {
+        "products": [
+            {
+                "product": "Furnitures",
+                "types": [
+                    {
+                        "type": "C",
+                        "qtty": 16,
+                        "price": 396
+                    },
+                    {
+                        "type": "C",
+                        "qtty": 6,
+                        "price": 108
+                    },
+                    {
+                        "type": "C",
+                        "qtty": 18,
+                        "price": 67
+                    },
+                    {
+                        "type": "C",
+                        "qtty": 9,
+                        "price": 819
+                    }
+                ],
+                "uuid": "ffc9a50d-01d2-41e7-b1c0-b5b2e53519c9"
+            }
+        ],
+        "iterms": "EXWFCA",
+        "paid": "Y"
+    },
+    "taxes": [
+        {
+            "type": "Bribe",
+            "value": 43
+        },
+        {
+            "type": "VAT",
+            "value": 7
+        },
+        {
+            "type": "Imp_tariff",
+            "value": 10
+        },
+        {
+            "type": "Special Tax",
+            "value": 7
+        },
+        {
+            "type": "Exp_tariff",
+            "value": 10
+        }
+    ]
+}

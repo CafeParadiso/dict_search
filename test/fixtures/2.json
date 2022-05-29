@@ -1,0 +1,167 @@
+{
+    "id": 2,
+    "status": "Preparing",
+    "date": "2022-02-18 00:00:00",
+    "customer": {
+        "first": "Jones",
+        "last": "Fat"
+    },
+    "info": {
+        "origin": "Russia",
+        "desination": "Sudan",
+        "suspicious": false,
+        "bulk": {
+            "w": 201,
+            "h": 439
+        }
+    },
+    "order": {
+        "products": [
+            {
+                "product": "Oil",
+                "types": [
+                    {
+                        "type": "C",
+                        "qtty": 6,
+                        "price": 980
+                    },
+                    {
+                        "type": "B",
+                        "qtty": 4,
+                        "price": 152
+                    }
+                ],
+                "due": "2022-02-21 00:00:00"
+            },
+            {
+                "product": "Sugar",
+                "types": [],
+                "uuid": "e1597558-8539-4be3-ac89-b322719cdfc1"
+            },
+            {
+                "product": "Wooden",
+                "types": [
+                    {
+                        "type": "B",
+                        "qtty": 18,
+                        "price": 598
+                    },
+                    {
+                        "type": "B",
+                        "qtty": 14,
+                        "price": 109
+                    },
+                    {
+                        "type": "B",
+                        "qtty": 10,
+                        "price": 498
+                    }
+                ],
+                "due": "2022-10-02 00:00:00"
+            },
+            {
+                "product": "Coffe",
+                "types": [
+                    {
+                        "type": "B",
+                        "qtty": 12,
+                        "price": 409
+                    },
+                    {
+                        "type": "A",
+                        "qtty": 5,
+                        "price": 125
+                    }
+                ],
+                "uuid": "6d227988-3f8a-4a32-98c3-b29899e4f956"
+            },
+            {
+                "product": "Guns",
+                "types": [
+                    {
+                        "type": "C",
+                        "qtty": 1,
+                        "price": 557
+                    },
+                    {
+                        "type": "A",
+                        "qtty": 20,
+                        "price": 811
+                    },
+                    {
+                        "type": "C",
+                        "qtty": 8,
+                        "price": 763
+                    },
+                    {
+                        "type": "A",
+                        "qtty": 9,
+                        "price": 133
+                    }
+                ],
+                "due": "2022-10-04 00:00:00"
+            },
+            {
+                "product": "Wooden",
+                "types": [
+                    {
+                        "type": "A",
+                        "qtty": 4,
+                        "price": 18
+                    },
+                    {
+                        "type": "A",
+                        "qtty": 8,
+                        "price": 639
+                    },
+                    {
+                        "type": "B",
+                        "qtty": 1,
+                        "price": 363
+                    },
+                    {
+                        "type": "C",
+                        "qtty": 3,
+                        "price": 431
+                    },
+                    {
+                        "type": "C",
+                        "qtty": 6,
+                        "price": 482
+                    }
+                ],
+                "due": "2022-08-14 00:00:00"
+            },
+            {
+                "product": "Iron",
+                "types": [
+                    {
+                        "type": "A",
+                        "qtty": 13,
+                        "price": 156
+                    }
+                ]
+            }
+        ],
+        "terms": "DPU",
+        "paid": "YES"
+    },
+    "taxes": [
+        {
+            "type": "Special Tax",
+            "value": 30
+        },
+        {
+            "type": "Bribe",
+            "value": 15
+        },
+        {
+            "type": "Imp_tariff",
+            "value": 10
+        },
+        {
+            "type": "Exp_tariff",
+            "value": 10
+        }
+    ]
+}

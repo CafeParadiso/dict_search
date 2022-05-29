@@ -1,8 +1,12 @@
 import datetime
 import json
-from pprint import pprint
+from os import path
+from os import listdir
 import random
+import re
+import uuid
 
+from pprint import pprint
 
 data = [
     {
@@ -422,79 +426,110 @@ class CursedData:
         raise ValueError("The truth value is ambiguous")
 
 
-def build_simple_data():
-    name = ["mdb", "akam", "goog", "appl", "msft", "gld", "ibm", "tsm", "asml", "estc", "gm"]
-    for _ in range(8):
-        d = {
-            "name": random.choice(name),
-            "assets": {
-                "curr": {
-                    "a": random.randrange(0, 2),
-                    "b": random.randrange(0, 2),
-                },
-                "non_cur": random.randrange(1000, 5000),
-            },
-            "liab": {
-                "cur": random.randrange(1000, 5000),
-                "non_cur": {
-                    "a": random.randrange(2000, 20000),
-                },
-            },
-            "fy": random.randrange(2010, 2015),
-            "special": [random.random() for _ in range(random.randrange(2, 6))]
-            if random.random() > 0.5
-            else random.choice([True, False]),
-        }
-        pprint(d)
-
-
-def build_complex_data():
-    name = ["mdb", "akam", "goog", "appl", "msft", "gld", "ibm", "tsm", "asml", "estc", "gm", "aaoi", "akam"]
-    values = []
-    for _ in range(8):
-        d = {
-            "id": _,
-            "posts": [
-                {
-                    "post_id": idx,
-                    "text": random.choice(name),
-                    "interacted": [
-                        {
-                            "type": random.choice(["share", "post", "keep"]),
-                            "date": datetime.datetime(2022, 1, random.randint(1, 31)),
-                        }
-                        for i in range(random.randint(1, 5))
-                    ],
-                }
-                for idx in range(random.randint(1, 5))
-            ],
-            "user": {"id": hash(random.choice(name)) % random.randint(1, 1000)},
-            "values": [random.random() + random.randint(-1, 1) for x in range(random.randint(2, 5))],
-        }
-
-        values.append(d)
-    pprint(values)
-
-
-def build_student_data(vals):
-    stats = ["graduated", "graduating", "expelled"]
-    subs = ["Maths", "English", "Sports", "Chemistry", "Spanish", "Music"]
+def build_transactions(vals):
+    status = ["Delivered", "Delivering", "Preparing", "Stall"]
+    products = ["Furnitures", "Cars", "Iron", "Guns", "Sugar", "Wooden", "Grain", "Coffe", "Oil", "Chips", "Cement"]
     names = ["Snoop", "BigL", "Gucc", "Lex", "Southside", "Fat", "Mike", "Joe", "Dogg", "Jones", "Montana", "Soulja"]
-    mentions = ["passive", "active", "angry", "eloquent"]
+    countries = ["Spain", "Italy", "Sudan", "USA", "Zimbawe", "Indonesia", "Peru", "Haiti", "Russia", "Albania"]
+    incoterms = ["EXW" "FCA", "CPT", "CIP", "DAP", "DPU", "DDP"]
+
     for _ in range(vals):
-        pprint(
-            {
+        taxes = [
+            {"type": "VAT", "value": random.randint(5, 20)},
+            {"type": "Exp_tariff", "value": 10},
+            {"type": "Imp_tariff", "value": 10},
+            {"type": "Special Tax", "value": random.randint(1, 50)},
+            {"type": "Bribe", "value": random.randint(0, 50)},
+        ]
+        random.shuffle(taxes)
+        document = {
                 "id": _,
-                "status": random.choice(stats),
-                "subjects": random.sample(subs, random.randint(2, 4)),
+                "status": random.choice(status),
+                "date": datetime.datetime(2022, random.randint(1, 12), random.randint(1, 28)),
+                "customer": {"first": random.choice(names), "last": random.choice(names)},
                 "info": {
-                    "full_name": {"first": random.choice(names), "last": random.choice(names)},
-                    "w": random.randint(55, 130),
-                    "h": random.randint(150, 210),
-                    "mentions": [
-                        {"type": random.choice(mentions), "score": random.randint(1, 10)}
-                        for _ in range(random.randint(1, 5))
-                    ],
+                    "origin": random.choice(countries),
+                    "desination": random.choice(countries),
+                    "suspicious": random.choice([True, False, CursedData()]),
+                    "bulk": random.choice(
+                        [
+                            f"{random.randint(100, 500)}x{random.randint(100, 500)}",
+                            [random.randint(100, 500), random.randint(100, 500)],
+                            {"w": random.randint(100, 500), "h": random.randint(100, 500)},
+                        ]
+                    ),
                 },
+                "order": {
+                    "products": [
+                        random.choice(
+                            [
+                                {
+                                    "product": random.choice(products),
+                                    "types": [
+                                        {
+                                            "type": random.choice(["A", "B", "C"]),
+                                            "qtty": random.randint(1, 20),
+                                            "price": random.randint(1, 1000),
+                                        }
+                                        for _ in range(random.randint(0, 5))
+                                    ],
+                                },
+                                {
+                                    "product": random.choice(products),
+                                    "types": [
+                                        {
+                                            "type": random.choice(["A", "B", "C"]),
+                                            "qtty": random.randint(1, 20),
+                                            "price": random.randint(1, 1000),
+                                        }
+                                        for _ in range(random.randint(0, 5))
+                                    ],
+                                    "due": datetime.datetime(2022, random.randint(1, 12), random.randint(1, 28)),
+                                },
+                                {
+                                    "product": random.choice(products),
+                                    "types": [
+                                        {
+                                            "type": random.choice(["A", "B", "C"]),
+                                            "qtty": random.randint(1, 20),
+                                            "price": random.randint(1, 1000),
+                                        }
+                                        for _ in range(random.randint(0, 5))
+                                    ],
+                                    "uuid": uuid.uuid4(),
+                                },
+                            ]
+                        )
+                        for _ in range(random.randint(1, 9))
+                    ],
+                    random.choice(
+                        ["Inco", "incoterms", "terms", "INCO", "ITerms", "iterms", "icoterms", "Terms"]
+                    ): random.choice(incoterms),
+                    "paid": random.choice(["Y", "y", "yes", "YES", "N", "n", "No", "NO"]),
+                },
+                "taxes": taxes[: random.randint(1, 5)],
             }
-        )
+        with open(path.join("fixtures", f"{_}.json"), "w") as file:
+            json.dump(document, file, indent=4, default=str)
+
+
+def custom_decoder(dikt):
+    pattern = re.compile(r"(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})")
+    for k in dikt:
+        if isinstance(dikt[k], str) and "__main__.CursedData" in dikt[k]:
+            dikt[k] = CursedData()
+        elif isinstance(dikt[k], str) and pattern.match(dikt[k]):
+            groups = pattern.match(dikt[k]).groups()
+            dikt[k] = datetime.datetime(int(groups[0]), int(groups[1]), int(groups[2]))
+    return dikt
+
+
+def read_fixtures():
+    directory = path.join(path.dirname(__file__), "fixtures")
+    for file in listdir(directory):
+        with open(path.join(directory, file), "r") as fp:
+            yield json.load(fp, object_hook=custom_decoder)
+
+
+if __name__ == "__main__":
+    read_fixtures()

@@ -1,0 +1,192 @@
+{
+    "id": 0,
+    "status": "Preparing",
+    "date": "2022-05-26 00:00:00",
+    "customer": {
+        "first": "Jones",
+        "last": "Fat"
+    },
+    "info": {
+        "origin": "Indonesia",
+        "desination": "Spain",
+        "suspicious": "<__main__.CursedData object at 0x00000238CD77B1C0>",
+        "bulk": [
+            221,
+            290
+        ]
+    },
+    "order": {
+        "products": [
+            {
+                "product": "Cement",
+                "types": [
+                    {
+                        "type": "B",
+                        "qtty": 15,
+                        "price": 370
+                    }
+                ],
+                "due": "2022-05-16 00:00:00"
+            },
+            {
+                "product": "Oil",
+                "types": [
+                    {
+                        "type": "A",
+                        "qtty": 13,
+                        "price": 775
+                    }
+                ]
+            },
+            {
+                "product": "Coffe",
+                "types": [
+                    {
+                        "type": "C",
+                        "qtty": 10,
+                        "price": 761
+                    }
+                ],
+                "uuid": "c6d97033-9cb3-4806-a8f7-0010d5b4b13d"
+            },
+            {
+                "product": "Wooden",
+                "types": [
+                    {
+                        "type": "B",
+                        "qtty": 14,
+                        "price": 931
+                    },
+                    {
+                        "type": "B",
+                        "qtty": 16,
+                        "price": 464
+                    },
+                    {
+                        "type": "A",
+                        "qtty": 11,
+                        "price": 814
+                    }
+                ],
+                "uuid": "0c104e04-c9bf-44ee-bb01-b29ef2dc184a"
+            },
+            {
+                "product": "Grain",
+                "types": [
+                    {
+                        "type": "B",
+                        "qtty": 13,
+                        "price": 743
+                    },
+                    {
+                        "type": "C",
+                        "qtty": 5,
+                        "price": 125
+                    },
+                    {
+                        "type": "A",
+                        "qtty": 1,
+                        "price": 648
+                    },
+                    {
+                        "type": "B",
+                        "qtty": 9,
+                        "price": 138
+                    }
+                ],
+                "uuid": "c57dc61b-6186-45db-a19a-e2773477be14"
+            },
+            {
+                "product": "Furnitures",
+                "types": [
+                    {
+                        "type": "A",
+                        "qtty": 15,
+                        "price": 492
+                    },
+                    {
+                        "type": "A",
+                        "qtty": 7,
+                        "price": 540
+                    },
+                    {
+                        "type": "A",
+                        "qtty": 15,
+                        "price": 297
+                    }
+                ]
+            },
+            {
+                "product": "Wooden",
+                "types": [
+                    {
+                        "type": "B",
+                        "qtty": 11,
+                        "price": 68
+                    },
+                    {
+                        "type": "B",
+                        "qtty": 14,
+                        "price": 123
+                    },
+                    {
+                        "type": "C",
+                        "qtty": 2,
+                        "price": 555
+                    }
+                ],
+                "uuid": "5ba6d445-0c04-43ba-b79c-aa41f87d4e03"
+            },
+            {
+                "product": "Cars",
+                "types": [
+                    {
+                        "type": "C",
+                        "qtty": 1,
+                        "price": 456
+                    }
+                ]
+            },
+            {
+                "product": "Iron",
+                "types": [
+                    {
+                        "type": "B",
+                        "qtty": 12,
+                        "price": 649
+                    },
+                    {
+                        "type": "A",
+                        "qtty": 13,
+                        "price": 720
+                    },
+                    {
+                        "type": "B",
+                        "qtty": 19,
+                        "price": 333
+                    }
+                ]
+            }
+        ],
+        "terms": "CPT",
+        "paid": "No"
+    },
+    "taxes": [
+        {
+            "type": "Special Tax",
+            "value": 46
+        },
+        {
+            "type": "Bribe",
+            "value": 15
+        },
+        {
+            "type": "VAT",
+            "value": 7
+        },
+        {
+            "type": "Exp_tariff",
+            "value": 10
+        }
+    ]
+}

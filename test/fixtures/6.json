@@ -1,0 +1,110 @@
+{
+    "id": 6,
+    "status": "Delivered",
+    "date": "2022-09-23 00:00:00",
+    "customer": {
+        "first": "Southside",
+        "last": "Jones"
+    },
+    "info": {
+        "origin": "Indonesia",
+        "desination": "Sudan",
+        "suspicious": true,
+        "bulk": {
+            "w": 187,
+            "h": 392
+        }
+    },
+    "order": {
+        "products": [
+            {
+                "product": "Cars",
+                "types": [
+                    {
+                        "type": "B",
+                        "qtty": 18,
+                        "price": 697
+                    },
+                    {
+                        "type": "A",
+                        "qtty": 3,
+                        "price": 995
+                    }
+                ],
+                "uuid": "db9aaaf7-2074-4d88-80c4-64299acf69c2"
+            },
+            {
+                "product": "Wooden",
+                "types": [
+                    {
+                        "type": "C",
+                        "qtty": 13,
+                        "price": 555
+                    },
+                    {
+                        "type": "C",
+                        "qtty": 18,
+                        "price": 731
+                    },
+                    {
+                        "type": "B",
+                        "qtty": 12,
+                        "price": 997
+                    },
+                    {
+                        "type": "C",
+                        "qtty": 9,
+                        "price": 47
+                    }
+                ],
+                "uuid": "1a2fc327-8e16-4073-9db3-e1d28db8a645"
+            },
+            {
+                "product": "Wooden",
+                "types": [
+                    {
+                        "type": "C",
+                        "qtty": 8,
+                        "price": 148
+                    },
+                    {
+                        "type": "C",
+                        "qtty": 13,
+                        "price": 302
+                    },
+                    {
+                        "type": "B",
+                        "qtty": 3,
+                        "price": 501
+                    },
+                    {
+                        "type": "A",
+                        "qtty": 8,
+                        "price": 25
+                    }
+                ],
+                "uuid": "a82ef821-3929-49a1-8d93-50245e9a2534"
+            }
+        ],
+        "INCO": "EXWFCA",
+        "paid": "n"
+    },
+    "taxes": [
+        {
+            "type": "Bribe",
+            "value": 9
+        },
+        {
+            "type": "VAT",
+            "value": 14
+        },
+        {
+            "type": "Special Tax",
+            "value": 45
+        },
+        {
+            "type": "Imp_tariff",
+            "value": 10
+        }
+    ]
+}

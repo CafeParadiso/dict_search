@@ -1,7 +1,6 @@
 import copy
 import re
 
-from . import constants
 from . import exceptions
 from . import utils
 from pprint import pprint
@@ -233,7 +232,7 @@ class DictSearch:
         if isinstance(selection_dict, dict) and data:
             for key, val in selection_dict.items():
                 if key == self.as_where:
-                    self._operator_sel_where()
+                    self._operator_sel_where(key, data, val, selected_dict, prev_keys)
                 elif key in [self.as_index, self.as_range]:
                     self._from_array_selector(key, data, val, selected_dict, prev_keys, original_data)
                 elif val in self.selection_operators:
@@ -294,8 +293,12 @@ class DictSearch:
             exec(f"del data[{range_str}]", {"data": data_copy})
             return data_copy
 
-    def _operator_sel_where(self):
-        pass
+    def _operator_sel_where(self, select_op, *args):
+
+        if select_op == self.sel_include:
+            pass
+        elif select_op == self.sel_exclude:
+            pass
 
     def _build_selected_dict(self, key, operator, data, selected_dict, prev_keys, original_data):
         if operator == self._forbid:

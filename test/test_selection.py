@@ -209,6 +209,19 @@ def test_range_exclude():
     pprint(values)
 
 
+def test_range_exclude_nested():
+    values = list(
+        DictSearch().dict_search(
+            [
+                {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "damn"}, {"b": 1, "c": "skate"}]}},
+                {"a": {"b": [{"b": 2, "c": "ok"}, {"b": 3, "c": "food"}, {"b": 4, "c": "sneeze "}]}},
+            ],
+            select_dict={"a": {"b": {"$range": {":2": {"c": 0}}}}},
+        )
+    )
+    pprint(values)
+
+
 def test_range_include():
     values = list(
         DictSearch().dict_search(
@@ -229,6 +242,17 @@ def test_range_include_nested():
                 {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "damn"}, {"b": 1, "c": "skate"}]}},
                 {"a": {"b": [{"b": 2, "c": "ok"}, {"b": 3, "c": "food"}, {"b": 4, "c": "sneeze "}]}},
             ],
+            select_dict={"id": 1}
+            #select_dict={"a": {"b": {"$range": {":1": {"c": 1}}}}},
+        )
+    )
+    pprint(values)
+
+
+def test_where_included():
+    values = list(
+        DictSearch().dict_search(
+            data.read_fixtures(),
             select_dict={"a": {"b": {"$range": {":1": {"c": 1}}}}},
         )
     )

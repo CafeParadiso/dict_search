@@ -1,0 +1,50 @@
+{
+    "id": 7,
+    "status": "Stall",
+    "date": "2022-01-01 00:00:00",
+    "customer": {
+        "first": "Soulja",
+        "last": "Gucc"
+    },
+    "info": {
+        "origin": "Zimbawe",
+        "desination": "Italy",
+        "suspicious": true,
+        "bulk": [
+            351,
+            471
+        ]
+    },
+    "order": {
+        "products": [
+            {
+                "product": "Cars",
+                "types": [],
+                "uuid": "246e338f-ffa8-486f-977e-8814e1f26338"
+            },
+            {
+                "product": "Wooden",
+                "types": [
+                    {
+                        "type": "A",
+                        "qtty": 9,
+                        "price": 581
+                    }
+                ]
+            },
+            {
+                "product": "Iron",
+                "types": [],
+                "due": "2022-03-14 00:00:00"
+            }
+        ],
+        "terms": "EXWFCA",
+        "paid": "yes"
+    },
+    "taxes": [
+        {
+            "type": "Imp_tariff",
+            "value": 10
+        }
+    ]
+}
