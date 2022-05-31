@@ -196,6 +196,19 @@ def test_select_index_include_error():
     pprint(values)
 
 
+def test_range_malformed():
+    values = list(
+        DictSearch().dict_search(
+            [
+                {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "damn"}, {"b": 1, "c": "skate"}]}},
+                {"a": {"b": [{"b": 2, "c": "ok"}, {"b": 3, "c": "food"}, {"b": 4, "c": "sneeze "}]}},
+            ],
+            select_dict={"a": {"b": {"$range": {complex(2, 3): 0}}}},
+        )
+    )
+    pprint(values)
+
+
 def test_range_exclude():
     values = list(
         DictSearch().dict_search(
@@ -242,8 +255,7 @@ def test_range_include_nested():
                 {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "damn"}, {"b": 1, "c": "skate"}]}},
                 {"a": {"b": [{"b": 2, "c": "ok"}, {"b": 3, "c": "food"}, {"b": 4, "c": "sneeze "}]}},
             ],
-            select_dict={"id": 1}
-            #select_dict={"a": {"b": {"$range": {":1": {"c": 1}}}}},
+            select_dict={"a": {"b": {"$range": {":1": {"c": 1}}}}},
         )
     )
     pprint(values)
@@ -253,7 +265,84 @@ def test_where_included():
     values = list(
         DictSearch().dict_search(
             data.read_fixtures(),
-            select_dict={"a": {"b": {"$range": {":1": {"c": 1}}}}},
+            {"order": {"products": {"$any": {"product": "Cement"}}}},
+            select_dict={"order": {"products": {"$where": [{"product": "Cement"}, 1]}}}
+        )
+    )
+    pprint(values)
+
+
+def test_where_included_nested():
+    values = list(
+        DictSearch().dict_search(
+            data.read_fixtures(),
+            {"order": {"products": {"$any": {"product": "Wooden"}}}},
+            select_dict={"order": {"products": {"$where": [{"product": "Wooden"}, {"type": 1, "product": 1}]}}, "id": 1}
+        )
+    )
+    pprint(values)
+
+
+def test_where_excluded():
+    values = list(
+        DictSearch().dict_search(
+            data.read_fixtures(),
+            {"order": {"products": {"$any": {"product": "Cement"}}}},
+            select_dict={
+                "order": {"products": {"$where": [{"product": "Cement"}, 0]}},
+            }
+        )
+    )
+    pprint(values)
+
+
+def test_where_excluded_nested():
+    values = list(
+        DictSearch().dict_search(
+            data.read_fixtures(),
+            {"order": {"products": {"$any": {"product": "Cement"}}}},
+            select_dict={
+                "order": {"products": {"$where": [{"product": "Cement"}, {"types": 0}]}}, "info": 0,
+            }
+        )
+    )
+    pprint(values)
+
+
+def test_include_array():
+    values = list(
+        DictSearch().dict_search(
+            data.read_fixtures(),
+            {"order": {"products": {"$any": {"product": "Cement"}}}},
+            select_dict={
+                "order": {"products": {"types": {"price": 1}}}, "id": 1,
+            }
+        )
+    )
+    pprint(values)
+
+
+def test_exclude_array():
+    values = list(
+        DictSearch().dict_search(
+            data.read_fixtures(),
+            {"order": {"products": {"$any": {"product": "Cement"}}}},
+            select_dict={
+                "order": {"products": {"types": 0}}, "info": 0
+            }
+        )
+    )
+    pprint(values)
+
+
+def test_wrong_key():
+    values = list(
+        DictSearch().dict_search(
+            data.read_fixtures(),
+            {"order": {"products": {"$any": {"product": "Cement"}}}},
+            select_dict={
+                "order": "akak"
+            }
         )
     )
     pprint(values)

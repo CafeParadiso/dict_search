@@ -58,7 +58,6 @@ def shortcircuit_counter(generator, check, counter, eager_check, eager_value):
 
 
 def set_from_list(dikt, keys, val):
-    """recursively traverse list of keys, create nested dict (dikt) and set val"""
     if len(keys) == 1:
         dikt[keys[0]] = val
         return dikt
