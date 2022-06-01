@@ -36,17 +36,6 @@ def israngestr(range_str):
     return True
 
 
-def compare(data, search_value):
-    # TODO refactor to class + add expected exceptions
-    """Object like pandas.Dataframe will raise a value error when checking its truthness"""
-    try:
-        if data == search_value:
-            return True
-        return False
-    except ValueError:
-        return False
-
-
 def shortcircuit_counter(generator, check, counter, eager_check, eager_value):
     matches = 0
     for match in generator:

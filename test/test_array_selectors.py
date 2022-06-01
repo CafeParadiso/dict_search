@@ -8,7 +8,7 @@ from src.dict_search import exceptions
 from . import data
 
 
-# TODO test with data being a generator
+# TODO test data as generator
 
 
 def test_array_selector_exception():

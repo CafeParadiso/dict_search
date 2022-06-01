@@ -7,8 +7,10 @@ from pprint import pprint
 
 
 class DictSearch:
-    def __init__(self, operator_str=None):
-        self.operator_char = operator_str if isinstance(operator_str, str) else None or "$"
+    def __init__(self, operator_str=None, expected_exceptions=None, exc_truth_value=False):
+        self.operator_char = operator_str if isinstance(operator_str, str) else "$"
+        self._truthness_exceptions = expected_exceptions
+        self._exc_truth_value = exc_truth_value
 
         # matching operators
         self.lop_ne = f"{self.operator_char}ne"
@@ -86,11 +88,21 @@ class DictSearch:
                 elif all(isinstance(obj, dict) for obj in [value, data]):
                     yield from self._search(data.get(key), value)
                 elif isinstance(data, dict):
-                    yield utils.compare(data.get(key), value)
+                    yield self._compare(data.get(key), value)
                 else:
                     yield False
         else:
-            yield utils.compare(data, match_dict)
+            yield self._compare(data, match_dict)
+
+    def _compare(self, data, comparison):
+        try:
+            if data == comparison:
+                return True
+            return False
+        except self._truthness_exceptions or Exception:
+            if self._truthness_exceptions:
+                return self._exc_truth_value
+            raise
 
     def _low_level_operator(self, operator, value, search_value):
         operation_map = {
@@ -108,15 +120,17 @@ class DictSearch:
             self.lop_expr: lambda val, func: func(val) if isinstance(func(val), bool) else False,
             self.lop_inst: lambda val, search_type: isinstance(val, search_type),
         }
-        # check if objects have implemented __bool__ in order to compare
+        # prematurely check if __bool__ is implemented in order to avoid unexpected errors on all() in dict_search()
         if operator in self._low_level_comparison_operators:
             try:
                 bool(value)
-            except ValueError:  # TODO expected exceptions
-                return False
+            except self._truthness_exceptions or Exception:
+                if not self._truthness_exceptions:
+                    raise
+                return self._exc_truth_value
         try:
             return operation_map[operator](value, search_value)
-        except TypeError:
+        except self._truthness_exceptions or TypeError:
             return False
 
     @staticmethod
@@ -154,12 +168,12 @@ class DictSearch:
     def _operator_all(self, data, search_value):
         if isinstance(search_value, dict):
             return all(match for d_point in data for match in self._search(d_point, search_value))
-        return all(utils.compare(d_point, search_value) for d_point in data)
+        return all(self._compare(d_point, search_value) for d_point in data)
 
     def _operator_any(self, data, search_value):
         if isinstance(search_value, dict):
             return any(match for d_point in data for match in self._search(d_point, search_value))
-        return any(utils.compare(d_point, search_value) for d_point in data)
+        return any(self._compare(d_point, search_value) for d_point in data)
 
     def _match_operators(self, operator, data, search_value):
         try:
@@ -188,7 +202,7 @@ class DictSearch:
                 iter(all([m for m in self._search(data_point, search_value)]) for data_point in data), *default_args
             )
         return utils.shortcircuit_counter(  # match is being used as array operator to compare each value
-            iter(utils.compare(d_point, search_value) for d_point in data), *default_args
+            iter(self._compare(d_point, search_value) for d_point in data), *default_args
         )
 
     def _array_selector(self, operator_type, data, search_value):

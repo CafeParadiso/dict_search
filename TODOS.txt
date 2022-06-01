@@ -1,7 +1,6 @@
 DOING:
 - test select to support array selectors
 TODOS
-- expected_exceptions argument
 - refactor all test names and variables
 - ultimate testing file by file
 - redo test data
@@ -15,7 +14,6 @@ UPCOMING FEATURES
 - $anykey $rekey (regex key)
 - $anyval (use the key over which we are iterating)
 - new low level operator to compare values from within
-- parameter to decide if exception on comparison should return True
 - greedy search
 - turn exceptions into warnings and return false on warning ?
 
