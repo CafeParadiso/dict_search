@@ -1,50 +1,68 @@
 {
     "id": 7,
-    "status": "Stall",
-    "date": "2022-01-01 00:00:00",
-    "customer": {
-        "first": "Soulja",
-        "last": "Gucc"
+    "shipping_date": "2022-06-22 00:00:00",
+    "customer_name": {
+        "first": "Joe",
+        "last": "Montana"
     },
     "info": {
-        "origin": "Zimbawe",
-        "desination": "Italy",
-        "suspicious": true,
-        "bulk": [
-            351,
-            471
+        "origin": "Peru",
+        "desination": "Russia",
+        "suspicious": false,
+        "container": [
+            100,
+            150
         ]
     },
-    "order": {
+    "batch": {
         "products": [
             {
-                "product": "Cars",
-                "types": [],
-                "uuid": "246e338f-ffa8-486f-977e-8814e1f26338"
-            },
-            {
-                "product": "Wooden",
+                "product": "Chips",
                 "types": [
                     {
-                        "type": "A",
-                        "qtty": 9,
-                        "price": 581
+                        "type": "B",
+                        "qtty": 8,
+                        "price": 111
+                    },
+                    {
+                        "type": "C",
+                        "qtty": 16,
+                        "price": 344
                     }
-                ]
-            },
-            {
-                "product": "Iron",
-                "types": [],
-                "due": "2022-03-14 00:00:00"
+                ],
+                "due": "2022-12-16 00:00:00"
             }
         ],
-        "terms": "EXWFCA",
-        "paid": "yes"
+        "wholesale_value": 15306
     },
     "taxes": [
         {
+            "type": "Bribe",
+            "value": 1
+        },
+        {
             "type": "Imp_tariff",
             "value": 10
+        },
+        {
+            "type": "VAT",
+            "value": 9
+        },
+        {
+            "type": "Special Tax",
+            "value": 11
         }
-    ]
+    ],
+    "terms": "DDP",
+    "paid": "NO",
+    "port_route": [
+        "<generator object ports at 0x000001A6AE76D660>",
+        [
+            "Jebel Ali",
+            "Valencia",
+            "Busan",
+            "Shenzen"
+        ]
+    ],
+    "arrival_date": "2022-08-25 00:00:00"
 }

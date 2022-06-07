@@ -1,192 +1,164 @@
 {
     "id": 0,
-    "status": "Preparing",
-    "date": "2022-05-26 00:00:00",
-    "customer": {
-        "first": "Jones",
-        "last": "Fat"
+    "shipping_date": "2022-04-09 00:00:00",
+    "customer_name": {
+        "first": "Dogg",
+        "last": "Joe"
     },
     "info": {
-        "origin": "Indonesia",
-        "desination": "Spain",
-        "suspicious": "<__main__.CursedData object at 0x00000238CD77B1C0>",
-        "bulk": [
-            221,
-            290
+        "origin": "Peru",
+        "desination": "Sudan",
+        "suspicious": "<__main__.CursedData object at 0x000001A6AE772D00>",
+        "container": [
+            250,
+            150
         ]
     },
-    "order": {
+    "batch": {
         "products": [
             {
-                "product": "Cement",
-                "types": [
-                    {
-                        "type": "B",
-                        "qtty": 15,
-                        "price": 370
-                    }
-                ],
-                "due": "2022-05-16 00:00:00"
-            },
-            {
-                "product": "Oil",
-                "types": [
-                    {
-                        "type": "A",
-                        "qtty": 13,
-                        "price": 775
-                    }
-                ]
-            },
-            {
-                "product": "Coffe",
-                "types": [
-                    {
-                        "type": "C",
-                        "qtty": 10,
-                        "price": 761
-                    }
-                ],
-                "uuid": "c6d97033-9cb3-4806-a8f7-0010d5b4b13d"
-            },
-            {
-                "product": "Wooden",
-                "types": [
-                    {
-                        "type": "B",
-                        "qtty": 14,
-                        "price": 931
-                    },
-                    {
-                        "type": "B",
-                        "qtty": 16,
-                        "price": 464
-                    },
-                    {
-                        "type": "A",
-                        "qtty": 11,
-                        "price": 814
-                    }
-                ],
-                "uuid": "0c104e04-c9bf-44ee-bb01-b29ef2dc184a"
+                "product": "Iron",
+                "uuid": "4b59f963-7a59-4207-9e91-1680a5c38184"
             },
             {
                 "product": "Grain",
                 "types": [
                     {
-                        "type": "B",
-                        "qtty": 13,
-                        "price": 743
+                        "type": "C",
+                        "qtty": 6,
+                        "price": 1994
                     },
                     {
                         "type": "C",
-                        "qtty": 5,
-                        "price": 125
+                        "qtty": 19,
+                        "price": 629
                     },
                     {
-                        "type": "A",
-                        "qtty": 1,
-                        "price": 648
-                    },
-                    {
-                        "type": "B",
-                        "qtty": 9,
-                        "price": 138
-                    }
-                ],
-                "uuid": "c57dc61b-6186-45db-a19a-e2773477be14"
-            },
-            {
-                "product": "Furnitures",
-                "types": [
-                    {
-                        "type": "A",
+                        "type": "C",
                         "qtty": 15,
-                        "price": 492
+                        "price": 1400
                     },
                     {
                         "type": "A",
                         "qtty": 7,
-                        "price": 540
+                        "price": 1153
+                    }
+                ],
+                "status": "ToProcess"
+            },
+            {
+                "product": "Oil",
+                "types": [
+                    {
+                        "type": "C",
+                        "qtty": 18,
+                        "price": 813
+                    },
+                    {
+                        "type": "C",
+                        "qtty": 19,
+                        "price": 18
+                    },
+                    {
+                        "type": "B",
+                        "qtty": 13,
+                        "price": 218
                     },
                     {
                         "type": "A",
-                        "qtty": 15,
-                        "price": 297
-                    }
-                ]
-            },
-            {
-                "product": "Wooden",
-                "types": [
-                    {
-                        "type": "B",
-                        "qtty": 11,
-                        "price": 68
-                    },
-                    {
-                        "type": "B",
-                        "qtty": 14,
-                        "price": 123
-                    },
-                    {
-                        "type": "C",
-                        "qtty": 2,
-                        "price": 555
+                        "qtty": 1,
+                        "price": 528
                     }
                 ],
-                "uuid": "5ba6d445-0c04-43ba-b79c-aa41f87d4e03"
-            },
-            {
-                "product": "Cars",
-                "types": [
-                    {
-                        "type": "C",
-                        "qtty": 1,
-                        "price": 456
-                    }
-                ]
+                "due": "2022-10-16 00:00:00"
             },
             {
                 "product": "Iron",
                 "types": [
                     {
                         "type": "B",
-                        "qtty": 12,
-                        "price": 649
+                        "qtty": 11,
+                        "price": 1812
                     },
                     {
                         "type": "A",
                         "qtty": 13,
-                        "price": 720
+                        "price": 685
                     },
                     {
                         "type": "B",
                         "qtty": 19,
-                        "price": 333
+                        "price": 1941
+                    },
+                    {
+                        "type": "B",
+                        "qtty": 19,
+                        "price": 1308
+                    },
+                    {
+                        "type": "B",
+                        "qtty": 13,
+                        "price": 930
                     }
-                ]
+                ],
+                "status": "Partial"
+            },
+            {
+                "product": "Chips",
+                "types": [
+                    {
+                        "type": "A",
+                        "qtty": 11,
+                        "price": 556
+                    }
+                ],
+                "due": "2022-11-03 00:00:00"
+            },
+            {
+                "product": "Cars",
+                "uuid": "bd1f7ee0-ab59-4a20-a6b2-d98fbb7e3ffa"
+            },
+            {
+                "product": "Cars",
+                "types": [],
+                "status": "Expired"
             }
         ],
-        "terms": "CPT",
-        "paid": "No"
+        "wholesale_value": 21743
     },
     "taxes": [
         {
-            "type": "Special Tax",
-            "value": 46
-        },
-        {
-            "type": "Bribe",
-            "value": 15
+            "type": "Exp_tariff",
+            "value": 10
         },
         {
             "type": "VAT",
-            "value": 7
+            "value": 9
         },
         {
-            "type": "Exp_tariff",
+            "type": "Bribe",
+            "value": 1
+        },
+        {
+            "type": "Imp_tariff",
             "value": 10
+        },
+        {
+            "type": "Special Tax",
+            "value": 11
         }
-    ]
+    ],
+    "ITerms": "EXWFCA",
+    "paid": "NO",
+    "port_route": [
+        "<generator object ports at 0x000001A6AE76D740>",
+        [
+            "Cape Town",
+            "Los Angeles",
+            "Shangai",
+            "Rotterdam",
+            "Valencia"
+        ]
+    ],
+    "arrival_date": "2022-05-25 00:00:00"
 }

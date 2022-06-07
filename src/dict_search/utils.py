@@ -1,4 +1,5 @@
 from collections import abc
+import itertools
 
 from . import constants
 
@@ -19,12 +20,13 @@ def iscontainer(data):
 
 def isempty(data):
     # TODO will malfunction if it is generator
-    # def peek(iterable):
-    #     try:
-    #         first = next(iterable)
-    #     except StopIteration:
-    #         return None
-    #     return first, itertools.chain([first], iterable)
+    if isinstance(data, abc.Generator):
+        try:
+            first = next(data)
+        except StopIteration:
+            return False
+        data = itertools.chain([first], data)
+        return True
     if not hasattr(data, "__len__") or len(data) == 0:
         return True
     return False

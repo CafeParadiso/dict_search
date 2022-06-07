@@ -3,7 +3,6 @@ DOING:
 TODOS
 - refactor all test names and variables
 - ultimate testing file by file
-- redo test data
 - check style
 - uninstall six, pytz, numpy, pandas
 - set setup.py in detail (libraries for project vs libraries for module)
@@ -15,6 +14,3 @@ UPCOMING FEATURES
 - $anyval (use the key over which we are iterating)
 - new low level operator to compare values from within
 - greedy search
-- turn exceptions into warnings and return false on warning ?
-
-

@@ -1,69 +1,131 @@
 {
     "id": 9,
-    "status": "Stall",
-    "date": "2022-01-03 00:00:00",
-    "customer": {
-        "first": "Montana",
-        "last": "Mike"
+    "shipping_date": "2022-03-22 00:00:00",
+    "customer_name": {
+        "first": "Fat",
+        "last": "Lex"
     },
     "info": {
-        "origin": "Italy",
-        "desination": "Zimbawe",
-        "suspicious": false,
-        "bulk": "337x324"
+        "origin": "Spain",
+        "desination": "Italy",
+        "suspicious": true,
+        "container": [
+            150,
+            100
+        ]
     },
-    "order": {
+    "batch": {
         "products": [
             {
                 "product": "Furnitures",
                 "types": [
                     {
                         "type": "C",
-                        "qtty": 16,
-                        "price": 396
+                        "qtty": 20,
+                        "price": 418
+                    },
+                    {
+                        "type": "A",
+                        "qtty": 7,
+                        "price": 265
+                    },
+                    {
+                        "type": "A",
+                        "qtty": 5,
+                        "price": 723
                     },
                     {
                         "type": "C",
-                        "qtty": 6,
-                        "price": 108
+                        "qtty": 12,
+                        "price": 242
                     },
                     {
-                        "type": "C",
-                        "qtty": 18,
-                        "price": 67
-                    },
-                    {
-                        "type": "C",
-                        "qtty": 9,
-                        "price": 819
+                        "type": "B",
+                        "qtty": 10,
+                        "price": 601
                     }
                 ],
-                "uuid": "ffc9a50d-01d2-41e7-b1c0-b5b2e53519c9"
+                "due": "2022-08-06 00:00:00"
+            },
+            {
+                "product": "Oil",
+                "uuid": "9182a42e-fca2-43db-a672-68fd2171a86c"
+            },
+            {
+                "product": "Cement",
+                "types": [
+                    {
+                        "type": "A",
+                        "qtty": 11,
+                        "price": 732
+                    },
+                    {
+                        "type": "B",
+                        "qtty": 7,
+                        "price": 718
+                    },
+                    {
+                        "type": "B",
+                        "qtty": 10,
+                        "price": 1937
+                    },
+                    {
+                        "type": "C",
+                        "qtty": 4,
+                        "price": 1022
+                    },
+                    {
+                        "type": "A",
+                        "qtty": 14,
+                        "price": 814
+                    }
+                ],
+                "status": "Finished"
+            },
+            {
+                "product": "Cars",
+                "types": [
+                    {
+                        "type": "B",
+                        "qtty": 1,
+                        "price": 505
+                    }
+                ],
+                "status": "Expired"
             }
         ],
-        "iterms": "EXWFCA",
-        "paid": "Y"
+        "wholesale_value": 70617
     },
     "taxes": [
         {
-            "type": "Bribe",
-            "value": 43
-        },
-        {
             "type": "VAT",
-            "value": 7
-        },
-        {
-            "type": "Imp_tariff",
-            "value": 10
-        },
-        {
-            "type": "Special Tax",
-            "value": 7
+            "value": 9
         },
         {
             "type": "Exp_tariff",
             "value": 10
+        },
+        {
+            "type": "Special Tax",
+            "value": 11
+        },
+        {
+            "type": "Bribe",
+            "value": 1
+        },
+        {
+            "type": "Imp_tariff",
+            "value": 10
         }
-    ]
+    ],
+    "Terms": "DAP",
+    "paid": "y",
+    "port_route": [
+        "<generator object ports at 0x000001A6AE76D660>",
+        [
+            "Valencia",
+            "Cape Town"
+        ]
+    ],
+    "producer_country": "Indonesia"
 }

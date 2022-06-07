@@ -1,94 +1,69 @@
 {
     "id": 3,
-    "status": "Stall",
-    "date": "2022-01-19 00:00:00",
-    "customer": {
-        "first": "Snoop",
-        "last": "Jones"
+    "shipping_date": "2022-05-07 00:00:00",
+    "customer_name": {
+        "first": "Montana",
+        "last": "Lex"
     },
     "info": {
-        "origin": "Spain",
-        "desination": "Peru",
+        "origin": "USA",
+        "desination": "Italy",
         "suspicious": true,
-        "bulk": {
-            "w": 335,
-            "h": 249
-        }
+        "container": [
+            250,
+            150
+        ]
     },
-    "order": {
+    "batch": {
         "products": [
             {
-                "product": "Sugar",
-                "types": [
-                    {
-                        "type": "A",
-                        "qtty": 5,
-                        "price": 979
-                    }
-                ]
+                "product": "Cars",
+                "types": [],
+                "due": "2022-02-08 00:00:00"
             },
             {
-                "product": "Furnitures",
-                "types": [
-                    {
-                        "type": "B",
-                        "qtty": 3,
-                        "price": 527
-                    },
-                    {
-                        "type": "C",
-                        "qtty": 6,
-                        "price": 721
-                    },
-                    {
-                        "type": "A",
-                        "qtty": 5,
-                        "price": 952
-                    }
-                ],
-                "uuid": "15720f77-b802-4cc5-9166-7494f8f44174"
+                "product": "Grain",
+                "uuid": "9c914f98-d353-44a5-b2f3-26d1569339f3"
             },
             {
-                "product": "Iron",
-                "types": [
-                    {
-                        "type": "B",
-                        "qtty": 15,
-                        "price": 153
-                    },
-                    {
-                        "type": "B",
-                        "qtty": 19,
-                        "price": 269
-                    },
-                    {
-                        "type": "A",
-                        "qtty": 19,
-                        "price": 343
-                    }
-                ],
-                "due": "2022-09-03 00:00:00"
+                "product": "Wooden",
+                "types": [],
+                "due": "2022-04-03 00:00:00"
             }
         ],
-        "Terms": "EXWFCA",
-        "paid": "NO"
+        "wholesale_value": 86142
     },
     "taxes": [
         {
             "type": "VAT",
-            "value": 20
+            "value": 9
         },
         {
-            "type": "Imp_tariff",
-            "value": 10
+            "type": "Bribe",
+            "value": 1
         },
         {
             "type": "Special Tax",
-            "value": 12
+            "value": 11
         },
         {
             "type": "Exp_tariff",
             "value": 10
+        },
+        {
+            "type": "Imp_tariff",
+            "value": 10
         }
-    ]
+    ],
+    "icoterms": "DDP",
+    "paid": "no",
+    "port_route": [
+        "<generator object ports at 0x000001A6AE76D660>",
+        [
+            "Los Angeles",
+            "Jebel Ali",
+            "Algeciras"
+        ]
+    ],
+    "arrival_date": "2022-07-14 00:00:00"
 }

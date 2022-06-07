@@ -1,110 +1,171 @@
 {
     "id": 6,
-    "status": "Delivered",
-    "date": "2022-09-23 00:00:00",
-    "customer": {
-        "first": "Southside",
-        "last": "Jones"
+    "shipping_date": "2022-11-13 00:00:00",
+    "customer_name": {
+        "first": "Mike",
+        "last": "Fat"
     },
     "info": {
-        "origin": "Indonesia",
-        "desination": "Sudan",
+        "origin": "Spain",
+        "desination": "Albania",
         "suspicious": true,
-        "bulk": {
-            "w": 187,
-            "h": 392
-        }
+        "container": [
+            150,
+            150
+        ]
     },
-    "order": {
+    "batch": {
         "products": [
             {
+                "product": "Furnitures",
+                "types": [
+                    {
+                        "type": "A",
+                        "qtty": 19,
+                        "price": 1334
+                    }
+                ],
+                "status": "Finished"
+            },
+            {
+                "product": "Grain",
+                "uuid": "ea9e3007-a8ff-46a3-8a84-a7bff5e284f9"
+            },
+            {
+                "product": "Cement",
+                "types": [
+                    {
+                        "type": "C",
+                        "qtty": 1,
+                        "price": 1381
+                    },
+                    {
+                        "type": "B",
+                        "qtty": 14,
+                        "price": 921
+                    },
+                    {
+                        "type": "A",
+                        "qtty": 5,
+                        "price": 831
+                    },
+                    {
+                        "type": "C",
+                        "qtty": 20,
+                        "price": 1514
+                    }
+                ],
+                "status": "Partial"
+            },
+            {
                 "product": "Cars",
+                "uuid": "cf89bef7-d038-4647-b7c8-766030f03f5b"
+            },
+            {
+                "product": "Furnitures",
                 "types": [
                     {
+                        "type": "A",
+                        "qtty": 14,
+                        "price": 1834
+                    },
+                    {
                         "type": "B",
-                        "qtty": 18,
-                        "price": 697
+                        "qtty": 13,
+                        "price": 1187
+                    },
+                    {
+                        "type": "B",
+                        "qtty": 5,
+                        "price": 792
                     },
                     {
                         "type": "A",
-                        "qtty": 3,
-                        "price": 995
+                        "qtty": 5,
+                        "price": 994
                     }
                 ],
-                "uuid": "db9aaaf7-2074-4d88-80c4-64299acf69c2"
+                "status": "Partial"
             },
             {
-                "product": "Wooden",
+                "product": "Iron",
                 "types": [
                     {
-                        "type": "C",
-                        "qtty": 13,
-                        "price": 555
+                        "type": "A",
+                        "qtty": 4,
+                        "price": 1880
                     },
                     {
                         "type": "C",
-                        "qtty": 18,
-                        "price": 731
-                    },
-                    {
-                        "type": "B",
-                        "qtty": 12,
-                        "price": 997
-                    },
-                    {
-                        "type": "C",
-                        "qtty": 9,
-                        "price": 47
-                    }
-                ],
-                "uuid": "1a2fc327-8e16-4073-9db3-e1d28db8a645"
-            },
-            {
-                "product": "Wooden",
-                "types": [
-                    {
-                        "type": "C",
-                        "qtty": 8,
-                        "price": 148
-                    },
-                    {
-                        "type": "C",
-                        "qtty": 13,
-                        "price": 302
-                    },
-                    {
-                        "type": "B",
-                        "qtty": 3,
-                        "price": 501
+                        "qtty": 14,
+                        "price": 1956
                     },
                     {
                         "type": "A",
                         "qtty": 8,
-                        "price": 25
+                        "price": 1615
                     }
                 ],
-                "uuid": "a82ef821-3929-49a1-8d93-50245e9a2534"
+                "status": "Expired"
+            },
+            {
+                "product": "Cement",
+                "types": [],
+                "status": "ToProcess"
+            },
+            {
+                "product": "Guns",
+                "types": [
+                    {
+                        "type": "C",
+                        "qtty": 20,
+                        "price": 1018
+                    },
+                    {
+                        "type": "A",
+                        "qtty": 11,
+                        "price": 647
+                    },
+                    {
+                        "type": "C",
+                        "qtty": 3,
+                        "price": 976
+                    },
+                    {
+                        "type": "B",
+                        "qtty": 1,
+                        "price": 1230
+                    },
+                    {
+                        "type": "A",
+                        "qtty": 14,
+                        "price": 1851
+                    }
+                ],
+                "status": "ToProcess"
+            },
+            {
+                "product": "Iron",
+                "uuid": "930606d1-7587-4f1d-9945-88848e12c200"
             }
         ],
-        "INCO": "EXWFCA",
-        "paid": "n"
+        "wholesale_value": 56897
     },
     "taxes": [
         {
-            "type": "Bribe",
-            "value": 9
-        },
-        {
-            "type": "VAT",
-            "value": 14
-        },
-        {
-            "type": "Special Tax",
-            "value": 45
-        },
-        {
             "type": "Imp_tariff",
             "value": 10
+        },
+        {
+            "type": "Bribe",
+            "value": 1
         }
-    ]
+    ],
+    "Inco": "DAP",
+    "paid": "NO",
+    "port_route": [
+        "<generator object ports at 0x000001A6AE76D740>",
+        []
+    ],
+    "arrival_date": "2023-02-20 00:00:00"
 }

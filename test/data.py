@@ -426,91 +426,113 @@ class CursedData:
         raise ValueError("The truth value is ambiguous")
 
 
-def build_transactions(vals):
-    status = ["Delivered", "Delivering", "Preparing", "Stall"]
-    products = ["Furnitures", "Cars", "Iron", "Guns", "Sugar", "Wooden", "Grain", "Coffe", "Oil", "Chips", "Cement"]
+def build_fixtures(vals):
     names = ["Snoop", "BigL", "Gucc", "Lex", "Southside", "Fat", "Mike", "Joe", "Dogg", "Jones", "Montana", "Soulja"]
     countries = ["Spain", "Italy", "Sudan", "USA", "Zimbawe", "Indonesia", "Peru", "Haiti", "Russia", "Albania"]
+    sizes = [100, 150, 200, 250]
+    products = ["Furnitures", "Cars", "Iron", "Guns", "Sugar", "Wooden", "Grain", "Coffe", "Oil", "Chips", "Cement"]
+    status = ["Partial", "ToProcess", "Finished", "Expired"]
     incoterms = ["EXW" "FCA", "CPT", "CIP", "DAP", "DPU", "DDP"]
-
+    taxes = [
+        {"type": "VAT", "value": random.randint(5, 20)},
+        {"type": "Exp_tariff", "value": 10},
+        {"type": "Imp_tariff", "value": 10},
+        {"type": "Special Tax", "value": random.randint(1, 25)},
+        {"type": "Bribe", "value": random.randint(0, 25)},
+    ]
+    ports_list = [
+        "Shangai",
+        "Shenzen",
+        "Busan",
+        "Rotterdam",
+        "Jebel Ali",
+        "Los Angeles",
+        "Valencia",
+        "Manila",
+        "Algeciras",
+        "Cape Town",
+    ]
     for _ in range(vals):
-        taxes = [
-            {"type": "VAT", "value": random.randint(5, 20)},
-            {"type": "Exp_tariff", "value": 10},
-            {"type": "Imp_tariff", "value": 10},
-            {"type": "Special Tax", "value": random.randint(1, 50)},
-            {"type": "Bribe", "value": random.randint(0, 50)},
-        ]
         random.shuffle(taxes)
+        random.shuffle(ports_list)
+        used_ports = ports_list[0:random.randint(0, 5)]
         document = {
-                "id": _,
-                "status": random.choice(status),
-                "date": datetime.datetime(2022, random.randint(1, 12), random.randint(1, 28)),
-                "customer": {"first": random.choice(names), "last": random.choice(names)},
-                "info": {
-                    "origin": random.choice(countries),
-                    "desination": random.choice(countries),
-                    "suspicious": random.choice([True, False, CursedData()]),
-                    "bulk": random.choice(
-                        [
-                            f"{random.randint(100, 500)}x{random.randint(100, 500)}",
-                            [random.randint(100, 500), random.randint(100, 500)],
-                            {"w": random.randint(100, 500), "h": random.randint(100, 500)},
-                        ]
-                    ),
-                },
-                "order": {
-                    "products": [
-                        random.choice(
-                            [
-                                {
-                                    "product": random.choice(products),
-                                    "types": [
-                                        {
-                                            "type": random.choice(["A", "B", "C"]),
-                                            "qtty": random.randint(1, 20),
-                                            "price": random.randint(1, 1000),
-                                        }
-                                        for _ in range(random.randint(0, 5))
-                                    ],
-                                },
-                                {
-                                    "product": random.choice(products),
-                                    "types": [
-                                        {
-                                            "type": random.choice(["A", "B", "C"]),
-                                            "qtty": random.randint(1, 20),
-                                            "price": random.randint(1, 1000),
-                                        }
-                                        for _ in range(random.randint(0, 5))
-                                    ],
-                                    "due": datetime.datetime(2022, random.randint(1, 12), random.randint(1, 28)),
-                                },
-                                {
-                                    "product": random.choice(products),
-                                    "types": [
-                                        {
-                                            "type": random.choice(["A", "B", "C"]),
-                                            "qtty": random.randint(1, 20),
-                                            "price": random.randint(1, 1000),
-                                        }
-                                        for _ in range(random.randint(0, 5))
-                                    ],
-                                    "uuid": uuid.uuid4(),
-                                },
-                            ]
-                        )
-                        for _ in range(random.randint(1, 9))
-                    ],
+            "id": _,
+            "shipping_date": datetime.datetime(2022, random.randint(1, 12), random.randint(1, 28)),
+            "customer_name": {"first": random.choice(names), "last": random.choice(names)},
+            "info": {
+                "origin": random.choice(countries),
+                "desination": random.choice(countries),
+                "suspicious": random.choice([True, False, CursedData()]),
+                "container": random.choice(
+                    [
+                        f"{random.choice(sizes)}x{random.choice(sizes)}",
+                        [random.choice(sizes), random.choice(sizes)],
+                        {"w": random.choice(sizes), "h": random.choice(sizes)},
+                    ]
+                ),
+            },
+            "batch": {
+                "products": [
                     random.choice(
-                        ["Inco", "incoterms", "terms", "INCO", "ITerms", "iterms", "icoterms", "Terms"]
-                    ): random.choice(incoterms),
-                    "paid": random.choice(["Y", "y", "yes", "YES", "N", "n", "No", "NO"]),
-                },
-                "taxes": taxes[: random.randint(1, 5)],
-            }
+                        [
+                            {
+                                "product": random.choice(products),
+                                "types": [
+                                    {
+                                        "type": random.choice(["A", "B", "C"]),
+                                        "qtty": random.randint(1, 20),
+                                        "price": random.randint(500, 2000),
+                                    }
+                                    for _ in range(random.randint(0, 5))
+                                ],
+                                "status": random.choice(status),
+                            },
+                            {
+                                "product": random.choice(products),
+                                "types": [
+                                    {
+                                        "type": random.choice(["A", "B", "C"]),
+                                        "qtty": random.randint(1, 20),
+                                        "price": random.randint(1, 1000),
+                                    }
+                                    for _ in range(random.randint(0, 5))
+                                ],
+                                "due": datetime.datetime(2022, random.randint(1, 12), random.randint(1, 28)),
+                            },
+                            {
+                                "product": random.choice(products),
+                                "uuid": uuid.uuid4(),
+                            },
+                        ]
+                    )
+                    for _ in range(random.randint(1, 9))
+                ],
+                "wholesale_value": random.randint(10000, 100000),
+            },
+            "taxes": taxes[: random.randint(1, 5)],
+            random.choice(
+                ["Inco", "incoterms", "terms", "INCO", "ITerms", "iterms", "icoterms", "Terms"]
+            ): random.choice(incoterms),
+            "paid": random.choice(["Y", "y", "yes", "YES", "N", "n", "no", "NO"]),
+            "port_route": (ports(used_ports), used_ports),
+        }
+        document.update(
+            random.choice(
+                [
+                    {"producer_country": random.choice(countries)},
+                    {"arrival_date": document["shipping_date"] + datetime.timedelta(days=random.randint(30, 120))},
+                ]
+            )
+        )
         with open(path.join("fixtures", f"{_}.json"), "w") as file:
             json.dump(document, file, indent=4, default=str)
+
+
+def ports(ports_list):
+    random.shuffle(ports_list)
+    for port in ports_list[0:random.randint(0, 5)]:
+        yield port
 
 
 def custom_decoder(dikt):
@@ -521,6 +543,8 @@ def custom_decoder(dikt):
         elif isinstance(dikt[k], str) and pattern.match(dikt[k]):
             groups = pattern.match(dikt[k]).groups()
             dikt[k] = datetime.datetime(int(groups[0]), int(groups[1]), int(groups[2]))
+        elif k == "port_route":
+            dikt[k] = ports(dikt[k][1])
     return dikt
 
 
@@ -532,4 +556,4 @@ def read_fixtures():
 
 
 if __name__ == "__main__":
-    read_fixtures()
+    build_fixtures(10)

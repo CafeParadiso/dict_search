@@ -1,167 +1,104 @@
 {
     "id": 2,
-    "status": "Preparing",
-    "date": "2022-02-18 00:00:00",
-    "customer": {
-        "first": "Jones",
-        "last": "Fat"
+    "shipping_date": "2022-01-03 00:00:00",
+    "customer_name": {
+        "first": "Southside",
+        "last": "Snoop"
     },
     "info": {
-        "origin": "Russia",
+        "origin": "Indonesia",
         "desination": "Sudan",
-        "suspicious": false,
-        "bulk": {
-            "w": 201,
-            "h": 439
-        }
+        "suspicious": true,
+        "container": [
+            200,
+            200
+        ]
     },
-    "order": {
+    "batch": {
         "products": [
             {
-                "product": "Oil",
-                "types": [
-                    {
-                        "type": "C",
-                        "qtty": 6,
-                        "price": 980
-                    },
-                    {
-                        "type": "B",
-                        "qtty": 4,
-                        "price": 152
-                    }
-                ],
-                "due": "2022-02-21 00:00:00"
-            },
-            {
-                "product": "Sugar",
-                "types": [],
-                "uuid": "e1597558-8539-4be3-ac89-b322719cdfc1"
+                "product": "Furnitures",
+                "uuid": "ee2842c2-25e7-4eaa-a3b6-00c05090a0af"
             },
             {
                 "product": "Wooden",
                 "types": [
                     {
-                        "type": "B",
-                        "qtty": 18,
-                        "price": 598
+                        "type": "C",
+                        "qtty": 1,
+                        "price": 732
                     },
                     {
-                        "type": "B",
-                        "qtty": 14,
-                        "price": 109
+                        "type": "C",
+                        "qtty": 19,
+                        "price": 517
                     },
                     {
-                        "type": "B",
-                        "qtty": 10,
-                        "price": 498
+                        "type": "C",
+                        "qtty": 2,
+                        "price": 242
                     }
                 ],
-                "due": "2022-10-02 00:00:00"
+                "due": "2022-10-25 00:00:00"
             },
             {
-                "product": "Coffe",
+                "product": "Oil",
+                "uuid": "40c82e34-15fb-480c-bb9b-0377d6f0ac93"
+            },
+            {
+                "product": "Cars",
+                "uuid": "ab5f868c-3e77-46ca-8512-222de5651179"
+            },
+            {
+                "product": "Chips",
+                "uuid": "b026bb74-77f1-4f81-9f2c-37dc9eb00975"
+            },
+            {
+                "product": "Oil",
                 "types": [
                     {
-                        "type": "B",
-                        "qtty": 12,
-                        "price": 409
+                        "type": "C",
+                        "qtty": 20,
+                        "price": 135
                     },
                     {
-                        "type": "A",
-                        "qtty": 5,
-                        "price": 125
+                        "type": "B",
+                        "qtty": 17,
+                        "price": 39
                     }
                 ],
-                "uuid": "6d227988-3f8a-4a32-98c3-b29899e4f956"
+                "due": "2022-05-11 00:00:00"
             },
             {
                 "product": "Guns",
                 "types": [
                     {
                         "type": "C",
-                        "qtty": 1,
-                        "price": 557
-                    },
-                    {
-                        "type": "A",
-                        "qtty": 20,
-                        "price": 811
-                    },
-                    {
-                        "type": "C",
-                        "qtty": 8,
-                        "price": 763
-                    },
-                    {
-                        "type": "A",
-                        "qtty": 9,
-                        "price": 133
-                    }
-                ],
-                "due": "2022-10-04 00:00:00"
-            },
-            {
-                "product": "Wooden",
-                "types": [
-                    {
-                        "type": "A",
-                        "qtty": 4,
-                        "price": 18
-                    },
-                    {
-                        "type": "A",
-                        "qtty": 8,
-                        "price": 639
-                    },
-                    {
-                        "type": "B",
-                        "qtty": 1,
-                        "price": 363
-                    },
-                    {
-                        "type": "C",
-                        "qtty": 3,
-                        "price": 431
-                    },
-                    {
-                        "type": "C",
-                        "qtty": 6,
-                        "price": 482
-                    }
-                ],
-                "due": "2022-08-14 00:00:00"
-            },
-            {
-                "product": "Iron",
-                "types": [
-                    {
-                        "type": "A",
                         "qtty": 13,
-                        "price": 156
+                        "price": 150
                     }
-                ]
+                ],
+                "due": "2022-06-14 00:00:00"
+            },
+            {
+                "product": "Oil",
+                "types": [],
+                "status": "ToProcess"
             }
         ],
-        "terms": "DPU",
-        "paid": "YES"
+        "wholesale_value": 32882
     },
     "taxes": [
         {
-            "type": "Special Tax",
-            "value": 30
-        },
-        {
             "type": "Bribe",
-            "value": 15
-        },
-        {
-            "type": "Imp_tariff",
-            "value": 10
-        },
-        {
-            "type": "Exp_tariff",
-            "value": 10
+            "value": 1
         }
-    ]
+    ],
+    "Inco": "EXWFCA",
+    "paid": "Y",
+    "port_route": [
+        "<generator object ports at 0x000001A6AE76D740>",
+        []
+    ],
+    "arrival_date": "2022-03-31 00:00:00"
 }

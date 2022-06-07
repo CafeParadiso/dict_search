@@ -1,57 +1,45 @@
 {
     "id": 5,
-    "status": "Preparing",
-    "date": "2022-08-19 00:00:00",
-    "customer": {
+    "shipping_date": "2022-12-08 00:00:00",
+    "customer_name": {
         "first": "Gucc",
-        "last": "Mike"
+        "last": "Gucc"
     },
     "info": {
-        "origin": "Albania",
-        "desination": "Zimbawe",
-        "suspicious": "<__main__.CursedData object at 0x00000238CD7CB700>",
-        "bulk": {
-            "w": 218,
-            "h": 135
-        }
+        "origin": "USA",
+        "desination": "Peru",
+        "suspicious": "<__main__.CursedData object at 0x000001A6AE9ED520>",
+        "container": "150x100"
     },
-    "order": {
+    "batch": {
         "products": [
             {
-                "product": "Sugar",
-                "types": [
-                    {
-                        "type": "B",
-                        "qtty": 2,
-                        "price": 82
-                    }
-                ],
-                "due": "2022-11-14 00:00:00"
+                "product": "Coffe",
+                "uuid": "6317404d-0d8b-4d55-b736-dedd231d3f8b"
             }
         ],
-        "ITerms": "DAP",
-        "paid": "N"
+        "wholesale_value": 15952
     },
     "taxes": [
         {
-            "type": "Imp_tariff",
-            "value": 10
+            "type": "Special Tax",
+            "value": 11
         },
         {
             "type": "Bribe",
-            "value": 36
-        },
-        {
-            "type": "VAT",
-            "value": 6
-        },
-        {
-            "type": "Special Tax",
-            "value": 49
-        },
-        {
-            "type": "Exp_tariff",
-            "value": 10
+            "value": 1
         }
-    ]
+    ],
+    "INCO": "DDP",
+    "paid": "n",
+    "port_route": [
+        "<generator object ports at 0x000001A6AE76D660>",
+        [
+            "Valencia",
+            "Busan",
+            "Cape Town",
+            "Jebel Ali"
+        ]
+    ],
+    "arrival_date": "2023-03-05 00:00:00"
 }

@@ -1,54 +1,147 @@
 {
     "id": 1,
-    "status": "Delivered",
-    "date": "2022-01-22 00:00:00",
-    "customer": {
-        "first": "Snoop",
-        "last": "Mike"
+    "shipping_date": "2022-09-03 00:00:00",
+    "customer_name": {
+        "first": "BigL",
+        "last": "Soulja"
     },
     "info": {
-        "origin": "Zimbawe",
-        "desination": "Albania",
-        "suspicious": true,
-        "bulk": "179x470"
+        "origin": "Peru",
+        "desination": "Peru",
+        "suspicious": false,
+        "container": {
+            "w": 150,
+            "h": 200
+        }
     },
-    "order": {
+    "batch": {
         "products": [
             {
                 "product": "Guns",
+                "types": [],
+                "status": "Partial"
+            },
+            {
+                "product": "Cement",
+                "uuid": "ba06d15e-afe1-4ec1-9fea-5575d003ebc4"
+            },
+            {
+                "product": "Cement",
                 "types": [
                     {
-                        "type": "C",
-                        "qtty": 16,
-                        "price": 627
+                        "type": "A",
+                        "qtty": 15,
+                        "price": 866
                     }
                 ],
-                "due": "2022-10-04 00:00:00"
+                "due": "2022-12-13 00:00:00"
+            },
+            {
+                "product": "Wooden",
+                "uuid": "6008fb49-0f41-4225-96f6-14495a5eb3ef"
+            },
+            {
+                "product": "Grain",
+                "types": [
+                    {
+                        "type": "B",
+                        "qtty": 16,
+                        "price": 689
+                    },
+                    {
+                        "type": "C",
+                        "qtty": 15,
+                        "price": 1531
+                    },
+                    {
+                        "type": "A",
+                        "qtty": 8,
+                        "price": 1396
+                    },
+                    {
+                        "type": "B",
+                        "qtty": 19,
+                        "price": 1143
+                    }
+                ],
+                "status": "Expired"
+            },
+            {
+                "product": "Wooden",
+                "types": [
+                    {
+                        "type": "B",
+                        "qtty": 19,
+                        "price": 697
+                    },
+                    {
+                        "type": "C",
+                        "qtty": 1,
+                        "price": 1635
+                    },
+                    {
+                        "type": "A",
+                        "qtty": 16,
+                        "price": 618
+                    },
+                    {
+                        "type": "A",
+                        "qtty": 19,
+                        "price": 1675
+                    }
+                ],
+                "status": "Expired"
+            },
+            {
+                "product": "Guns",
+                "uuid": "d7e7f8bb-e41c-436b-8e6b-d49946d307a0"
+            },
+            {
+                "product": "Grain",
+                "types": [
+                    {
+                        "type": "B",
+                        "qtty": 7,
+                        "price": 452
+                    },
+                    {
+                        "type": "B",
+                        "qtty": 13,
+                        "price": 719
+                    },
+                    {
+                        "type": "A",
+                        "qtty": 20,
+                        "price": 65
+                    }
+                ],
+                "due": "2022-02-17 00:00:00"
             }
         ],
-        "icoterms": "DPU",
-        "paid": "No"
+        "wholesale_value": 72733
     },
     "taxes": [
         {
-            "type": "Bribe",
-            "value": 4
-        },
-        {
             "type": "Special Tax",
-            "value": 31
-        },
-        {
-            "type": "Imp_tariff",
-            "value": 10
-        },
-        {
-            "type": "Exp_tariff",
-            "value": 10
+            "value": 11
         },
         {
             "type": "VAT",
-            "value": 16
+            "value": 9
+        },
+        {
+            "type": "Bribe",
+            "value": 1
         }
-    ]
+    ],
+    "INCO": "EXWFCA",
+    "paid": "n",
+    "port_route": [
+        "<generator object ports at 0x000001A6AE76D660>",
+        [
+            "Shangai",
+            "Los Angeles"
+        ]
+    ],
+    "producer_country": "Zimbawe"
 }

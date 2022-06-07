@@ -74,24 +74,27 @@ def test_malformed_high_level_operator():
 
 def test_expected_exception():
     import pandas as pd
-    values = list(DictSearch(expected_exceptions=ValueError).dict_search(
-        {"df": pd.DataFrame()}, {"df": {"$gt": pd.DataFrame()}})
+
+    values = list(
+        DictSearch(expected_exceptions=ValueError).dict_search({"df": pd.DataFrame()}, {"df": {"$gt": pd.DataFrame()}})
     )
     assert not values
 
 
 def test_unexpected_exception():
     import pandas as pd
+
     with pytest_raises(ValueError):
-        list(DictSearch().dict_search(
-            {"df": pd.DataFrame()}, {"df": {"$gt": pd.DataFrame()}})
-        )
+        list(DictSearch().dict_search({"df": pd.DataFrame()}, {"df": {"$gt": pd.DataFrame()}}))
 
 
 def test_exc_truth_value_false():
     import pandas as pd
-    values = list(DictSearch(expected_exceptions=ValueError, exc_truth_value=True).dict_search(
-        {"df": pd.DataFrame()}, {"df": {"$gt": pd.DataFrame()}})
+
+    values = list(
+        DictSearch(expected_exceptions=ValueError, exc_truth_value=True).dict_search(
+            {"df": pd.DataFrame()}, {"df": {"$gt": pd.DataFrame()}}
+        )
     )
     assert values
 

@@ -266,7 +266,7 @@ def test_where_included():
         DictSearch().dict_search(
             data.read_fixtures(),
             {"order": {"products": {"$any": {"product": "Cement"}}}},
-            select_dict={"order": {"products": {"$where": [{"product": "Cement"}, 1]}}}
+            select_dict={"order": {"products": {"$where": [{"product": "Cement"}, 1]}}},
         )
     )
     pprint(values)
@@ -277,7 +277,10 @@ def test_where_included_nested():
         DictSearch().dict_search(
             data.read_fixtures(),
             {"order": {"products": {"$any": {"product": "Wooden"}}}},
-            select_dict={"order": {"products": {"$where": [{"product": "Wooden"}, {"type": 1, "product": 1}]}}, "id": 1}
+            select_dict={
+                "order": {"products": {"$where": [{"product": "Wooden"}, {"type": 1, "product": 1}]}},
+                "id": 1,
+            },
         )
     )
     pprint(values)
@@ -287,10 +290,10 @@ def test_where_excluded():
     values = list(
         DictSearch().dict_search(
             data.read_fixtures(),
-            {"order": {"products": {"$any": {"product": "Cement"}}}},
+            {"batch": {"products": {"$any": {"product": "Cement"}}}},
             select_dict={
-                "order": {"products": {"$where": [{"product": "Cement"}, 0]}},
-            }
+                "batch": {"products": {"$where": [{"product": "Cement"}, 0]}},
+            },
         )
     )
     pprint(values)
@@ -302,8 +305,9 @@ def test_where_excluded_nested():
             data.read_fixtures(),
             {"order": {"products": {"$any": {"product": "Cement"}}}},
             select_dict={
-                "order": {"products": {"$where": [{"product": "Cement"}, {"types": 0}]}}, "info": 0,
-            }
+                "order": {"products": {"$where": [{"product": "Cement"}, {"types": 0}]}},
+                "info": 0,
+            },
         )
     )
     pprint(values)
@@ -315,8 +319,9 @@ def test_include_array():
             data.read_fixtures(),
             {"order": {"products": {"$any": {"product": "Cement"}}}},
             select_dict={
-                "order": {"products": {"types": {"price": 1}}}, "id": 1,
-            }
+                "order": {"products": {"types": {"price": 1}}},
+                "id": 1,
+            },
         )
     )
     pprint(values)
@@ -327,9 +332,7 @@ def test_exclude_array():
         DictSearch().dict_search(
             data.read_fixtures(),
             {"order": {"products": {"$any": {"product": "Cement"}}}},
-            select_dict={
-                "order": {"products": {"types": 0}}, "info": 0
-            }
+            select_dict={"order": {"products": {"types": 0}}, "info": 0},
         )
     )
     pprint(values)
@@ -340,9 +343,7 @@ def test_wrong_key():
         DictSearch().dict_search(
             data.read_fixtures(),
             {"order": {"products": {"$any": {"product": "Cement"}}}},
-            select_dict={
-                "order": "akak"
-            }
+            select_dict={"order": "akak"},
         )
     )
     pprint(values)

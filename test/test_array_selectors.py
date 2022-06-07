@@ -163,21 +163,21 @@ def test_where_empty():
 def test_where_malformed_exceptions():
     with pytest_raises(exceptions.PreconditionError):
         values = list(
-                DictSearch().dict_search(
-                    data.student_data,
-                    {"info": {"mentions": {"$where": [1, 2]}}},
-                )
+            DictSearch().dict_search(
+                data.student_data,
+                {"info": {"mentions": {"$where": [1, 2]}}},
             )
+        )
         pprint(values)
 
 
 def test_where_malfored():
     values = list(
-            DictSearch().dict_search(
-                data.student_data,
-                {"info": {"mentions": {"$where": [{}, 1]}}},
-            )
+        DictSearch().dict_search(
+            data.student_data,
+            {"info": {"mentions": {"$where": [{}, 1]}}},
         )
+    )
     assert not values
 
 
@@ -190,3 +190,18 @@ def test_where_exception():
             )
         )
 
+
+# Data as generator
+def generator(values):
+    for val in range(values):
+        yield val
+
+
+def test_data_generator():
+    vals = list(
+        DictSearch().dict_search(
+            [{"a": generator(4), "b": generator(3)}], {"a": {"$any": 3}}
+
+        )
+    )
+    pprint(vals)

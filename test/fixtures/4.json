@@ -1,37 +1,56 @@
 {
     "id": 4,
-    "status": "Preparing",
-    "date": "2022-02-09 00:00:00",
-    "customer": {
-        "first": "Montana",
-        "last": "Soulja"
+    "shipping_date": "2022-07-13 00:00:00",
+    "customer_name": {
+        "first": "BigL",
+        "last": "Mike"
     },
     "info": {
-        "origin": "Spain",
-        "desination": "Peru",
-        "suspicious": true,
-        "bulk": [
-            500,
-            286
+        "origin": "Indonesia",
+        "desination": "Albania",
+        "suspicious": false,
+        "container": [
+            150,
+            150
         ]
     },
-    "order": {
+    "batch": {
         "products": [
             {
-                "product": "Cars",
+                "product": "Cement",
                 "types": [],
-                "due": "2022-06-06 00:00:00"
+                "due": "2022-06-21 00:00:00"
             },
             {
-                "product": "Wooden",
+                "product": "Furnitures",
                 "types": [
                     {
-                        "type": "B",
+                        "type": "C",
+                        "qtty": 19,
+                        "price": 96
+                    },
+                    {
+                        "type": "A",
                         "qtty": 20,
-                        "price": 11
+                        "price": 868
+                    },
+                    {
+                        "type": "A",
+                        "qtty": 18,
+                        "price": 380
+                    },
+                    {
+                        "type": "B",
+                        "qtty": 4,
+                        "price": 490
                     }
                 ],
-                "due": "2022-07-13 00:00:00"
+                "due": "2022-12-26 00:00:00"
+            },
+            {
+                "product": "Guns",
+                "types": [],
+                "status": "Expired"
             },
             {
                 "product": "Guns",
@@ -39,62 +58,63 @@
                     {
                         "type": "C",
                         "qtty": 11,
-                        "price": 455
-                    },
-                    {
-                        "type": "B",
-                        "qtty": 16,
-                        "price": 909
+                        "price": 901
                     }
                 ],
-                "uuid": "b9e0b9e5-a4fd-443c-9408-6c84dfe4b662"
+                "due": "2022-07-24 00:00:00"
             },
             {
-                "product": "Cement",
+                "product": "Sugar",
+                "uuid": "917ab3cd-730c-46e0-9029-869637ff78a2"
+            },
+            {
+                "product": "Wooden",
                 "types": [
                     {
                         "type": "A",
-                        "qtty": 18,
-                        "price": 801
+                        "qtty": 15,
+                        "price": 1817
                     },
                     {
-                        "type": "B",
-                        "qtty": 10,
-                        "price": 338
+                        "type": "A",
+                        "qtty": 14,
+                        "price": 927
                     },
                     {
-                        "type": "C",
-                        "qtty": 16,
-                        "price": 424
-                    },
-                    {
-                        "type": "B",
-                        "qtty": 4,
-                        "price": 671
-                    },
-                    {
-                        "type": "C",
-                        "qtty": 12,
-                        "price": 81
+                        "type": "A",
+                        "qtty": 7,
+                        "price": 933
                     }
-                ]
+                ],
+                "status": "Finished"
+            },
+            {
+                "product": "Coffe",
+                "uuid": "0ec2a347-87a6-4ea3-bc7b-915bd9ecdbb7"
             }
         ],
-        "incoterms": "CIP",
-        "paid": "N"
+        "wholesale_value": 84565
     },
     "taxes": [
         {
-            "type": "VAT",
-            "value": 15
-        },
-        {
-            "type": "Imp_tariff",
+            "type": "Exp_tariff",
             "value": 10
         },
         {
             "type": "Special Tax",
-            "value": 1
+            "value": 11
         }
-    ]
+    ],
+    "iterms": "CIP",
+    "paid": "y",
+    "port_route": [
+        "<generator object ports at 0x000001A6AE76D740>",
+        [
+            "Los Angeles",
+            "Busan",
+            "Shangai",
+            "Jebel Ali"
+        ]
+    ],
+    "arrival_date": "2022-09-28 00:00:00"
 }

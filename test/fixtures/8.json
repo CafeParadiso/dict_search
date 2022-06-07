@@ -1,112 +1,170 @@
 {
     "id": 8,
-    "status": "Delivered",
-    "date": "2022-03-28 00:00:00",
-    "customer": {
-        "first": "Fat",
-        "last": "Soulja"
+    "shipping_date": "2022-06-20 00:00:00",
+    "customer_name": {
+        "first": "Dogg",
+        "last": "Southside"
     },
     "info": {
-        "origin": "Peru",
-        "desination": "Zimbawe",
-        "suspicious": false,
-        "bulk": {
-            "w": 143,
-            "h": 386
+        "origin": "Italy",
+        "desination": "Spain",
+        "suspicious": true,
+        "container": {
+            "w": 150,
+            "h": 200
         }
     },
-    "order": {
+    "batch": {
         "products": [
             {
-                "product": "Cars",
-                "types": [],
-                "due": "2022-05-05 00:00:00"
-            },
-            {
                 "product": "Furnitures",
-                "types": [
-                    {
-                        "type": "B",
-                        "qtty": 10,
-                        "price": 86
-                    },
-                    {
-                        "type": "A",
-                        "qtty": 16,
-                        "price": 32
-                    },
-                    {
-                        "type": "B",
-                        "qtty": 11,
-                        "price": 898
-                    }
-                ],
-                "uuid": "065c3f9d-529b-4300-9738-51c2c5db645f"
-            },
-            {
-                "product": "Coffe",
-                "types": [
-                    {
-                        "type": "B",
-                        "qtty": 10,
-                        "price": 699
-                    },
-                    {
-                        "type": "C",
-                        "qtty": 13,
-                        "price": 103
-                    },
-                    {
-                        "type": "C",
-                        "qtty": 3,
-                        "price": 646
-                    },
-                    {
-                        "type": "C",
-                        "qtty": 7,
-                        "price": 350
-                    },
-                    {
-                        "type": "A",
-                        "qtty": 10,
-                        "price": 5
-                    }
-                ],
-                "uuid": "308d1e0f-95f3-42f8-9ae6-7178ae718de5"
+                "types": [],
+                "status": "Partial"
             },
             {
                 "product": "Sugar",
                 "types": [
                     {
+                        "type": "A",
+                        "qtty": 12,
+                        "price": 39
+                    },
+                    {
+                        "type": "A",
+                        "qtty": 19,
+                        "price": 768
+                    },
+                    {
                         "type": "C",
+                        "qtty": 10,
+                        "price": 876
+                    },
+                    {
+                        "type": "C",
+                        "qtty": 15,
+                        "price": 482
+                    },
+                    {
+                        "type": "A",
+                        "qtty": 5,
+                        "price": 616
+                    }
+                ],
+                "due": "2022-09-20 00:00:00"
+            },
+            {
+                "product": "Chips",
+                "uuid": "6fca7393-f087-408a-bc35-b00c1d598bd9"
+            },
+            {
+                "product": "Oil",
+                "types": [
+                    {
+                        "type": "C",
+                        "qtty": 14,
+                        "price": 848
+                    },
+                    {
+                        "type": "C",
+                        "qtty": 18,
+                        "price": 1174
+                    },
+                    {
+                        "type": "A",
                         "qtty": 9,
-                        "price": 189
+                        "price": 1068
+                    },
+                    {
+                        "type": "C",
+                        "qtty": 12,
+                        "price": 545
+                    }
+                ],
+                "status": "Expired"
+            },
+            {
+                "product": "Oil",
+                "types": [
+                    {
+                        "type": "A",
+                        "qtty": 12,
+                        "price": 855
                     },
                     {
                         "type": "A",
-                        "qtty": 17,
-                        "price": 843
+                        "qtty": 13,
+                        "price": 78
                     },
                     {
                         "type": "A",
-                        "qtty": 11,
-                        "price": 201
+                        "qtty": 18,
+                        "price": 251
+                    },
+                    {
+                        "type": "C",
+                        "qtty": 14,
+                        "price": 749
                     },
                     {
                         "type": "B",
                         "qtty": 5,
-                        "price": 53
+                        "price": 289
+                    }
+                ],
+                "due": "2022-01-17 00:00:00"
+            },
+            {
+                "product": "Cement",
+                "uuid": "4bffe41f-cecc-4bec-95f1-9a6cea3e5c5d"
+            },
+            {
+                "product": "Iron",
+                "types": [
+                    {
+                        "type": "C",
+                        "qtty": 6,
+                        "price": 170
+                    },
+                    {
+                        "type": "A",
+                        "qtty": 20,
+                        "price": 647
+                    }
+                ],
+                "due": "2022-12-06 00:00:00"
+            },
+            {
+                "product": "Guns",
+                "types": [
+                    {
+                        "type": "C",
+                        "qtty": 14,
+                        "price": 1818
+                    },
+                    {
+                        "type": "A",
+                        "qtty": 9,
+                        "price": 773
+                    },
+                    {
+                        "type": "A",
+                        "qtty": 2,
+                        "price": 1789
                     },
                     {
                         "type": "C",
-                        "qtty": 17,
-                        "price": 750
+                        "qtty": 5,
+                        "price": 829
                     }
-                ]
+                ],
+                "status": "ToProcess"
+            },
+            {
+                "product": "Furnitures",
+                "uuid": "26d7d367-c5c3-4b13-bcc9-9a82390d4774"
             }
         ],
-        "incoterms": "CIP",
-        "paid": "NO"
+        "wholesale_value": 70961
     },
     "taxes": [
         {
@@ -114,16 +172,21 @@
             "value": 10
         },
         {
-            "type": "Bribe",
-            "value": 35
-        },
-        {
-            "type": "Special Tax",
-            "value": 9
-        },
-        {
             "type": "Imp_tariff",
             "value": 10
         }
-    ]
+    ],
+    "Terms": "CIP",
+    "paid": "YES",
+    "port_route": [
+        "<generator object ports at 0x000001A6AE76D740>",
+        [
+            "Manila",
+            "Cape Town",
+            "Busan",
+            "Shangai",
+            "Los Angeles"
+        ]
+    ],
+    "arrival_date": "2022-09-05 00:00:00"
 }
