@@ -1,5 +1,4 @@
 from collections import abc
-import itertools
 
 from . import constants
 
@@ -14,20 +13,6 @@ def isiter(data):
 
 def iscontainer(data):
     if isinstance(data, (abc.Container, abc.Generator)) and not isinstance(data, abc.Mapping):
-        return True
-    return False
-
-
-def isempty(data):
-    # TODO will malfunction if it is generator
-    if isinstance(data, abc.Generator):
-        try:
-            first = next(data)
-        except StopIteration:
-            return False
-        data = itertools.chain([first], data)
-        return True
-    if not hasattr(data, "__len__") or len(data) == 0:
         return True
     return False
 

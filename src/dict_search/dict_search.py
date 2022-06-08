@@ -145,7 +145,7 @@ class DictSearch:
     def _high_level_operator(self, operator, data, search_container):
         if not utils.iscontainer(search_container):
             raise exceptions.HighLevelOperatorIteratorError
-        if utils.isempty(search_container):
+        if not search_container:
             return False
         operator_map = {
             self.hop_and: lambda matches: all(matches),
@@ -157,7 +157,7 @@ class DictSearch:
         )
 
     def _array_operators(self, operator, data, search_value):
-        if not utils.isiter(data) or utils.isempty(data):
+        if not utils.isiter(data):
             return False
         operator_map = {
             self.aop_all: self._operator_all,
@@ -167,8 +167,10 @@ class DictSearch:
 
     def _operator_all(self, data, search_value):
         if isinstance(search_value, dict):
-            return all(match for d_point in data for match in self._search(d_point, search_value))
-        return all(self._compare(d_point, search_value) for d_point in data)
+            values = [match for d_point in data for match in self._search(d_point, search_value)] or [None]
+            return all(values)
+        values = [self._compare(d_point, search_value) for d_point in data] or [None]
+        return all(values)
 
     def _operator_any(self, data, search_value):
         if isinstance(search_value, dict):
@@ -295,8 +297,6 @@ class DictSearch:
                 utils.set_from_list(selected_dict, prev_keys, values)
 
     def _from_array_selector(self, operator_type, data, search_value, selected_dict, prev_keys, original_data):
-        if utils.isempty(data):
-            return
         try:
             operator, search_value = list(search_value.items())[0]
         except AttributeError:
