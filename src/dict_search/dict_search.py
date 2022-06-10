@@ -1,5 +1,7 @@
+from collections import abc
 import copy
 import re
+import types
 
 from . import exceptions
 from . import utils
@@ -11,6 +13,7 @@ class DictSearch:
         self.operator_char = operator_str if isinstance(operator_str, str) else "$"
         self._truthness_exceptions = expected_exceptions
         self._exc_truth_value = exc_truth_value
+        self._container_types = (set, list, tuple)
 
         # matching operators
         self.lop_ne = f"{self.operator_char}ne"
@@ -61,7 +64,7 @@ class DictSearch:
         self.selection_operators = [self.sel_include, self.sel_exclude]
 
     def dict_search(self, data, match_dict=None, select_dict=None):
-        data = [data] if not utils.iscontainer(data) else data
+        data = [data] if isinstance(data, dict) or not utils.isiter(data) else data
         if not all(not arg or isinstance(arg, dict) for arg in [match_dict, select_dict]):
             raise exceptions.PreconditionError()
         for data_point in data:
@@ -143,7 +146,7 @@ class DictSearch:
             return False
 
     def _high_level_operator(self, operator, data, search_container):
-        if not utils.iscontainer(search_container):
+        if not utils.isoperator(search_container):
             raise exceptions.HighLevelOperatorIteratorError
         if not search_container:
             return False
@@ -195,7 +198,7 @@ class DictSearch:
         }
         default_args = operator_map[operator][0], count, operator_map[operator][1], operator_map[operator][2]
 
-        if utils.iscontainer(search_value):  # match is being used as high level operator
+        if utils.isoperator(search_value):  # match is being used as high level operator
             return utils.shortcircuit_counter(
                 iter(match for search_dict in search_value for match in self._search(data, search_dict)), *default_args
             )
@@ -220,7 +223,7 @@ class DictSearch:
             return [], {}
 
     def _operator_where(self, data, search_value):
-        if not utils.iscontainer(search_value) or len(search_value) != 2:
+        if not utils.isoperator(search_value) or len(search_value) != 2:
             raise exceptions.WhereOperatorError
         array_match_dict, match_dict = search_value
         return [sub_dict for sub_dict in self.dict_search(data, array_match_dict)], match_dict
@@ -255,7 +258,8 @@ class DictSearch:
                     prev_keys.append(key)
                     self._build_selected_dict(key, val, data, selected_dict, prev_keys, original_data)
                     prev_keys.pop(-1)
-                elif utils.iscontainer(data):
+                elif utils.isiter(data) and not isinstance(data, (str, bytes, bytearray, abc.Mapping)):
+                    # iterate over data and apply selection over each data_point
                     self._apply_to_container(data, selection_dict, selected_dict, prev_keys, original_data)
                 else:
                     prev_keys.append(key)
@@ -275,7 +279,7 @@ class DictSearch:
             utils.set_from_list(selected_dict, prev_keys, values)
 
     def _operator_sel_where(self, data, search_value, selected_dict, prev_keys, original_data):
-        if not utils.iscontainer(search_value) or len(search_value) != 2:
+        if not utils.isoperator(search_value) or len(search_value) != 2:
             raise exceptions.WhereOperatorError
         match_dict, operator = search_value
         if isinstance(operator, dict):

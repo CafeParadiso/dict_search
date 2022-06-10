@@ -1,5 +1,3 @@
-from collections import abc
-
 from . import constants
 
 
@@ -11,8 +9,8 @@ def isiter(data):
         return False
 
 
-def iscontainer(data):
-    if isinstance(data, (abc.Container, abc.Generator)) and not isinstance(data, abc.Mapping):
+def isoperator(data):
+    if isinstance(data, (list, tuple, set)):
         return True
     return False
 
