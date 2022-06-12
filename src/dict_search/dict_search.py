@@ -262,7 +262,7 @@ class DictSearch:
 
     def _apply_selection(self, data, selection_dict, selected_dict, prev_keys=None, original_data=None):
         prev_keys = prev_keys if prev_keys else []
-        original_data = copy.deepcopy(data) if not original_data else original_data
+        original_data = data if not original_data else original_data
         if isinstance(selection_dict, dict) and data:
             for key, val in selection_dict.items():
                 if key == self.as_where:
@@ -280,7 +280,13 @@ class DictSearch:
                     self._apply_to_container(data, selection_dict, selected_dict, prev_keys, original_data)
                 else:
                     prev_keys.append(key)
-                    self._apply_selection(data.get(key), val, selected_dict, prev_keys, original_data)
+                    self._apply_selection(
+                        self._assign_consumed_iterator(data, key, val, data.get(key)),
+                        val,
+                        selected_dict,
+                        prev_keys,
+                        original_data,
+                    )
                     prev_keys.pop(-1)
 
     def _apply_to_container(self, data, selection_dict, selected_dict, prev_keys, original_data):
@@ -291,7 +297,7 @@ class DictSearch:
             if sel_dict:
                 values.append(sel_dict)
         if self._forbid != self.sel_exclude and not selected_dict:
-            selected_dict.update(copy.deepcopy(original_data))
+            selected_dict.update(original_data)
         if values:
             utils.set_from_list(selected_dict, prev_keys, values)
 
@@ -311,7 +317,7 @@ class DictSearch:
                         values.append(data_point)
                 elif operator == self.sel_exclude:
                     if not selected_dict:
-                        selected_dict.update(copy.deepcopy(original_data))
+                        selected_dict.update(original_data)
                     if not all(match for match in self._search(data_point, match_dict)):
                         values.append(data_point)
             if values:
@@ -340,11 +346,10 @@ class DictSearch:
 
     def _operator_sel_index(self, data, index, select_op):
         if select_op == self.sel_include:
-            return copy.deepcopy(data)[int(index)]
+            return data[int(index)]
         elif select_op == self.sel_exclude:
-            data_copy = copy.deepcopy(data)
-            data_copy.pop(int(index))
-            return data_copy
+            data.pop(int(index))
+            return data
 
     def _operator_sel_range(self, data, range_str, select_op):
         if select_op == self.sel_include:
@@ -352,18 +357,17 @@ class DictSearch:
         elif select_op == self.sel_exclude:
             if not isinstance(range_str, str) or not utils.israngestr(range_str):
                 return
-            data_copy = copy.deepcopy(data)
-            exec(f"del data[{range_str}]", {"data": data_copy})
-            return data_copy
+            exec(f"del data[{range_str}]", {"data": data})
+            return data
 
     def _build_selected_dict(self, key, operator, data, selected_dict, prev_keys, original_data):
         if operator == self._forbid:
             return
         if operator == self.sel_include:
             self._forbid = self.sel_exclude
-            utils.set_from_list(selected_dict, prev_keys, copy.deepcopy(data).pop(key, None))
+            utils.set_from_list(selected_dict, prev_keys, data.pop(key, None))
         elif operator == self.sel_exclude:
             self._forbid = self.sel_include
             if not selected_dict:
-                selected_dict.update(copy.deepcopy(original_data))
+                selected_dict.update(original_data)
             utils.pop_from_list(selected_dict, prev_keys)
