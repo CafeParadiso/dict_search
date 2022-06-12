@@ -203,12 +203,9 @@ class DictSearch:
     def _match_operators(self, operator, data, search_value):
         try:
             count, search_value = list(search_value.items())[0]
-        except (AttributeError, IndexError):
-            return False
-        try:
-            count = int(count)
-        except (TypeError, ValueError):
-            return False
+            assert isinstance(count, int)
+        except (AttributeError, IndexError, AssertionError):
+            raise exceptions.MatchOperatorError(search_value)
         operator_map = {
             self.mop_match: [lambda m, c: True if m == c else False, lambda m, c: True if m > c else False, False],
             self.mop_matchgt: [lambda m, c: True if m > c else False, lambda m, c: True if m > c else False, True],

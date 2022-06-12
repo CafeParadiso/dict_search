@@ -8,6 +8,13 @@ class HighLevelOperatorIteratorError(TypeError):
         super().__init__("The search value for a high level operator must be a container (but not a dict)")
 
 
+class MatchOperatorError(TypeError):
+    def __init__(self, search_operator):
+        super().__init__(
+            f"Any match operator must be a dict like {{'$match_op': count(int): search_val}}, not:\n {search_operator}"
+        )
+
+
 class WhereOperatorError(TypeError):
     def __init__(self):
         super().__init__(

@@ -111,8 +111,8 @@ def test_nested_high_operator():
             "$or": [
                 {
                     "$and": [
-                        {"posts": {"$match": {"1": {"interacted": {"$all": {"type": "post"}}}}}},
-                        {"posts": {"$matchgte": {"1": {"text": "mdb"}}}},
+                        {"posts": {"$match": {1: {"interacted": {"$all": {"type": "post"}}}}}},
+                        {"posts": {"$matchgte": {1: {"text": "mdb"}}}},
                     ]
                 },
                 {"$or": [{"user": {"id": 141}}]},
