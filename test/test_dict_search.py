@@ -76,7 +76,7 @@ def test_expected_exception():
     import pandas as pd
 
     values = list(
-        DictSearch(expected_exceptions=ValueError).dict_search({"df": pd.DataFrame()}, {"df": {"$gt": pd.DataFrame()}})
+        DictSearch(eval_exc=ValueError).dict_search({"df": pd.DataFrame()}, {"df": {"$gt": pd.DataFrame()}})
     )
     assert not values
 
@@ -92,7 +92,7 @@ def test_exc_truth_value_false():
     import pandas as pd
 
     values = list(
-        DictSearch(expected_exceptions=ValueError, exc_truth_value=True).dict_search(
+        DictSearch(eval_exc=ValueError, exc_truth_value=True).dict_search(
             {"df": pd.DataFrame()}, {"df": {"$gt": pd.DataFrame()}}
         )
     )

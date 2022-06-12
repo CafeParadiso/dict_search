@@ -9,7 +9,6 @@ TODOS
 - check license
 - document properly in README
 UPCOMING FEATURES
-- $if $elif $else (logic operators)
 - $anykey $rekey (regex key)
 - $anyval (use the key over which we are iterating)
 - new low level operator to compare values from within

@@ -9,11 +9,11 @@ from pprint import pprint
 
 
 class DictSearch:
-    def __init__(self, operator_str=None, expected_exceptions=None, exc_truth_value=False):
+    def __init__(self, operator_str=None, eval_exc=None, exc_truth_value=False, consumable_iterator=None):
         self.operator_char = operator_str if isinstance(operator_str, str) else "$"
-        self._truthness_exceptions = expected_exceptions
+        self._eval_exc = eval_exc
         self._exc_truth_value = exc_truth_value
-        self._container_types = (set, list, tuple)
+        self._consumable_iterator = consumable_iterator
 
         # matching operators
         self.lop_ne = f"{self.operator_char}ne"
@@ -71,9 +71,7 @@ class DictSearch:
             if not isinstance(data_point, dict):
                 continue
             if all(match for match in self._search(data_point, match_dict)) if match_dict else True:
-                data_point = self._select(data_point, select_dict)
-                if data_point:
-                    yield data_point
+                yield self._select(data_point, select_dict) if select_dict else data_point
 
     def _search(self, data, match_dict):
         if isinstance(match_dict, dict) and match_dict:
@@ -81,7 +79,7 @@ class DictSearch:
                 if key in self.low_level_operators:
                     yield self._low_level_operator(key, data, value)
                 elif key in self.high_level_operators:
-                    yield self._high_level_operator(key, data, match_dict[key])
+                    yield self._high_level_operator(key, data, value)
                 elif key in self.array_operators:
                     yield self._array_operators(key, data, value)
                 elif key in self.match_operators:
@@ -89,7 +87,7 @@ class DictSearch:
                 elif key in self.array_selectors:
                     yield from self._search(*self._array_selector(key, data, value))
                 elif all(isinstance(obj, dict) for obj in [value, data]):
-                    yield from self._search(data.get(key), value)
+                    yield from self._search(self._assign_consumed_iterator(data, key, value, data.get(key)), value)
                 elif isinstance(data, dict):
                     yield self._compare(data.get(key), value)
                 else:
@@ -97,13 +95,35 @@ class DictSearch:
         else:
             yield self._compare(data, match_dict)
 
+    def _assign_consumed_iterator(self, data, key, value, nested_data):
+        """Assign to original data the consumed generator to avoid bugs while performing matching and after return it
+
+        It will be applied if the next search operator(arg value) is:
+        -array operator, array selector or match operator being used as array operator
+        This behaviour can be avoided by specfiying an iterator type through the exhaustible_iterator parameter
+        """
+        if (
+            not isinstance(nested_data, self._consumable_iterator) and isinstance(nested_data, abc.Iterator)
+            if self._consumable_iterator
+            else isinstance(nested_data, abc.Iterator)
+            and isinstance(value, dict)
+            and value
+            and (
+                list(value.keys())[0] in self.array_operators + self.array_selectors
+                or (list(value.keys())[0] in self.match_operators and not utils.isoperator(list(value.values())[0]))
+            )
+        ):
+            nested_data = list(nested_data)
+            data[key] = nested_data
+        return nested_data
+
     def _compare(self, data, comparison):
         try:
             if data == comparison:
                 return True
             return False
-        except self._truthness_exceptions or Exception:
-            if self._truthness_exceptions:
+        except self._eval_exc or Exception:
+            if self._eval_exc:
                 return self._exc_truth_value
             raise
 
@@ -127,13 +147,13 @@ class DictSearch:
         if operator in self._low_level_comparison_operators:
             try:
                 bool(value)
-            except self._truthness_exceptions or Exception:
-                if not self._truthness_exceptions:
+            except self._eval_exc or Exception:
+                if not self._eval_exc:
                     raise
                 return self._exc_truth_value
         try:
             return operation_map[operator](value, search_value)
-        except self._truthness_exceptions or TypeError:
+        except self._eval_exc or TypeError:
             return False
 
     @staticmethod
@@ -170,10 +190,10 @@ class DictSearch:
 
     def _operator_all(self, data, search_value):
         if isinstance(search_value, dict):
-            values = [match for d_point in data for match in self._search(d_point, search_value)] or [None]
-            return all(values)
-        values = [self._compare(d_point, search_value) for d_point in data] or [None]
-        return all(values)
+            values = [match for d_point in data for match in self._search(d_point, search_value)]
+        else:
+            values = [self._compare(d_point, search_value) for d_point in data]
+        return False if not values else all(values)
 
     def _operator_any(self, data, search_value):
         if isinstance(search_value, dict):
@@ -206,7 +226,7 @@ class DictSearch:
             return utils.shortcircuit_counter(
                 iter(all([m for m in self._search(data_point, search_value)]) for data_point in data), *default_args
             )
-        return utils.shortcircuit_counter(  # match is being used as array operator to compare each value
+        return utils.shortcircuit_counter(  # match is being used as array op. to compare each value in the iterable
             iter(self._compare(d_point, search_value) for d_point in data), *default_args
         )
 
@@ -241,7 +261,7 @@ class DictSearch:
     def _select(self, data, selection_dict):
         selected_dict = {}
         self._apply_selection(data, selection_dict, selected_dict)
-        return selected_dict if selection_dict else data
+        return selected_dict
 
     def _apply_selection(self, data, selection_dict, selected_dict, prev_keys=None, original_data=None):
         prev_keys = prev_keys if prev_keys else []
