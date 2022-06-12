@@ -4,7 +4,7 @@ from src.dict_search.dict_search import DictSearch
 from . import data
 
 
-def test_select_index_include_error():
+def test_index_include_error():
     values = list(
         DictSearch().dict_search(
             [
@@ -17,7 +17,7 @@ def test_select_index_include_error():
     pprint(values)
 
 
-def test_select_index_include():
+def test_index_include():
     values = list(
         DictSearch().dict_search(
             [
@@ -30,20 +30,7 @@ def test_select_index_include():
     pprint(values)
 
 
-def test_select_index_exclude():
-    values = list(
-        DictSearch().dict_search(
-            [
-                {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "damn"}, {"b": 1, "c": "skate"}]}},
-                {"a": {"b": [{"b": 2, "c": "ok"}, {"b": 3, "c": "food"}, {"b": 4, "c": "sneeze "}]}},
-            ],
-            select_dict={"a": {"b": {"$index": {0: 0}}}},
-        )
-    )
-    assert values
-
-
-def test_select_index_include_nested():
+def test_index_include_nested():
     values = list(
         DictSearch().dict_search(
             [
@@ -53,10 +40,11 @@ def test_select_index_include_nested():
             select_dict={"a": {"b": {"$index": {0: {"b": 1}}}}},
         )
     )
+    pprint(values)
     assert values
 
 
-def test_select_index_include_generator():
+def test_index_include_generator():
     values = list(
         DictSearch().dict_search(
             [
@@ -69,7 +57,7 @@ def test_select_index_include_generator():
     print(values)
 
 
-def test_select_index_include_nested_generator():
+def test_index_include_nested_generator():
     values = list(
         DictSearch().dict_search(
             [
@@ -82,7 +70,33 @@ def test_select_index_include_nested_generator():
     print(values)
 
 
-def test_select_index_exclude_generator():
+def test_index_exclude():
+    values = list(
+        DictSearch().dict_search(
+            [
+                {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "damn"}, {"b": 1, "c": "skate"}]}},
+                {"a": {"b": [{"b": 2, "c": "ok"}, {"b": 3, "c": "food"}, {"b": 4, "c": "sneeze "}]}},
+            ],
+            select_dict={"a": {"b": {"$index": {0: 0}}}},
+        )
+    )
+    assert values
+
+
+def test_index_exclude_nested():
+    values = list(
+        DictSearch().dict_search(
+            [
+                {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "damn"}, {"b": 1, "c": "skate"}]}},
+                {"a": {"b": [{"b": 2, "c": "ok"}, {"b": 3, "c": "food"}, {"b": 4, "c": "sneeze "}]}},
+            ],
+            select_dict={"a": {"b": {"$index": {0: {"c": 0}}}}},
+        )
+    )
+    pprint(values)
+
+
+def test_index_exclude_generator():
     values = list(
         DictSearch().dict_search(
             [
@@ -95,7 +109,7 @@ def test_select_index_exclude_generator():
     print(values)
 
 
-def test_select_index_exclude_nested_generator():
+def test_index_exclude_nested_generator():
     values = list(
         DictSearch().dict_search(
             [
@@ -116,6 +130,32 @@ def test_range_malformed():
                 {"a": {"b": [{"b": 2, "c": "ok"}, {"b": 3, "c": "food"}, {"b": 4, "c": "sneeze "}]}},
             ],
             select_dict={"a": {"b": {"$range": {complex(2, 3): 0}}}},
+        )
+    )
+    pprint(values)
+
+
+def test_range_include():
+    values = list(
+        DictSearch().dict_search(
+            [
+                {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "damn"}, {"b": 1, "c": "skate"}]}},
+                {"a": {"b": [{"b": 2, "c": "ok"}, {"b": 3, "c": "food"}, {"b": 4, "c": "sneeze "}]}},
+            ],
+            select_dict={"a": {"b": {"$range": {":2": 1}}}},
+        )
+    )
+    pprint(values)
+
+
+def test_range_include_nested():
+    values = list(
+        DictSearch().dict_search(
+            [
+                {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "damn"}, {"b": 1, "c": "skate"}]}},
+                {"a": {"b": [{"b": 2, "c": "ok"}, {"b": 3, "c": "food"}, {"b": 4, "c": "sneeze "}]}},
+            ],
+            select_dict={"a": {"b": {"$range": {":2": {"c": 1}}}}},
         )
     )
     pprint(values)
@@ -142,32 +182,6 @@ def test_range_exclude_nested():
                 {"a": {"b": [{"b": 2, "c": "ok"}, {"b": 3, "c": "food"}, {"b": 4, "c": "sneeze "}]}},
             ],
             select_dict={"a": {"b": {"$range": {":2": {"c": 0}}}}},
-        )
-    )
-    pprint(values)
-
-
-def test_range_include():
-    values = list(
-        DictSearch().dict_search(
-            [
-                {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "damn"}, {"b": 1, "c": "skate"}]}},
-                {"a": {"b": [{"b": 2, "c": "ok"}, {"b": 3, "c": "food"}, {"b": 4, "c": "sneeze "}]}},
-            ],
-            select_dict={"a": {"b": {"$range": {":2": 1}}}},
-        )
-    )
-    pprint(values)
-
-
-def test_range_include_nested():
-    values = list(
-        DictSearch().dict_search(
-            [
-                {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "damn"}, {"b": 1, "c": "skate"}]}},
-                {"a": {"b": [{"b": 2, "c": "ok"}, {"b": 3, "c": "food"}, {"b": 4, "c": "sneeze "}]}},
-            ],
-            select_dict={"a": {"b": {"$range": {":1": {"c": 1}}}}},
         )
     )
     pprint(values)
@@ -204,7 +218,7 @@ def test_where_excluded():
             data.read_fixtures(),
             {"batch": {"products": {"$any": {"product": "Cement"}}}},
             select_dict={
-                "batch": {"products": {"$where": [{"product": "Cement"}, 1]}},
+                "batch": {"products": {"$where": [{"product": "Cement"}, 0]}},
             },
         )
     )

@@ -1,7 +1,5 @@
 from collections import abc
-import copy
 import re
-import types
 
 from . import exceptions
 from . import utils
@@ -342,6 +340,7 @@ class DictSearch:
             values = self._array_selector_map[operator_type](data, operator)
         except (TypeError, IndexError):
             return
+        utils.set_from_list(original_data, prev_keys, values)
         self._apply_selection(values, search_value, selected_dict, prev_keys, original_data)
 
     def _operator_sel_index(self, data, index, select_op):
