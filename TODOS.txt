@@ -1,10 +1,11 @@
 DOING:
 - test select to support array selectors
-TODOS
 - refactor all test names and variables
 - ultimate testing file by file
+TODOS
 - check style
 - uninstall six, pytz, numpy, pandas
+- use isort
 - set setup.py in detail (libraries for project vs libraries for module)
 - check license
 - document properly in README

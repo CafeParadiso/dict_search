@@ -1,6 +1,9 @@
 from pprint import pprint
 
+from pytest import raises as pytest_raises
+
 from src.dict_search.dict_search import DictSearch
+from src.dict_search import exceptions
 from . import data
 
 
@@ -123,16 +126,17 @@ def test_index_exclude_nested_generator():
 
 
 def test_range_malformed():
-    values = list(
-        DictSearch().dict_search(
-            [
-                {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "damn"}, {"b": 1, "c": "skate"}]}},
-                {"a": {"b": [{"b": 2, "c": "ok"}, {"b": 3, "c": "food"}, {"b": 4, "c": "sneeze "}]}},
-            ],
-            select_dict={"a": {"b": {"$range": {complex(2, 3): 0}}}},
+    with pytest_raises(exceptions.RangeSelectionOperatorError):
+        values = list(
+            DictSearch().dict_search(
+                [
+                    {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "damn"}, {"b": 1, "c": "skate"}]}},
+                    {"a": {"b": [{"b": 2, "c": "ok"}, {"b": 3, "c": "food"}, {"b": 4, "c": "sneeze "}]}},
+                ],
+                select_dict={"a": {"b": {"$range": {complex(2, 3): 0}}}},
+            )
         )
-    )
-    pprint(values)
+        pprint(values)
 
 
 def test_range_include():

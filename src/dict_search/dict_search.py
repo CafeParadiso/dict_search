@@ -68,10 +68,10 @@ class DictSearch:
         for data_point in data:
             if not isinstance(data_point, dict):
                 continue
-            if all(match for match in self._search(data_point, match_dict)) if match_dict else True:
+            if all(match for match in self._match(data_point, match_dict)) if match_dict else True:
                 yield self._select(data_point, select_dict) if select_dict else data_point
 
-    def _search(self, data, match_dict):
+    def _match(self, data, match_dict):
         if isinstance(match_dict, dict) and match_dict:
             for key, value in match_dict.items():
                 if key in self.low_level_operators:
@@ -83,9 +83,9 @@ class DictSearch:
                 elif key in self.match_operators:
                     yield self._match_operators(key, data, value)
                 elif key in self.array_selectors:
-                    yield from self._search(*self._array_selector(key, data, value))
+                    yield from self._match(*self._array_selector(key, data, value))
                 elif all(isinstance(obj, dict) for obj in [value, data]):
-                    yield from self._search(self._assign_consumed_iterator(data, key, value, data.get(key)), value)
+                    yield from self._match(self._assign_consumed_iterator(data, key, value, data.get(key)), value)
                 elif isinstance(data, dict):
                     yield self._compare(data.get(key), value)
                 else:
@@ -174,7 +174,7 @@ class DictSearch:
             self.hop_not: lambda matches: not all(matches),
         }
         return operator_map[operator](
-            match for search_dict in search_container for match in self._search(data, search_dict)
+            match for search_dict in search_container for match in self._match(data, search_dict)
         )
 
     def _array_operators(self, operator, data, search_value):
@@ -188,14 +188,14 @@ class DictSearch:
 
     def _operator_all(self, data, search_value):
         if isinstance(search_value, dict):
-            values = [match for d_point in data for match in self._search(d_point, search_value)]
+            values = [match for d_point in data for match in self._match(d_point, search_value)]
         else:
             values = [self._compare(d_point, search_value) for d_point in data]
         return False if not values else all(values)
 
     def _operator_any(self, data, search_value):
         if isinstance(search_value, dict):
-            return any(match for d_point in data for match in self._search(d_point, search_value))
+            return any(match for d_point in data for match in self._match(d_point, search_value))
         return any(self._compare(d_point, search_value) for d_point in data)
 
     def _match_operators(self, operator, data, search_value):
@@ -215,11 +215,11 @@ class DictSearch:
 
         if utils.isoperator(search_value):  # match is being used as high level operator
             return utils.shortcircuit_counter(
-                iter(match for search_dict in search_value for match in self._search(data, search_dict)), *default_args
+                iter(match for search_dict in search_value for match in self._match(data, search_dict)), *default_args
             )
         elif isinstance(search_value, dict):  # match is being used as array operator
             return utils.shortcircuit_counter(
-                iter(all([m for m in self._search(data_point, search_value)]) for data_point in data), *default_args
+                iter(all([m for m in self._match(data_point, search_value)]) for data_point in data), *default_args
             )
         return utils.shortcircuit_counter(  # match is being used as array op. to compare each value in the iterable
             iter(self._compare(d_point, search_value) for d_point in data), *default_args
@@ -250,7 +250,7 @@ class DictSearch:
     @staticmethod
     def _operator_range(data, range_str):
         if not isinstance(range_str, str) or not utils.israngestr(range_str):
-            return
+            raise exceptions.RangeSelectionOperatorError(range_str)
         return eval(f"data[{range_str}]", {"data": data})
 
     def _select(self, data, selection_dict):
@@ -311,12 +311,12 @@ class DictSearch:
             values = []
             for data_point in data:
                 if operator == self.sel_include:
-                    if all(match for match in self._search(data_point, match_dict)):
+                    if all(match for match in self._match(data_point, match_dict)):
                         values.append(data_point)
                 elif operator == self.sel_exclude:
                     if not selected_dict:
                         selected_dict.update(original_data)
-                    if not all(match for match in self._search(data_point, match_dict)):
+                    if not all(match for match in self._match(data_point, match_dict)):
                         values.append(data_point)
             if values:
                 utils.set_from_list(selected_dict, prev_keys, values)
@@ -355,7 +355,7 @@ class DictSearch:
             return self._operator_range(data, range_str)
         elif select_op == self.sel_exclude:
             if not isinstance(range_str, str) or not utils.israngestr(range_str):
-                return
+                raise exceptions.RangeSelectionOperatorError(range_str)
             exec(f"del data[{range_str}]", {"data": data})
             return data
 

@@ -1,3 +1,6 @@
+from . import constants
+
+
 class PreconditionError(Exception):
     def __init__(self):
         super().__init__("Provide a dict to perform the matching or select")
@@ -25,3 +28,8 @@ class WhereOperatorError(TypeError):
 class ArraySelectorFormatException(ValueError):
     def __init__(self, operator):
         super().__init__(f"Use a dict as '{operator}' operator to match")
+
+
+class RangeSelectionOperatorError(ValueError):
+    def __init__(self, operator):
+        super().__init__(f"Use a 'rangestr' matchin any pattern in {constants.RANGE_PATTERN} not:\n '{operator}'")

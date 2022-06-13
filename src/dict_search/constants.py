@@ -1,12 +1,12 @@
 import re
 
-RANGE_PATTERNS = [
-    re.compile(rf"^(-?\d+)::?$"),
-    re.compile(rf"^:(-?\d+):?$"),
-    re.compile(rf"^::(-?\d+)$"),
-    re.compile(rf"^(-?\d+):(-?\d+):?$"),
-    re.compile(rf"^(-?\d+)::(-?\d+)$"),
-    re.compile(rf"^:(-?\d+):(-?\d+)$"),
-    re.compile(rf"^(-?\d+):(-?\d+):(-?\d+)$"),
-    re.compile(r"^:$"),
-]
+RANGE_PATTERN = re.compile(
+    r"^(-?\d+)::?$|"
+    r"^:(-?\d+):?$|"
+    r"^::(-?\d+)$|"
+    r"^(-?\d+):(-?\d+):?$|"
+    r"^(-?\d+)::(-?\d+)$|"
+    r"^:(-?\d+):(-?\d+)$|"
+    r"^(-?\d+):(-?\d+):(-?\d+)$|"
+    r"^:$"
+)

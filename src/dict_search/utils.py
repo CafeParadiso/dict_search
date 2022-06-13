@@ -16,7 +16,7 @@ def isoperator(data):
 
 
 def israngestr(range_str):
-    if not any(patt.match(range_str) for patt in constants.RANGE_PATTERNS):
+    if not constants.RANGE_PATTERN.match(range_str):
         return False
     return True
 

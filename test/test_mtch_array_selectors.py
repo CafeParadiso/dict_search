@@ -92,12 +92,13 @@ def test_range_empty():
 
 
 def test_range_bad_format():
-    results = list(
-        DictSearch().dict_search(
-            data.range_data, {"mixed": {"a": {"$range": {"a": {"$expr": lambda x: isinstance(x, list)}}}}}
+    with pytest_raises(exceptions.RangeSelectionOperatorError):
+        results = list(
+            DictSearch().dict_search(
+                data.range_data, {"mixed": {"a": {"$range": {"a": {"$expr": lambda x: isinstance(x, list)}}}}}
+            )
         )
-    )
-    assert not results
+        assert not results
 
 
 def test_where():

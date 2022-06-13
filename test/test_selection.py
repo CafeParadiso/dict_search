@@ -175,8 +175,8 @@ def test_wrong_key():
     values = list(
         DictSearch().dict_search(
             data.read_fixtures(),
-            {"order": {"products": {"$any": {"product": "Cement"}}}},
-            select_dict={"order": "akak"},
+            {"batch": {"products": {"$any": {"product": "Cement"}}}},
+            select_dict={"batch": "akak"},
         )
     )
     pprint(values)
