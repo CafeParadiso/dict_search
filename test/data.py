@@ -425,6 +425,9 @@ class CursedData:
     def __bool__(self):
         raise ValueError("The truth value is ambiguous")
 
+    def __eq__(self, other):
+        raise ValueError("The truth value is ambiguous")
+
 
 def build_fixtures(vals):
     names = ["Snoop", "BigL", "Gucc", "Lex", "Southside", "Fat", "Mike", "Joe", "Dogg", "Jones", "Montana", "Soulja"]
@@ -530,8 +533,7 @@ def build_fixtures(vals):
 
 
 def ports(ports_list):
-    random.shuffle(ports_list)
-    for port in ports_list[0:random.randint(0, 5)]:
+    for port in ports_list:
         yield port
 
 

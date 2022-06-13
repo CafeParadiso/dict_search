@@ -1,11 +1,27 @@
+import datetime
+
 from pytest import raises as pytest_raises
 import types
 
+import dict_search
 from src.dict_search.dict_search import DictSearch
 from src.dict_search import exceptions
 
-from .data import data, complex_data
-#from . import data
+from . import data
+from pprint import pprint
+
+
+def test_search_dict_precondition():
+    with pytest_raises(exceptions.PreconditionError):
+        list(DictSearch().dict_search(data.read_fixtures(), 1))
+
+
+def test_mixed_type_data():
+    values = DictSearch().dict_search(
+        [{"demo": 1}, "not_a_dict", 123, {"demo": 2}],
+        {"demo": {"$gte": 1}},
+    )
+    assert len(list(values)) == 2
 
 
 def test_operator_char():
@@ -24,162 +40,90 @@ def test_operator_char():
     assert len([val for val in values]) == 1
 
 
-def test_search_dict_precondition():
-    with pytest_raises(exceptions.PreconditionError):
-        list(DictSearch().dict_search(data, 1))
-
-
-def test_mixed_type_data():
-    values = DictSearch().dict_search(
-        [{"demo": 1}, "not_a_dict", 123, {"demo": 2}],
-        {"demo": {"$gte": 1}},
-    )
-    assert len(list(values)) == 2
-
-
-def test_mixed_type_field():
-    values = DictSearch().dict_search(data, {"special": False})
-    assert len([val for val in values]) == 5
-
-
-def test_wrong_type_comparison():
-    values = DictSearch().dict_search(data, {"fy": {"$lt": "r"}})
-    assert len([val for val in values]) == 0
-
-
-def test_simple_field():
-    values = DictSearch().dict_search(data, {"fy": 2011})
-    assert len([val for val in values]) == 3
-
-
-def test_nested_field():
-    values = DictSearch().dict_search(data, {"assets": {"curr": {"a": 0}}})
-    assert len([val for val in values]) == 5
-
-
-def test_multiple_fields():
-    values = DictSearch().dict_search(
-        data, {"assets": {"curr": {"a": 0}, "non_cur": 4586}, "liab": {"non_cur": {"a": 2447}}}
-    )
-    results = [val for val in values]
-    assert results[0]["name"] == "mdb"
-    assert len(results) == 1
-
-
-def test_malformed_high_level_operator():
-    values = DictSearch().dict_search(
-        [{"assets": "a"}, {"assets": 2}, {"assets": [1, 32]}], {"$and": [1, {"assets": "a"}], "missing": [1, 2]}
-    )
-    results = [val for val in values]
-    assert len(results) == 0
+def test_unexpected_exception():
+    with pytest_raises(ValueError):
+        list(DictSearch().dict_search(data.read_fixtures(), {"info": {"suspicious": True}}))
+    with pytest_raises(ValueError):
+        list(DictSearch().dict_search(data.read_fixtures(), {"info": {"suspicious": {"$gt": 1}}}))
 
 
 def test_expected_exception():
-    import pandas as pd
-
-    values = list(
-        DictSearch(eval_exc=ValueError).dict_search({"df": pd.DataFrame()}, {"df": {"$gt": pd.DataFrame()}})
-    )
-    assert not values
+    values = list(DictSearch(eval_exc=ValueError).dict_search(data.read_fixtures(), {"info": {"suspicious": True}}))
+    assert len(values) == 5
 
 
-def test_unexpected_exception():
-    import pandas as pd
-
-    with pytest_raises(ValueError):
-        list(DictSearch().dict_search({"df": pd.DataFrame()}, {"df": {"$gt": pd.DataFrame()}}))
-
-
-def test_exc_truth_value_false():
-    import pandas as pd
-
+def test_exception_truth_value_true():
     values = list(
         DictSearch(eval_exc=ValueError, exc_truth_value=True).dict_search(
-            {"df": pd.DataFrame()}, {"df": {"$gt": pd.DataFrame()}}
+            data.read_fixtures(), {"info": {"suspicious": "error"}}
         )
     )
-    assert values
+    assert len(values) == 2
+    values = list(
+        DictSearch(eval_exc=ValueError, exc_truth_value=True).dict_search(
+            data.read_fixtures(), {"info": {"suspicious": {"$gt": 2}}}
+        )
+    )
+    assert len(values) == 2
 
 
-def test_search_else_branch():
-    values = list(DictSearch().dict_search({"a": {1: []}}, {"a": {1: {"b": 2}}}))
+def test_mixed_type_field():
+    values = list(DictSearch().dict_search(data.read_fixtures(), {"info": {"container": [150, 150]}}))
+    assert len(values) == 2 and [4, 6] == [v["id"] for v in values]
+
+
+def test_wrong_type_comparison():
+    values = list(DictSearch().dict_search(data.read_fixtures(), {"shipping_date": 12}))
     assert not values
 
 
-def test_nested_high_operator():
-    values = DictSearch().dict_search(
-        complex_data,
-        {
-            "$or": [
-                {
-                    "$and": [
-                        {"posts": {"$match": {1: {"interacted": {"$all": {"type": "post"}}}}}},
-                        {"posts": {"$matchgte": {1: {"text": "mdb"}}}},
-                    ]
-                },
-                {"$or": [{"user": {"id": 141}}]},
-            ]
-        },
+def test_simple_field():
+    values = list(DictSearch().dict_search(data.read_fixtures(), {"id": 0}))
+    assert len(values) == 1 and values[0]["id"] == 0
+
+
+def test_nested_field():
+    values = list(DictSearch().dict_search(data.read_fixtures(), {"info": {"origin": "Spain"}}))
+    assert len(values) == 2 and [val["id"] for val in values] == [6, 9]
+
+
+def test_multiple_fields():
+    values = list(
+        DictSearch(eval_exc=ValueError).dict_search(
+            data.read_fixtures(),
+            {"info": {"suspicious": True}, "shipping_date": {"$gt": datetime.datetime(2022, 5, 1)}},
+        )
     )
-    values = list(values)
-
-    assert len(values) == 4
-    assert [x["id"] for x in values] == [0, 1, 5, 6]
-
-
-def test_array_selector_and_other():
-    values = DictSearch().dict_search(
-        complex_data,
-        {
-            "values": {"$all": {"$gt": 0.5}},
-            "user": {"id": {"$lt": 100}},
-        },
-    )
-    values = list(values)
-    assert len(values) == 2
-    assert [val["user"]["id"] for val in values] == [94, 68]
+    assert len(values) == 3 and [val["id"] for val in values] == [3, 6, 8]
 
 
 def test_unpack_iterator():
-    print(list(
-        DictSearch().dict_search(
-            [
-                {"a": (x for x in ["Sydney", "Moscow"]), "b": 1},
-                {"a": (x for x in ["Bcn", "Sydney"]), "b": 2},
-                {"a": (x for x in ["Bcn", "Svq"]), "b": 3},
-                {"a": (x for x in []), "b": 3},
-            ],
-            {"a": {"$any": "Bcn"}},
+    values = list(DictSearch().dict_search(data.read_fixtures(), {"port_route": {"$any": "Jebel Ali"}}))
+    pprint(values)
+    assert len(values) == 4 and any(
+        val["port_route"] == ["Jebel Ali", "Valencia", "Busan", "Shenzen"] for val in values
+    )
+
+
+def test_start_iterator():
+    port = "Jebel Ali"
+    values = list(
+        DictSearch(consumable_iterator=types.GeneratorType).dict_search(
+            data.read_fixtures(), {"port_route": {"$any": port}}, {"port_route": 1}
         )
-    ))
+    )
+    assert len(values) == 4
+    for val in values:
+        assert port not in list(val["port_route"])
 
 
 def test_literal_iterator():
-    v = list(
-        DictSearch().dict_search(
-            [
-                {"a": (x for x in ["Sydney", "Moscow"]), "b": 1},
-                {"a": (x for x in ["Bcn", "Sydney"]), "b": 2},
-                {"a": (x for x in ["Bcn", "Svq"]), "b": 3},
-                {"a": "cat", "b": 3},
-            ],
-            {"a": {"$inst": types.GeneratorType}},
-        )
-    )
-    print([dikt["a"] for dikt in v])
-    assert len(v) == 3 and all(isinstance(dikt["a"], types.GeneratorType) for dikt in v)
+    values = list(DictSearch().dict_search(data.read_fixtures(), {"port_route": {"$inst": types.GeneratorType}}))
+    assert len(values) == 10 and all(isinstance(val["port_route"], types.GeneratorType) for val in values)
 
 
-def test_exhaustible_iterator():
-    v = list(
-        DictSearch(consumable_iterator=types.GeneratorType).dict_search(
-            [
-                {"a": (x for x in ["Sydney", "Moscow"]), "b": 1},
-                {"a": (x for x in ["Bcn", "Sydney"]), "b": 2},
-                {"a": (x for x in ["Bcn", "Svq"]), "b": 3},
-                {"a": (x for x in []), "b": 3},
-            ],
-            {"a": {"$any": "Bcn"}},
-        )
-    )
-    assert all(len(list(val["a"])) == 1 for val in v)
+def test():
+    pprint(list(DictSearch().dict_search(
+        [{"a": 1}, {"b": 1}, {"a": 2}],
+        select_dict={"a": 1}
+    )))

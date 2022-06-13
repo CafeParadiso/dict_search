@@ -113,7 +113,7 @@ def test_where():
 
 def test_where_type_error():
     results = list(
-        DictSearch().dict_search(
+        DictSearch(eval_exc=ValueError).dict_search(
             [
                 {"a": [{"b": 1, "c": False}, {"b": 0, "c": False}, {"b": 1, "c": True}]},
                 {"a": [{"b": 1, "c": True}, {"b": 0, "c": False}, {"b": 1, "c": True}]},
@@ -206,3 +206,16 @@ def test_data_generator():
         )
     )
     pprint(vals)
+
+
+def test_array_selector_and_other():
+    values = DictSearch().dict_search(
+        data.complex_data,
+        {
+            "values": {"$all": {"$gt": 0.5}},
+            "user": {"id": {"$lt": 100}},
+        },
+    )
+    values = list(values)
+    assert len(values) == 2
+    assert [val["user"]["id"] for val in values] == [94, 68]

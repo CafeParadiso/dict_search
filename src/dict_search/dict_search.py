@@ -69,7 +69,13 @@ class DictSearch:
             if not isinstance(data_point, dict):
                 continue
             if all(match for match in self._match(data_point, match_dict)) if match_dict else True:
-                yield self._select(data_point, select_dict) if select_dict else data_point
+                if select_dict:
+                    selected_dict = self._select(data_point, select_dict)
+                    if not selected_dict:
+                        continue
+                    yield selected_dict
+                else:
+                    yield data_point
 
     def _match(self, data, match_dict):
         if isinstance(match_dict, dict) and match_dict:
