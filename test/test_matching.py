@@ -3,7 +3,6 @@ import datetime
 from pytest import raises as pytest_raises
 import types
 
-import dict_search
 from src.dict_search.dict_search import DictSearch
 from src.dict_search import exceptions
 
@@ -98,23 +97,21 @@ def test_multiple_fields():
 
 
 def test_unpack_iterator():
-    values = list(DictSearch().dict_search(data.read_fixtures(), {"port_route": {"$any": "Jebel Ali"}}))
-    pprint(values)
-    assert len(values) == 4 and any(
-        val["port_route"] == ["Jebel Ali", "Valencia", "Busan", "Shenzen"] for val in values
-    )
+    port = "Jebel Ali"
+    values = list(DictSearch().dict_search(data.read_fixtures(), {"port_route": {"$any": {"port": port}}}))
+    assert len(values) == 4 and all(port in [v["port"] for v in val["port_route"]] for val in values)
 
 
 def test_start_iterator():
     port = "Jebel Ali"
     values = list(
         DictSearch(consumable_iterator=types.GeneratorType).dict_search(
-            data.read_fixtures(), {"port_route": {"$any": port}}, {"port_route": 1}
+            data.read_fixtures(), {"port_route": {"$any": {"port": port}}}, {"port_route": 1}
         )
     )
     assert len(values) == 4
     for val in values:
-        assert port not in list(val["port_route"])
+        assert port not in list(v["port"] for v in val["port_route"])
 
 
 def test_literal_iterator():
@@ -123,7 +120,4 @@ def test_literal_iterator():
 
 
 def test():
-    pprint(list(DictSearch().dict_search(
-        [{"a": 1}, {"b": 1}, {"a": 2}],
-        select_dict={"a": 1}
-    )))
+    pprint(list(DictSearch().dict_search([{"a": 1}, {"b": 1}, {"a": 2}], select_dict={"a": 1})))

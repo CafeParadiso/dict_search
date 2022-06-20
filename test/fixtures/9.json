@@ -123,8 +123,14 @@
     "port_route": [
         "<generator object ports at 0x000001A6AE76D660>",
         [
-            "Valencia",
-            "Cape Town"
+            {
+                "port": "Valencia",
+                "days": 19
+            },
+            {
+                "port": "Cape Town",
+                "days": 24
+            }
         ]
     ],
     "producer_country": "Indonesia"

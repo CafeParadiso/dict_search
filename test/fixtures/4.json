@@ -110,10 +110,22 @@
     "port_route": [
         "<generator object ports at 0x000001A6AE76D740>",
         [
-            "Los Angeles",
-            "Busan",
-            "Shangai",
-            "Jebel Ali"
+            {
+                "port": "Los Angeles",
+                "days": 40
+            },
+            {
+                "port": "Busan",
+                "days": 32
+            },
+            {
+                "port": "Shangai",
+                "days": 40
+            },
+            {
+                "port": "Jebel Ali",
+                "days": 25
+            }
         ]
     ],
     "arrival_date": "2022-09-28 00:00:00"

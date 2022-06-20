@@ -1,182 +1,227 @@
-from copy import deepcopy
-
-from pprint import pprint
 from unittest import mock
 
 from src.dict_search.dict_search import DictSearch
 from . import data
 
 
-def test_incomp_first_incl():
+def test_malformed():
     values = list(
         DictSearch().dict_search(
-            deepcopy(data.student_data),
-            {"subjects": {"$cont": "Chemistry"}},
-            {"status": 1, "subjects": 0},
+            data.read_fixtures(),
+            select_dict={"id": "1"},
         )
     )
-    assert all({"status": mock.ANY} == v for v in values) if values else False
+    assert not values
 
 
-def test_incomp_first_excl():
+def test_mixed_include():
     values = list(
         DictSearch().dict_search(
-            deepcopy(data.student_data),
-            {"subjects": {"$cont": "Chemistry"}},
-            {"status": 0, "subjects": 1},
+            data.read_fixtures(),
+            select_dict={"id": 1, "batch": 0},
         )
     )
-    assert all({"id": mock.ANY, "subjects": mock.ANY, "info": mock.ANY} == v for v in values) if values else False
+    assert len(values) == 10 and all({"id": mock.ANY} == v for v in values)
+
+
+def test_mixed_exclude():
+    values = list(
+        DictSearch().dict_search(
+            data.read_fixtures(),
+            select_dict={"id": 0, "batch": 1},
+        )
+    )
+    assert (
+        len(values) == 10
+        and all("id" not in v.keys() and "batch" in v.keys() for v in values)
+        and all(len(v.keys()) > 1 for v in values)
+    )
+
+
+def test_include_missing_key():
+    values = list(
+        DictSearch().dict_search(
+            data.read_fixtures(),
+            select_dict={"missing": 1},
+        )
+    )
+    assert not values
+    values = list(
+        DictSearch().dict_search(
+            data.read_fixtures(),
+            select_dict={"id": 1, "missing": 1},
+        )
+    )
+    assert len(values) == 10 and values == [{"id": i} for i, v in enumerate(values)]
 
 
 def test_include_one():
     values = list(
         DictSearch().dict_search(
-            deepcopy(data.student_data),
-            {"subjects": {"$cont": "Chemistry"}},
-            {"status": 1},
+            data.read_fixtures(),
+            select_dict={"id": 1},
         )
     )
-    assert all({"status": mock.ANY} == v for v in values) if values else False
+    assert len(values) == 10 and values == [{"id": i} for i, v in enumerate(values)]
 
 
-def test_multiple_include():
-    values = list(
-        DictSearch().dict_search(
-            deepcopy(data.student_data),
-            {"subjects": {"$cont": "Chemistry"}},
-            {"status": 1, "id": 1},
-        )
-    )
-    assert all({"status": mock.ANY, "id": mock.ANY} == v for v in values) if values else False
-
-
-def test_nested_include():
-    values = list(
-        DictSearch().dict_search(
-            deepcopy(data.student_data),
-            {"subjects": {"$cont": "Chemistry"}},
-            {"info": {"full_name": {"first": 1}, "w": 1}, "id": 1},
-        )
-    )
-    pprint(values)
-    assert (
-        all({"info": {"full_name": {"first": mock.ANY}, "w": mock.ANY}, "id": mock.ANY} == v for v in values)
-        if values
-        else False
-    )
-
-
-def test_exclude_one():
-    values = list(
-        DictSearch().dict_search(
-            deepcopy(data.student_data),
-            {"subjects": {"$cont": "Chemistry"}},
-            {"status": 0},
-        )
-    )
-    assert all({"id": mock.ANY, "subjects": mock.ANY, "info": mock.ANY} == v for v in values) if values else False
-
-
-def test_multiple_exclude():
-    values = list(
-        DictSearch().dict_search(
-            deepcopy(data.student_data),
-            {"subjects": {"$cont": "Chemistry"}},
-            {"status": 0, "id": 0},
-        )
-    )
-    assert all({"subjects": mock.ANY, "info": mock.ANY} == v for v in values) if values else False
-
-
-def test_nested_exclude():
-    values = list(
-        DictSearch().dict_search(
-            deepcopy(data.student_data),
-            {"subjects": {"$cont": "Chemistry"}},
-            {"info": {"full_name": {"first": 0}}, "id": 0},
-        )
-    )
-    assert (
-        all(
-            {
-                "subjects": mock.ANY,
-                "status": mock.ANY,
-                "info": {"full_name": {"last": mock.ANY}, "w": mock.ANY, "h": mock.ANY, "mentions": mock.ANY},
-            }
-            == v
-            for v in values
-        )
-        if values
-        else False
-    )
-
-
-def test_wrong_keys():
-    values = list(
-        DictSearch().dict_search(
-            deepcopy(data.student_data),
-            {"subjects": {"$cont": "Chemistry"}},
-            {"wrong": {"full_name": {"first": 0}}, "id": 0},
-        )
-    )
-    pprint(values)
-    assert (
-        all(
-            {
-                "subjects": mock.ANY,
-                "status": mock.ANY,
-                "info": {
-                    "full_name": {"last": mock.ANY, "first": mock.ANY},
-                    "w": mock.ANY,
-                    "h": mock.ANY,
-                    "mentions": mock.ANY,
-                },
-            }
-            == v
-            for v in values
-        )
-        if values
-        else False
-    )
-
-
-def test_select_only():
-    values = list(DictSearch().dict_search([{"a": 1, "b": 0}, {"a": 2, "b": 1}], select_dict={"a": 1}))
-    assert all(v == {"a": mock.ANY} for v in values)
-
-
-def test_include_array():
+def test_include_multiple():
     values = list(
         DictSearch().dict_search(
             data.read_fixtures(),
-            {"order": {"products": {"$any": {"product": "Cement"}}}},
+            select_dict={"paid": 1, "id": 1},
+        )
+    )
+    assert len(values) == 10 and all({"id": mock.ANY, "paid": mock.ANY} == v for v in values)
+
+
+def test_include_nested():
+    values = list(
+        DictSearch().dict_search(
+            data.read_fixtures(),
+            select_dict={"info": {"origin": 1}, "id": 1},
+        )
+    )
+    assert len(values) == 10 and all({"info": {"origin": mock.ANY}, "id": mock.ANY} == v for v in values)
+
+
+def test_include_in_list():
+    values = list(
+        DictSearch().dict_search(
+            data.read_fixtures(),
             select_dict={
-                "order": {"products": {"types": {"price": 1}}},
+                "batch": {"products": {"types": {"price": 1}}},
                 "id": 1,
             },
         )
     )
-    pprint(values)
+    assert len(values) == 10 and all(
+        {"batch": {"products": mock.ANY}, "id": i} == val
+        or {"id": i} == val
+        and all({"price": mock.ANY} == v for va in val["batch"]["products"] for v in va["types"])
+        if "batch" in val.keys()
+        else True
+        for i, val in enumerate(values)
+    )
 
 
-def test_exclude_array():
+def test_include_in_iterator():
     values = list(
         DictSearch().dict_search(
             data.read_fixtures(),
-            {"order": {"products": {"$any": {"product": "Cement"}}}},
-            select_dict={"order": {"products": {"types": 0}}, "info": 0},
+            select_dict={"port_route": {"port": 1}},
         )
     )
-    pprint(values)
+    assert len(values) == 8
+    assert all({"port": mock.ANY} == v for val in values for v in val["port_route"])
 
 
-def test_wrong_key():
+def test_exclude_missing_key():
     values = list(
         DictSearch().dict_search(
             data.read_fixtures(),
-            {"batch": {"products": {"$any": {"product": "Cement"}}}},
-            select_dict={"batch": "akak"},
+            select_dict={"missing": 0},
         )
     )
-    pprint(values)
+    assert not values
+    for d_point in data.read_fixtures():
+        keys = list(d_point.keys())
+        values = list(
+            DictSearch().dict_search(
+                d_point,
+                select_dict={"id": 0, "missing": 0},
+            )
+        )
+        assert values
+        keys.remove("id")
+        assert list(values[0].keys()) == keys
+
+
+def test_exclude_one():
+    counter = 0
+    for d_point in data.read_fixtures():
+        keys = list(d_point.keys())
+        values = list(
+            DictSearch().dict_search(
+                d_point,
+                select_dict={"batch": 0},
+            )
+        )
+        assert values
+        counter += 1
+        keys.remove("batch")
+        assert list(values[0].keys()) == keys
+    assert counter == 10
+
+
+def test_exclude_multiple():
+    counter = 0
+    for d_point in data.read_fixtures():
+        keys = list(d_point.keys())
+        values = list(
+            DictSearch().dict_search(
+                d_point,
+                select_dict={"batch": 0, "id": 0},
+            )
+        )
+        assert values
+        counter += 1
+        [keys.remove(k) for k in ["batch", "id"]]
+        assert list(values[0].keys()) == keys
+    assert counter == 10
+
+
+def test_exclude_nested():
+    counter = 0
+    for d_point in data.read_fixtures():
+        keys = list(d_point.keys())
+        info_keys = list(d_point["info"].keys())
+        values = list(
+            DictSearch().dict_search(
+                d_point,
+                select_dict={"info": {"origin": 0}, "id": 0},
+            )
+        )
+        assert values
+        counter += 1
+        keys.remove("id")
+        assert list(values[0].keys()) == keys
+        info_keys.remove("origin")
+        assert list(values[0]["info"].keys()) == info_keys
+    assert counter == 10
+
+
+def test_exclude_in_list():
+    counter = 0
+    for d_point in data.read_fixtures():
+        keys = list(d_point.keys())
+        values = list(
+            DictSearch().dict_search(
+                d_point,
+                select_dict={"batch": {"products": {"product": 0}}},
+            )
+        )
+        assert values
+        counter += 1
+        assert list(values[0].keys()) == keys
+        assert all("product" not in val.keys() for val in values[0]["batch"]["products"])
+    assert counter == 10
+
+
+def test_exclude_in_iterator():
+    counter = 0
+    for d_point in data.read_fixtures():
+        keys = list(d_point.keys())
+        values = list(
+            DictSearch().dict_search(
+                d_point,
+                select_dict={"port_route": {"port": 0}},
+            )
+        )
+        assert values
+        counter += 1
+        assert list(values[0].keys()) == keys
+        port_route = values[0]["port_route"]
+        if port_route:
+            assert all({"days": mock.ANY} == port for port in port_route)
+    assert counter == 10

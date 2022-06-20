@@ -1,4 +1,5 @@
 from pprint import pprint
+from unittest import mock
 
 from pytest import raises as pytest_raises
 
@@ -7,96 +8,92 @@ from src.dict_search import exceptions
 from . import data
 
 
-def test_index_include_error():
-    values = list(
-        DictSearch().dict_search(
-            [
-                {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "damn"}, {"b": 1, "c": "skate"}]}},
-                {"a": {"b": [{"b": 2, "c": "ok"}, {"b": 3, "c": "food"}, {"b": 4, "c": "sneeze "}]}},
-            ],
-            select_dict={"a": {"b": {"$index": {3: {"b": 1}}}}},
+def test_index_malformed():
+    with pytest_raises(exceptions.ArraySelectorFormatException):
+        list(
+            DictSearch().dict_search(
+                data.read_fixtures(),
+                select_dict={"batch": {"products": {"$index": {1}}}},
+            )
         )
-    )
-    pprint(values)
 
 
 def test_index_include():
-    values = list(
-        DictSearch().dict_search(
-            [
-                {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "damn"}, {"b": 1, "c": "skate"}]}},
-                {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "food"}, {"b": 1, "c": "sneeze "}]}},
-            ],
-            select_dict={"a": {"b": {"$index": {0: 1}}}},
+    counter = 0
+    for d_point in data.read_fixtures():
+        if len(d_point["batch"]["products"]) >= 5:
+            comparison = d_point["batch"]["products"][4]
+        values = list(
+            DictSearch().dict_search(d_point, select_dict={"batch": {"products": {"$index": {4: 1}}}})
         )
-    )
-    pprint(values)
+        if values:
+            counter += 1
+            assert values[0].get("batch").get("products") == comparison
+    assert counter == 6
 
 
 def test_index_include_nested():
-    values = list(
-        DictSearch().dict_search(
-            [
-                {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "damn"}, {"b": 1, "c": "skate"}]}},
-                {"a": {"b": [{"b": 2, "c": "ok"}, {"b": 3, "c": "food"}, {"b": 4, "c": "sneeze "}]}},
-            ],
-            select_dict={"a": {"b": {"$index": {0: {"b": 1}}}}},
+    counter = 0
+    for d_point in data.read_fixtures():
+        if len(d_point["batch"]["products"]) >= 5:
+            comparison = d_point["batch"]["products"][4]["product"]
+        values = list(
+            DictSearch().dict_search(d_point, select_dict={"batch": {"products": {"$index": {4: {"product": 1}}}}})
         )
-    )
-    pprint(values)
-    assert values
+        if values:
+            counter += 1
+            assert values[0].get("batch").get("products").get("product") == comparison
+    assert counter == 6
 
 
 def test_index_include_generator():
-    values = list(
-        DictSearch().dict_search(
-            [
-                {"a": {"b": (v for v in ["a", "b", "c"])}},
-                {"a": {"b": (v for v in ["c", "b", "a"])}},
-            ],
-            select_dict={"a": {"b": {"$index": {0: 1}}}},
+    counter = 0
+    for d_point in data.read_fixtures():
+        values = list(
+            DictSearch().dict_search(d_point, select_dict={"port_route": {"$index": {0: 1}}})
         )
-    )
-    print(values)
+        if values:
+            counter += 1
+            assert values[0] == {'port_route': {'days': mock.ANY, 'port': mock.ANY}}
+    assert counter == 8
 
 
 def test_index_include_nested_generator():
-    values = list(
-        DictSearch().dict_search(
-            [
-                {"a": {"b": (v for v in [{"a": "a", "b": 1}, {"a": "b", "b": 2}])}},
-                {"a": {"b": (v for v in [{"a": "b", "b": 2}, {"a": "a", "b": 1}])}},
-            ],
-            select_dict={"a": {"b": {"$index": {0: {"a": 1}}}}},
+    counter = 0
+    for d_point in data.read_fixtures():
+        values = list(
+            DictSearch().dict_search(d_point, select_dict={"port_route": {"$index": {0: {"days": 1}}}})
         )
-    )
-    print(values)
+        if values:
+            counter += 1
+            assert values[0] == {'port_route': {'days': mock.ANY}}
+    assert counter == 8
 
 
 def test_index_exclude():
-    values = list(
-        DictSearch().dict_search(
-            [
-                {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "damn"}, {"b": 1, "c": "skate"}]}},
-                {"a": {"b": [{"b": 2, "c": "ok"}, {"b": 3, "c": "food"}, {"b": 4, "c": "sneeze "}]}},
-            ],
-            select_dict={"a": {"b": {"$index": {0: 0}}}},
+    counter = 0
+    for d_point in data.read_fixtures():
+        keys = d_point.keys()
+        values = list(
+            DictSearch().dict_search(d_point, select_dict={"port_route": {"$index": {0: 0}}})
         )
-    )
-    assert values
+        if values:
+            counter += 1
+            assert values[0].keys() == keys
+    assert counter == 8
 
 
 def test_index_exclude_nested():
-    values = list(
-        DictSearch().dict_search(
-            [
-                {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "damn"}, {"b": 1, "c": "skate"}]}},
-                {"a": {"b": [{"b": 2, "c": "ok"}, {"b": 3, "c": "food"}, {"b": 4, "c": "sneeze "}]}},
-            ],
-            select_dict={"a": {"b": {"$index": {0: {"c": 0}}}}},
+    counter = 0
+    for d_point in data.read_fixtures():
+        keys = d_point.keys()
+        values = list(
+            DictSearch().dict_search(d_point, select_dict={"port_route": {"$index": {0: {"port": 0}}}})
         )
-    )
-    pprint(values)
+        if values:
+            counter += 1
+            assert values[0].keys() == keys
+    assert counter == 8
 
 
 def test_index_exclude_generator():

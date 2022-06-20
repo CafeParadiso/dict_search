@@ -60,9 +60,18 @@
     "port_route": [
         "<generator object ports at 0x000001A6AE76D660>",
         [
-            "Los Angeles",
-            "Jebel Ali",
-            "Algeciras"
+            {
+                "port": "Los Angeles",
+                "days": 41
+            },
+            {
+                "port": "Jebel Ali",
+                "days": 36
+            },
+            {
+                "port": "Algeciras",
+                "days": 22
+            }
         ]
     ],
     "arrival_date": "2022-07-14 00:00:00"

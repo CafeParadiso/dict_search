@@ -458,7 +458,7 @@ def build_fixtures(vals):
     for _ in range(vals):
         random.shuffle(taxes)
         random.shuffle(ports_list)
-        used_ports = ports_list[0:random.randint(0, 5)]
+        used_ports = [{"port": port, "days": random.randint(5, 45)} for port in ports_list[0:random.randint(0, 5)]]
         document = {
             "id": _,
             "shipping_date": datetime.datetime(2022, random.randint(1, 12), random.randint(1, 28)),
@@ -555,7 +555,3 @@ def read_fixtures():
     for file in listdir(directory):
         with open(path.join(directory, file), "r") as fp:
             yield json.load(fp, object_hook=custom_decoder)
-
-
-if __name__ == "__main__":
-    build_fixtures(10)

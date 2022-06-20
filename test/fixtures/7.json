@@ -58,10 +58,22 @@
     "port_route": [
         "<generator object ports at 0x000001A6AE76D660>",
         [
-            "Jebel Ali",
-            "Valencia",
-            "Busan",
-            "Shenzen"
+            {
+                "port": "Jebel Ali",
+                "days": 32
+            },
+            {
+                "port": "Valencia",
+                "days": 34
+            },
+            {
+                "port": "Busan",
+                "days": 9
+            },
+            {
+                "port": "Shenzen",
+                "days": 32
+            }
         ]
     ],
     "arrival_date": "2022-08-25 00:00:00"

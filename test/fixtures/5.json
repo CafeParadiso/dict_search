@@ -35,10 +35,22 @@
     "port_route": [
         "<generator object ports at 0x000001A6AE76D660>",
         [
-            "Valencia",
-            "Busan",
-            "Cape Town",
-            "Jebel Ali"
+            {
+                "port": "Valencia",
+                "days": 22
+            },
+            {
+                "port": "Busan",
+                "days": 11
+            },
+            {
+                "port": "Cape Town",
+                "days": 20
+            },
+            {
+                "port": "Jebel Ali",
+                "days": 19
+            }
         ]
     ],
     "arrival_date": "2023-03-05 00:00:00"

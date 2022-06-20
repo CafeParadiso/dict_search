@@ -181,11 +181,26 @@
     "port_route": [
         "<generator object ports at 0x000001A6AE76D740>",
         [
-            "Manila",
-            "Cape Town",
-            "Busan",
-            "Shangai",
-            "Los Angeles"
+            {
+                "port": "Manila",
+                "days": 41
+            },
+            {
+                "port": "Cape Town",
+                "days": 33
+            },
+            {
+                "port": "Busan",
+                "days": 44
+            },
+            {
+                "port": "Shangai",
+                "days": 31
+            },
+            {
+                "port": "Los Angeles",
+                "days": 17
+            }
         ]
     ],
     "arrival_date": "2022-09-05 00:00:00"

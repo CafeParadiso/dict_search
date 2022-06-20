@@ -153,11 +153,26 @@
     "port_route": [
         "<generator object ports at 0x000001A6AE76D740>",
         [
-            "Cape Town",
-            "Los Angeles",
-            "Shangai",
-            "Rotterdam",
-            "Valencia"
+            {
+                "port": "Cape Town",
+                "days": 14
+            },
+            {
+                "port": "Los Angeles",
+                "days": 14
+            },
+            {
+                "port": "Shangai",
+                "days": 39
+            },
+            {
+                "port": "Rotterdam",
+                "days": 34
+            },
+            {
+                "port": "Valencia",
+                "days": 6
+            }
         ]
     ],
     "arrival_date": "2022-05-25 00:00:00"
