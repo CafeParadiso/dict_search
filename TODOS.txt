@@ -8,7 +8,8 @@ TODOS
 - use isort
 - set setup.py in detail (libraries for project vs libraries for module)
 - check license
-- document properly in README
+- document properly in README (ipython cells)
+- invert self._forbid if possible
 UPCOMING FEATURES
 - $anykey $rekey (regex key)
 - $anyval?

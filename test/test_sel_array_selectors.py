@@ -21,10 +21,11 @@ def test_index_malformed():
 def test_index_include():
     counter = 0
     for d_point in data.read_fixtures():
-        if len(d_point["batch"]["products"]) >= 5:
-            comparison = d_point["batch"]["products"][4]
+        if not len(d_point["batch"]["products"]) >= 6:
+            continue
+        comparison = d_point["batch"]["products"][6]
         values = list(
-            DictSearch().dict_search(d_point, select_dict={"batch": {"products": {"$index": {4: 1}}}})
+            DictSearch().dict_search(d_point, select_dict={"batch": {"products": {"$index": {6: 1}}}})
         )
         if values:
             counter += 1
@@ -73,27 +74,32 @@ def test_index_include_nested_generator():
 def test_index_exclude():
     counter = 0
     for d_point in data.read_fixtures():
-        keys = d_point.keys()
+        initial_data = d_point.get("batch", {}).get("products", [None])
+        initial_keys = d_point.keys()
         values = list(
-            DictSearch().dict_search(d_point, select_dict={"port_route": {"$index": {0: 0}}})
+            DictSearch().dict_search(d_point, select_dict={"batch": {"products": {"$index": {0: 0}}}})
         )
         if values:
             counter += 1
-            assert values[0].keys() == keys
-    assert counter == 8
+            assert len(values[0]["batch"]["products"]) == len(initial_data) - 1
+            assert values[0].keys() == initial_keys
+    assert counter == 10
 
 
 def test_index_exclude_nested():
     counter = 0
     for d_point in data.read_fixtures():
-        keys = d_point.keys()
+        initial_data = d_point.get("batch", {}).get("products")
+        initial_keys = d_point.keys()
         values = list(
-            DictSearch().dict_search(d_point, select_dict={"port_route": {"$index": {0: {"port": 0}}}})
+            DictSearch().dict_search(d_point, select_dict={"batch": {"products": {"$index": {0: {"product": 0}}}}})
         )
         if values:
             counter += 1
-            assert values[0].keys() == keys
-    assert counter == 8
+            assert "product" not in list(values[0]["batch"]["products"][0].keys())
+            assert len(values[0]["batch"]["products"]) == len(initial_data)
+            assert values[0].keys() == initial_keys
+    assert counter == 10
 
 
 def test_index_exclude_generator():
@@ -163,12 +169,13 @@ def test_range_include_nested():
 
 
 def test_range_exclude():
-    values = list(
-        DictSearch().dict_search(
-            [
+    data = [
                 {"a": {"b": [{"b": 1, "c": "ok"}, {"b": 0, "c": "damn"}, {"b": 1, "c": "skate"}]}},
                 {"a": {"b": [{"b": 2, "c": "ok"}, {"b": 3, "c": "food"}, {"b": 4, "c": "sneeze "}]}},
-            ],
+            ]
+    values = list(
+        DictSearch().dict_search(
+            data,
             select_dict={"a": {"b": {"$range": {":2": 0}}}},
         )
     )

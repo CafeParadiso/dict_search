@@ -70,7 +70,7 @@ class DictSearch:
                 continue
             if all(match for match in self._match(data_point, match_dict)) if match_dict else True:
                 if select_dict:
-                    selected_dict = self._select(data_point, select_dict)
+                    selected_dict = self._select(dict(data_point.items()), select_dict)
                     if not selected_dict:
                         continue
                     yield selected_dict
@@ -336,34 +336,61 @@ class DictSearch:
             self.as_index: self._operator_sel_index,
             self.as_range: self._operator_sel_range,
         }
-        if search_value in self.selection_operators:
-            try:
-                utils.set_from_list(selected_dict, prev_keys, operator_map[operator_type](data, operator, search_value))
-            except (TypeError, IndexError):
-                return
-            return
         try:
-            values = self._array_selector_map[operator_type](data, operator)
+            operator_map[operator_type](data, operator, search_value, selected_dict, prev_keys, original_data)
         except (TypeError, IndexError):
             return
-        utils.set_from_list(original_data, prev_keys, values)
-        self._apply_selection(values, search_value, selected_dict, prev_keys, original_data)
 
-    def _operator_sel_index(self, data, index, select_op):
+    def _operator_sel_index(self, data, index, select_op, selected_dict, prev_keys, original_data):
         if select_op == self.sel_include:
-            return data[int(index)]
+            self._forbid = self.sel_exclude
+            values = self._operator_index(data, index)
+            utils.set_from_list(selected_dict, prev_keys, values)
         elif select_op == self.sel_exclude:
-            data.pop(int(index))
-            return data
+            self._forbid = self.sel_include
+            data_copy = list(data)
+            data_copy.pop(int(index))
+            if not selected_dict:
+                selected_dict.update(original_data)
+            utils.set_from_list(selected_dict, prev_keys, data_copy)
+        else:
+            try:
+                value = self._operator_index(data, index)
+            except (TypeError, IndexError):
+                return
+            sel_dict = self._select(value, select_op)
+            if not sel_dict:
+                return
+            if self._forbid == self.sel_exclude:
+                utils.set_from_list(selected_dict, prev_keys, sel_dict)
+            elif self._forbid == self.sel_include:
+                data_copy = list(data)
+                data_copy[index] = sel_dict
+                if not selected_dict:
+                    selected_dict.update(original_data)
+                utils.set_from_list(selected_dict, prev_keys, data_copy)
 
-    def _operator_sel_range(self, data, range_str, select_op):
+    def _operator_sel_range(self, data, range_str, select_op, selected_dict, prev_keys, original_data):
+        if not isinstance(range_str, str) or not utils.israngestr(range_str):
+            raise exceptions.RangeSelectionOperatorError(range_str)
         if select_op == self.sel_include:
-            return self._operator_range(data, range_str)
+            self._forbid = self.sel_exclude
+            utils.set_from_list(selected_dict, prev_keys, self._operator_range(data, range_str))
         elif select_op == self.sel_exclude:
-            if not isinstance(range_str, str) or not utils.israngestr(range_str):
-                raise exceptions.RangeSelectionOperatorError(range_str)
+            self._forbid = self.sel_include
             exec(f"del data[{range_str}]", {"data": data})
-            return data
+            if not selected_dict:
+                selected_dict.update(original_data)
+            utils.set_from_list(selected_dict, prev_keys, data)
+        else:
+            values = [self._select(val, select_op) for val in eval(f"data[{range_str}]")]
+            if self._forbid == self.sel_exclude:
+                utils.set_from_list(selected_dict, prev_keys, values)
+            elif self._forbid == self.sel_include:
+                if not selected_dict:
+                    selected_dict.update(original_data)
+                exec(f"data[{range_str}] = values", {"data": data, "values": values})
+                utils.set_from_list(selected_dict, prev_keys, data)
 
     def _build_selected_dict(self, key, operator, data, selected_dict, prev_keys, original_data):
         if operator == self._forbid:
