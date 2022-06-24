@@ -103,16 +103,14 @@ def test_index_exclude_nested():
 
 
 def test_index_exclude_generator():
-    values = list(
-        DictSearch().dict_search(
-            [
-                {"a": {"b": (v for v in ["a", "b", "c"])}},
-                {"a": {"b": (v for v in ["c", "b", "a"])}},
-            ],
-            select_dict={"a": {"b": {"$index": {0: 0}}}},
+    counter = 0
+    for d_point in data.read_fixtures():
+        values = list(
+            DictSearch().dict_search(d_point, select_dict={"port_route": {"$index": {0: 0}}})
         )
-    )
-    print(values)
+        if values:
+            counter += 1
+    assert counter == 8
 
 
 def test_index_exclude_nested_generator():
