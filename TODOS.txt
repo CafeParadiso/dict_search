@@ -9,9 +9,9 @@ TODOS
 - set setup.py in detail (libraries for project vs libraries for module)
 - check license
 - document properly in README (ipython cells)
-- invert self._forbid if possible
 UPCOMING FEATURES
 - $anykey $rekey (regex key)
 - $anyval?
-- new low level operator to compare values from within
+- $nindex  select more than one arbitrary index?  b = [a[idx] for idx in idxs]
+- $ new low level operator to compare values from within
 - greedy search

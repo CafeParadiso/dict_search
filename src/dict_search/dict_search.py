@@ -1,3 +1,4 @@
+from copy import copy
 from collections import abc
 import re
 
@@ -58,7 +59,7 @@ class DictSearch:
         # select
         self.sel_include = 1
         self.sel_exclude = 0
-        self._allowed = None
+        self._used = None
         self.selection_operators = [self.sel_include, self.sel_exclude]
 
     def dict_search(self, data, match_dict=None, select_dict=None):
@@ -70,7 +71,7 @@ class DictSearch:
                 continue
             if all(match for match in self._match(data_point, match_dict)) if match_dict else True:
                 if select_dict:
-                    selected_dict = self._select(dict(data_point.items()), select_dict)
+                    selected_dict = self._select(data_point, select_dict)
                     if not selected_dict:
                         continue
                     yield selected_dict
@@ -99,7 +100,7 @@ class DictSearch:
         else:
             yield self._compare(data, match_dict)
 
-    def _assign_consumed_iterator(self, data, key, value, nested_data):
+    def _assign_consumed_iterator(self, data, key, value, nested_data, operator_check=True):
         """Assign to original data the consumed generator to avoid bugs while performing matching and after return it
 
         It will be applied if the next search operator(arg value) is:
@@ -115,6 +116,8 @@ class DictSearch:
             and (
                 list(value.keys())[0] in self.array_operators + self.array_selectors
                 or (list(value.keys())[0] in self.match_operators and not utils.isoperator(list(value.values())[0]))
+                if operator_check
+                else True
             )
         ):
             nested_data = list(nested_data)
@@ -266,7 +269,7 @@ class DictSearch:
 
     def _apply_selection(self, data, selection_dict, selected_dict, prev_keys=None, original_data=None):
         prev_keys = prev_keys if prev_keys else []
-        original_data = data if not original_data else original_data
+        original_data = data.copy() if not original_data else original_data
         if isinstance(selection_dict, dict) and data:
             for key, val in selection_dict.items():
                 if key == self.as_where:
@@ -277,14 +280,14 @@ class DictSearch:
                     continue
                 elif val in self.selection_operators and isinstance(data, dict):
                     prev_keys.append(key)
-                    self._build_selected_dict(key, val, data, selected_dict, prev_keys, original_data)
+                    self._build_selected_dict(val, data.get(key), selected_dict, prev_keys, original_data)
                     prev_keys.pop(-1)
                 elif utils.isiter(data) and not isinstance(data, (str, bytes, bytearray, abc.Mapping)):
                     self._apply_to_container(data, selection_dict, selected_dict, prev_keys, original_data)
                 else:
                     prev_keys.append(key)
                     self._apply_selection(
-                        self._assign_consumed_iterator(data, key, val, data.get(key)),
+                        self._assign_consumed_iterator(data, key, val, data.get(key), operator_check=False),
                         val,
                         selected_dict,
                         prev_keys,
@@ -293,16 +296,22 @@ class DictSearch:
                     prev_keys.pop(-1)
 
     def _apply_to_container(self, data, selection_dict, selected_dict, prev_keys, original_data):
+        values = self._select_iter(data, selection_dict)
+        if not values:
+            return
+        if self._used == self.sel_exclude and not selected_dict:
+            selected_dict.update(original_data)
+        utils.set_from_list(selected_dict, prev_keys, values)
+
+    def _select_iter(self, data, selection_dict):
         values = []
-        for data_point in data:
-            sel_dict = {}
-            self._apply_selection(data_point, selection_dict, sel_dict)
+        for d_point in data:
+            if not isinstance(d_point, dict):
+                continue
+            sel_dict = self._select(d_point, selection_dict)
             if sel_dict:
                 values.append(sel_dict)
-        if self._allowed == self.sel_exclude and not selected_dict:
-            selected_dict.update(original_data)
-        if values:
-            utils.set_from_list(selected_dict, prev_keys, values)
+        return values
 
     def _operator_sel_where(self, data, search_value, selected_dict, prev_keys, original_data):
         if not utils.isoperator(search_value) or len(search_value) != 2:
@@ -342,27 +351,24 @@ class DictSearch:
 
     def _operator_sel_index(self, data, index, select_op, selected_dict, prev_keys, original_data):
         if select_op == self.sel_include:
-            self._allowed = self.sel_include
+            self._used = self.sel_include
             values = self._operator_index(data, index)
             utils.set_from_list(selected_dict, prev_keys, values)
         elif select_op == self.sel_exclude:
-            self._allowed = self.sel_exclude
-            data_copy = list(data)
-            data_copy.pop(int(index))
+            self._used = self.sel_exclude
+            values = list(data)
+            values.pop(index)
             if not selected_dict:
                 selected_dict.update(original_data)
-            utils.set_from_list(selected_dict, prev_keys, data_copy)
+            utils.set_from_list(selected_dict, prev_keys, values)
         else:
-            try:
-                value = self._operator_index(data, index)
-            except (TypeError, IndexError):
-                return
+            value = self._operator_index(data, index)
             sel_dict = self._select(value, select_op)
             if not sel_dict:
                 return
-            if self._allowed == self.sel_include:
+            if self._used == self.sel_include:
                 utils.set_from_list(selected_dict, prev_keys, sel_dict)
-            elif self._allowed == self.sel_exclude:
+            elif self._used == self.sel_exclude:
                 data_copy = list(data)
                 data_copy[index] = sel_dict
                 if not selected_dict:
@@ -372,30 +378,33 @@ class DictSearch:
     def _operator_sel_range(self, data, range_str, select_op, selected_dict, prev_keys, original_data):
         values = self._operator_range(data, range_str)
         if select_op == self.sel_include:
-            self._allowed = self.sel_include
-            utils.set_from_list(selected_dict, prev_keys, values)
+            self._build_selected_dict(select_op, values, selected_dict, prev_keys, original_data)
         elif select_op == self.sel_exclude:
-            self._allowed = self.sel_exclude
-            exec(f"del data[{range_str}]", {"data": data})
+            data_copy = copy(data)
+            self._used = self.sel_exclude
+            exec(f"del data[{range_str}]", {"data": data_copy})
             if not selected_dict:
                 selected_dict.update(original_data)
-            utils.set_from_list(selected_dict, prev_keys, data)
+            utils.set_from_list(selected_dict, prev_keys, data_copy)
         else:
-            values = [self._select(val, select_op) for val in eval(f"data[{range_str}]")]
-            if self._allowed == self.sel_include:
+            values = self._select_iter(eval(f"data[{range_str}]"), select_op)
+            if not values:
+                return
+            if self._used == self.sel_include:
                 utils.set_from_list(selected_dict, prev_keys, values)
-            elif self._allowed == self.sel_exclude:
+            elif self._used == self.sel_exclude:
+                data_copy = copy(data)
                 if not selected_dict:
                     selected_dict.update(original_data)
-                exec(f"data[{range_str}] = values", {"data": data, "values": values})
-                utils.set_from_list(selected_dict, prev_keys, data)
+                exec(f"data[{range_str}] = values", {"data": data_copy, "values": values})
+                utils.set_from_list(selected_dict, prev_keys, data_copy)
 
-    def _build_selected_dict(self, key, operator, data, selected_dict, prev_keys, original_data):
+    def _build_selected_dict(self, operator, data, selected_dict, prev_keys, original_data):
         if operator == self.sel_include:
-            self._allowed = self.sel_include
-            utils.set_from_list(selected_dict, prev_keys, data.pop(key, None))
+            self._used = self.sel_include
+            utils.set_from_list(selected_dict, prev_keys, data)
         elif operator == self.sel_exclude:
-            self._allowed = self.sel_exclude
+            self._used = self.sel_exclude
             if not selected_dict:
                 selected_dict.update(original_data)
             utils.pop_from_list(selected_dict, prev_keys)
