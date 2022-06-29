@@ -103,9 +103,7 @@ def test_match_malformed_query():
 
 def test_match_malformed_count():
     with pytest_raises(MatchOperatorError):
-        list(
-            DictSearch().dict_search([{"a": {1: "2", 2: "3"}, "b": True}, {"a": []}], {"a": {"$match": {"s": 1}}})
-        )
+        list(DictSearch().dict_search([{"a": {1: "2", 2: "3"}, "b": True}, {"a": []}], {"a": {"$match": {"s": 1}}}))
 
 
 def test_match_emtpy_operator():

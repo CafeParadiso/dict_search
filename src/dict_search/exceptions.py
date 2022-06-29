@@ -21,7 +21,7 @@ class MatchOperatorError(TypeError):
 class WhereOperatorError(TypeError):
     def __init__(self):
         super().__init__(
-            "The search value for 'where' must be a container of two elements: [{array_match_condition}, {match_dict}]"
+            "The search value for 'where' must be a list of two elements: [{array_match_condition}, {match_dict}]"
         )
 
 

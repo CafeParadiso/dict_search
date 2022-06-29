@@ -199,12 +199,7 @@ def generator(values):
 
 
 def test_data_generator():
-    vals = list(
-        DictSearch().dict_search(
-            [{"a": generator(4), "b": generator(3)}], {"a": {"$any": 3}}
-
-        )
-    )
+    vals = list(DictSearch().dict_search([{"a": generator(4), "b": generator(3)}], {"a": {"$any": 3}}))
     pprint(vals)
 
 

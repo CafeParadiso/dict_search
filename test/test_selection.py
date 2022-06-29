@@ -1,13 +1,14 @@
 from unittest import mock
 
 from src.dict_search.dict_search import DictSearch
-from . import data
+from . import data as test_data
+from pprint import pprint
 
 
 def test_malformed():
     values = list(
         DictSearch().dict_search(
-            data.read_fixtures(),
+            test_data.read_fixtures(),
             select_dict={"id": "1"},
         )
     )
@@ -17,7 +18,7 @@ def test_malformed():
 def test_mixed_include():
     values = list(
         DictSearch().dict_search(
-            data.read_fixtures(),
+            test_data.read_fixtures(),
             select_dict={"id": 1, "batch": 0},
         )
     )
@@ -25,30 +26,24 @@ def test_mixed_include():
 
 
 def test_mixed_exclude():
-    values = list(
-        DictSearch().dict_search(
-            data.read_fixtures(),
-            select_dict={"id": 0, "batch": 1},
-        )
-    )
-    assert (
-        len(values) == 10
-        and all("id" not in v.keys() and "batch" in v.keys() for v in values)
-        and all(len(v.keys()) > 1 for v in values)
-    )
+    for d_point in test_data.read_fixtures():
+        initial_keys = list(d_point.keys())
+        values = list(DictSearch().dict_search(d_point, select_dict={"id": 0, "batch": 1}))
+        initial_keys.remove("id")
+        assert initial_keys == list(values[0].keys())
 
 
 def test_include_missing_key():
     values = list(
         DictSearch().dict_search(
-            data.read_fixtures(),
+            test_data.read_fixtures(),
             select_dict={"missing": 1},
         )
     )
     assert not values
     values = list(
         DictSearch().dict_search(
-            data.read_fixtures(),
+            test_data.read_fixtures(),
             select_dict={"id": 1, "missing": 1},
         )
     )
@@ -58,7 +53,7 @@ def test_include_missing_key():
 def test_include_one():
     values = list(
         DictSearch().dict_search(
-            data.read_fixtures(),
+            test_data.read_fixtures(),
             select_dict={"id": 1},
         )
     )
@@ -68,7 +63,7 @@ def test_include_one():
 def test_include_multiple():
     values = list(
         DictSearch().dict_search(
-            data.read_fixtures(),
+            test_data.read_fixtures(),
             select_dict={"paid": 1, "id": 1},
         )
     )
@@ -78,7 +73,7 @@ def test_include_multiple():
 def test_include_nested():
     values = list(
         DictSearch().dict_search(
-            data.read_fixtures(),
+            test_data.read_fixtures(),
             select_dict={"info": {"origin": 1}, "id": 1},
         )
     )
@@ -88,27 +83,27 @@ def test_include_nested():
 def test_include_in_list():
     values = list(
         DictSearch().dict_search(
-            data.read_fixtures(),
+            test_data.read_fixtures(),
             select_dict={
                 "batch": {"products": {"types": {"price": 1}}},
                 "id": 1,
             },
         )
     )
-    assert len(values) == 10 and all(
-        {"batch": {"products": mock.ANY}, "id": i} == val
-        or {"id": i} == val
-        and all({"price": mock.ANY} == v for va in val["batch"]["products"] for v in va["types"])
-        if "batch" in val.keys()
-        else True
-        for i, val in enumerate(values)
-    )
+    assert len(values) == 10
+    for i, val in enumerate(values):
+        if "batch" in val:
+            assert val == {"id": i, "batch": {"products": mock.ANY}}
+            assert "price" in val["batch"]["products"][0]["types"][0]
+        else:
+            assert val == {"id": i}
 
 
 def test_include_in_iterator():
+    data = list(test_data.read_fixtures())
     values = list(
         DictSearch().dict_search(
-            data.read_fixtures(),
+            data,
             select_dict={"port_route": {"port": 1}},
         )
     )
@@ -119,12 +114,12 @@ def test_include_in_iterator():
 def test_exclude_missing_key():
     values = list(
         DictSearch().dict_search(
-            data.read_fixtures(),
+            test_data.read_fixtures(),
             select_dict={"missing": 0},
         )
     )
     assert not values
-    for d_point in data.read_fixtures():
+    for d_point in test_data.read_fixtures():
         keys = list(d_point.keys())
         values = list(
             DictSearch().dict_search(
@@ -139,7 +134,7 @@ def test_exclude_missing_key():
 
 def test_exclude_one():
     counter = 0
-    for d_point in data.read_fixtures():
+    for d_point in test_data.read_fixtures():
         keys = list(d_point.keys())
         values = list(
             DictSearch().dict_search(
@@ -156,8 +151,8 @@ def test_exclude_one():
 
 def test_exclude_multiple():
     counter = 0
-    for d_point in data.read_fixtures():
-        keys = list(d_point.keys())
+    for d_point in test_data.read_fixtures():
+        initial_keys = list(d_point.keys())
         values = list(
             DictSearch().dict_search(
                 d_point,
@@ -166,14 +161,14 @@ def test_exclude_multiple():
         )
         assert values
         counter += 1
-        [keys.remove(k) for k in ["batch", "id"]]
-        assert list(values[0].keys()) == keys
+        [initial_keys.remove(k) for k in ["batch", "id"]]
+        assert list(values[0].keys()) == initial_keys
     assert counter == 10
 
 
 def test_exclude_nested():
     counter = 0
-    for d_point in data.read_fixtures():
+    for d_point in test_data.read_fixtures():
         keys = list(d_point.keys())
         info_keys = list(d_point["info"].keys())
         values = list(
@@ -193,7 +188,7 @@ def test_exclude_nested():
 
 def test_exclude_in_list():
     counter = 0
-    for d_point in data.read_fixtures():
+    for d_point in test_data.read_fixtures():
         keys = list(d_point.keys())
         values = list(
             DictSearch().dict_search(
@@ -210,7 +205,7 @@ def test_exclude_in_list():
 
 def test_exclude_in_iterator():
     counter = 0
-    for d_point in data.read_fixtures():
+    for d_point in test_data.read_fixtures():
         keys = list(d_point.keys())
         values = list(
             DictSearch().dict_search(
@@ -218,10 +213,10 @@ def test_exclude_in_iterator():
                 select_dict={"port_route": {"port": 0}},
             )
         )
-        assert values
-        counter += 1
-        assert list(values[0].keys()) == keys
-        port_route = values[0]["port_route"]
-        if port_route:
-            assert all({"days": mock.ANY} == port for port in port_route)
-    assert counter == 10
+        if values:
+            counter += 1
+            assert list(values[0].keys()) == keys
+            port_route = values[0]["port_route"]
+            if port_route:
+                assert all({"days": mock.ANY} == port for port in port_route)
+    assert counter == 8
