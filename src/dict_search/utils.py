@@ -1,4 +1,5 @@
 from . import constants
+from pprint import pprint
 
 
 def isiter(data):
@@ -21,37 +22,38 @@ def israngestr(range_str):
     return True
 
 
-def shortcircuit_counter(generator, check, counter, eager_check, eager_value):
-    matches = 0
+def shortcircuit_counter(generator, check, tresh, eager_check, eager_value):
+    count = 0
     for match in generator:
         if match:
-            matches += 1
-            if eager_check(matches, counter):
+            count += 1
+            if eager_check(count, tresh):
                 return eager_value
-    return check(matches, counter)
-
-
-def get_from_list(dikt, keys):
-    try:
-        val = dikt.get(keys[0])
-    except AttributeError:
-        return
-    if len(keys) == 1:
-        return val
-    get_from_list(val, keys[1:])
+    return check(count, tresh)
 
 
 def set_from_list(dikt, keys, val):
     if len(keys) == 1:
         dikt.update({keys[0]: val})
         return dikt
-    set_from_list(dikt, keys[:-1], {keys[-1]: val})
+    try:
+        prev_val = get_from_list(dikt, keys[:-1]).copy()
+        prev_val.update({keys[-1]: val})
+        set_from_list(dikt, keys[:-1], prev_val)
+    except KeyError:
+        set_from_list(dikt, keys[:-1], {keys[-1]: val})
 
 
-def pop_from_list(dikt, keys):
+def get_from_list(dikt, keys):
     if len(keys) == 1:
-        dikt.pop(keys[0], None)
-        return dikt
+        return dikt[keys[0]]
+    get_from_list(dikt[keys[0]], keys[1:])
+
+
+def pop_from_list(dikt, keys, return_value=False):
+    if len(keys) == 1:
+        val = dikt.pop(keys[0], None)
+        return dikt if not return_value else val
     dikt = dikt.get(keys[0])
     if not dikt:
         return

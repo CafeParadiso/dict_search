@@ -3,7 +3,7 @@ DOING:
 - refactor all test names and variables
 - ultimate testing (test by verifying that matched documents meeet criteria and the remaining ones don't)
 TODOS
-- check style
+- check if self._used is needed
 - uninstall six, pytz, numpy, pandas
 - use isort
 - set setup.py in detail (libraries for project vs libraries for module)
@@ -13,5 +13,5 @@ UPCOMING FEATURES
 - $anykey $rekey (regex key)
 - $anyval?
 - $nindex  select more than one arbitrary index?  b = [a[idx] for idx in idxs]
-- $ new low level operator to compare values from within
+- $ new low level operator to compare values from within ([keys], func=lambda x, y: x == y)
 - greedy search
