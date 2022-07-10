@@ -1,19 +1,17 @@
-DOING:
-- test select to support array selectors
-- refactor all test names and variables
 TODOS
+- rethink select from iterable
+- finish tests
+- improve exception messages. Provide examples
 - uninstall six, pytz, numpy, pandas
 - isort
 - set setup.py in detail (libraries for project vs libraries for module)
 - check license
 - document properly in README (ipython cells)
 UPCOMING FEATURES
-- coerce_list argument
-- rethink select from iterable
+- pop empty
 - $anykey $rekey (regex key)
 - $anyval?
-- $nindex  select more than one arbitrary index?  b = [a[idx] for idx in idxs] ie a [1, 2, 3, 4] -> a[1, 4]
-- incl_index_on_error=False?
+- $index  select more than one arbitrary index?  b = [a[idx] for idx in idxs] ie a [1, 2, 3, 4] -> a[1, 4]
 - $ new low level operator to compare values from within ([keys], func=lambda x, y: x == y)
 - greedy search
 - unpack (return only the values)
