@@ -8,11 +8,18 @@ from pprint import pprint
 
 
 class DictSearch:
-    def __init__(self, operator_str=None, eval_exc=None, exc_truth_value=False, consumable_iterator=None):
+    def __init__(
+            self, operator_str=None, eval_exc=None, exc_truth_value=False, consumable_iterators=None, pop_empty=True
+    ):
         self.operator_char = operator_str if isinstance(operator_str, str) else "$"
         self._eval_exc = eval_exc
         self._exc_truth_value = exc_truth_value
-        self._consumable_iterator = consumable_iterator
+        self._consumable_iterators = consumable_iterators
+        if consumable_iterators:
+            self._consumable_iterators = (
+                consumable_iterators if isinstance(consumable_iterators, list) else [consumable_iterators]
+            )
+        self._pop_empty = pop_empty
 
         # matching operators
         self.lop_ne = f"{self.operator_char}ne"
@@ -108,8 +115,8 @@ class DictSearch:
         except AttributeError:
             return
         if (
-            not isinstance(nested_data, self._consumable_iterator) and isinstance(nested_data, abc.Iterator)
-            if self._consumable_iterator
+            not isinstance(nested_data, *self._consumable_iterators) and isinstance(nested_data, abc.Iterator)
+            if self._consumable_iterators
             else isinstance(nested_data, abc.Iterator)
             and isinstance(value, dict)
             and value
@@ -311,7 +318,7 @@ class DictSearch:
         values = self._select_iter(data, selection_dict)
         if not values:
             return
-        excl = lambda: self.exclude(selected_dict, prev_keys, original_data, values)
+        excl = lambda: self._exclude(selected_dict, prev_keys, original_data, values)
         self._build_dict(self._used, values, selected_dict, prev_keys, original_data, excl_func=excl)
 
     def _operator_sel_where(self, data, search_value, selected_dict, prev_keys, original_data):
@@ -336,7 +343,7 @@ class DictSearch:
         if values == data:
             return
         if values:
-            self.exclude(selected_dict, prev_keys, original_data, values)
+            self._exclude(selected_dict, prev_keys, original_data, values)
 
     def _from_array_selector(self, operator_type, data, search_value, selected_dict, prev_keys, original_data):
         try:
@@ -354,9 +361,7 @@ class DictSearch:
             return
         if select_op in self.selection_operators:
             excl = lambda: self.index_excl_simple(data, index, selected_dict, prev_keys, original_data)
-            self._build_dict(
-                select_op, value, selected_dict, prev_keys, original_data, excl_func=excl
-            )
+            self._build_dict(select_op, value, selected_dict, prev_keys, original_data, excl_func=excl)
         elif isinstance(value, dict):
             value = self._select(value, select_op)
             if not value:
@@ -370,16 +375,15 @@ class DictSearch:
             del values[index]
         except TypeError:
             return
-        self.exclude(selected_dict, prev_keys, original_data, values)
+        self._exclude(selected_dict, prev_keys, original_data, values)
 
     def index_excl_nested(self, data, index, value, selected_dict, prev_keys, original_data):
         values = data[:]
         try:
             values[index] = value
         except TypeError:
-            utils.pop_from_list(selected_dict, prev_keys)
             return
-        self.exclude(selected_dict, prev_keys, original_data, values)
+        self._exclude(selected_dict, prev_keys, original_data, values)
 
     def _operator_sel_range(self, data, range_str, select_op, selected_dict, prev_keys, original_data):
         try:
@@ -397,21 +401,23 @@ class DictSearch:
             self._build_dict(self._used, values, selected_dict, prev_keys, original_data, excl_func=excl)
 
     def range_excl_simple(self, data, range_str, selected_dict, prev_keys, original_data):
-        if not isinstance(data, list):
-            return
         values = data[:]
-        exec(f"del data[{range_str}]", {"data": values})
-        self.exclude(selected_dict, prev_keys, original_data, values)
+        try:
+            exec(f"del data[{range_str}]", {"data": values})
+        except TypeError:
+            return
+        self._exclude(selected_dict, prev_keys, original_data, values)
 
     def range_excl_nested(self, data, range_str, values, selected_dict, prev_keys, original_data):
-        if not isinstance(data, list):
-            return
         data_copy = data[:]
-        exec(f"data[{range_str}] = values", {"data": data_copy, "values": values})
-        self.exclude(selected_dict, prev_keys, original_data, data_copy)
+        try:
+            exec(f"data[{range_str}] = values", {"data": data_copy, "values": values})
+        except TypeError:
+            return
+        self._exclude(selected_dict, prev_keys, original_data, data_copy)
 
     @staticmethod
-    def exclude(selected_dict, prev_keys, original_data, values):
+    def _exclude(selected_dict, prev_keys, original_data, values):
         if not selected_dict:
             selected_dict.update(original_data)
         utils.set_from_list(selected_dict, prev_keys, values)
@@ -428,5 +434,5 @@ class DictSearch:
                 excl_func()
                 return
             if not selected_dict:
-                selected_dict.update(original_data)
+                selected_dict.update(dict(original_data.items()))
             utils.pop_from_list(selected_dict, prev_keys)

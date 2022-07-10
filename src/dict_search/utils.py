@@ -50,11 +50,13 @@ def get_from_list(dikt, keys):
     get_from_list(dikt[keys[0]], keys[1:])
 
 
-def pop_from_list(dikt, keys, return_value=False):
-    if len(keys) == 1:
-        val = dikt.pop(keys[0], None)
-        return dikt if not return_value else val
-    dikt = dikt.get(keys[0])
+def pop_from_list(dikt, keys):
     if not dikt:
         return
-    pop_from_list(dikt, keys[1:])
+    if len(keys) == 1:
+        dikt.pop(keys[0], None)
+    if len(keys) == 2:
+        dikt.update({keys[0]: {k: v for k, v in dikt[keys[0]].items() if k != keys[1]}})
+    else:
+        pop_from_list(dikt.get(keys[0]), keys[1:])
+    return dikt
