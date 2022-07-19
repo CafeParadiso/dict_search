@@ -13,7 +13,6 @@ class DictSearch:
         eval_exc=None,
         exc_truth_value=False,
         consumable_iterators=None,
-        pop_empty=False,
         coerce_list=False,
     ):
         self.operator_char = operator_str if isinstance(operator_str, str) else "$"
@@ -24,8 +23,8 @@ class DictSearch:
             self._consumable_iterators = (
                 consumable_iterators if isinstance(consumable_iterators, list) else [consumable_iterators]
             )
-        self._pop_empty = pop_empty
         self._coerce_list = coerce_list
+        self._initial_data = None
 
         # matching operators
         self.lop_ne = f"{self.operator_char}ne"
@@ -78,9 +77,11 @@ class DictSearch:
         for data_point in data:
             if not isinstance(data_point, dict):
                 continue
+            self._initial_data = data_point.copy()
             if all(match for match in self._match(data_point, match_dict)) if match_dict else True:
                 if select_dict:
                     selected_dict = self._select(data_point, select_dict)
+                    self._initial_data.clear()
                     if not selected_dict:
                         continue
                     yield selected_dict
@@ -351,13 +352,13 @@ class DictSearch:
         if values:
             self._exclude(selected_dict, prev_keys, original_data, values)
 
-    def _from_array_selector(self, operator_type, data, search_value, selected_dict, prev_keys, original_data):
+    def _from_array_selector(self, operator_type, data, select_dict, selected_dict, prev_keys, original_data):
         try:
-            operator, search_value = list(search_value.items())[0]
+            operator, select_dict = list(select_dict.items())[0]
         except AttributeError:
             raise exceptions.ArraySelectorFormatException(operator_type)
         {self.as_index: self._operator_sel_index, self.as_range: self._operator_sel_range}[operator_type](
-            data, operator, search_value, selected_dict, prev_keys, original_data
+            data, operator, select_dict, selected_dict, prev_keys, original_data
         )
 
     def _operator_sel_index(self, data, index, select_op, selected_dict, prev_keys, original_data):
@@ -375,7 +376,7 @@ class DictSearch:
             excl = lambda: self._index_excl_nested(data, index, value, selected_dict, prev_keys, original_data)
             self._build_dict(self._used, value, selected_dict, prev_keys, original_data, excl_func=excl)
 
-    def _index_excl(self, data,selected_dict, prev_keys, original_data, func, *args):
+    def _index_excl(self, data, selected_dict, prev_keys, original_data, func, *args):
         values = self._try_coerce_list(data[:])
         try:
             func(*args)
@@ -456,5 +457,5 @@ class DictSearch:
                 excl_func()
                 return
             if not selected_dict:
-                selected_dict.update(dict(original_data.items()))
+                selected_dict.update(original_data)
             utils.pop_from_list(selected_dict, prev_keys)
