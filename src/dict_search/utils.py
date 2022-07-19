@@ -32,31 +32,39 @@ def shortcircuit_counter(generator, check, tresh, eager_check, eager_value):
     return check(count, tresh)
 
 
+def get_from_list(dikt, keys):
+    if not isinstance(dikt, dict) or not dikt:
+        raise KeyError
+    if len(keys) == 1:
+        return dikt[keys[0]]
+    return get_from_list(dikt[keys[0]], keys[1:])
+
+
 def set_from_list(dikt, keys, val):
     if len(keys) == 1:
         dikt.update({keys[0]: val})
         return dikt
     try:
-        prev_val = get_from_list(dikt, keys[:-1]).copy()
-        prev_val.update({keys[-1]: val})
-        set_from_list(dikt, keys[:-1], prev_val)
+        prev_val = get_from_list(dikt, keys[:-1])
     except KeyError:
-        set_from_list(dikt, keys[:-1], {keys[-1]: val})
-
-
-def get_from_list(dikt, keys):
-    if len(keys) == 1:
-        return dikt[keys[0]]
-    get_from_list(dikt[keys[0]], keys[1:])
+        return set_from_list(dikt, keys[:-1], {keys[-1]: val})
+    else:
+        if isinstance(prev_val, dict):
+            prev_val = prev_val.copy()
+            prev_val.update({keys[-1]: val})
+            return set_from_list(dikt, keys[:-1], prev_val)
+        else:
+            return set_from_list(dikt, keys[:-1], {keys[-1]: val})
 
 
 def pop_from_list(dikt, keys):
-    if not dikt:
-        return
     if len(keys) == 1:
         dikt.pop(keys[0], None)
-    if len(keys) == 2:
-        dikt.update({keys[0]: {k: v for k, v in dikt[keys[0]].items() if k != keys[1]}})
-    else:
-        pop_from_list(dikt.get(keys[0]), keys[1:])
-    return dikt
+        return dikt
+    try:
+        prev_val = get_from_list(dikt, keys[:-1])
+    except KeyError:
+        return
+    if not isinstance(prev_val, dict) or not prev_val:
+        return
+    return set_from_list(dikt, keys[:-1], {k: v for k, v in prev_val.items() if k != keys[-1]})
