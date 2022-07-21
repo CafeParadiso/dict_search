@@ -24,7 +24,6 @@ class DictSearch:
                 consumable_iterators if isinstance(consumable_iterators, list) else [consumable_iterators]
             )
         self._coerce_list = coerce_list
-        self._initial_data = None
 
         # matching operators
         self.lop_ne = f"{self.operator_char}ne"
@@ -40,6 +39,8 @@ class DictSearch:
         self.lop_regex = f"{self.operator_char}regex"
         self.lop_expr = f"{self.operator_char}expr"
         self.lop_inst = f"{self.operator_char}inst"
+        self.lop_with = f"{self.operator_char}with"
+        self._initial_data = None
         self.low_level_operators = [val for key, val in self.__dict__.items() if re.match(r"^lop_.*$", key)]
         self._low_level_comparison_operators = [self.lop_ne, self.lop_gt, self.lop_gte, self.lop_lt, self.lop_lte]
 
@@ -109,7 +110,7 @@ class DictSearch:
                     yield False
         else:
             yield self._compare(data, match_dict)
-
+    
     def _assign_consumed_iterator(self, data, key, value, operator_check=True):
         """Assign to original data the consumed generator to avoid bugs while performing matching and after return it
 
@@ -129,7 +130,7 @@ class DictSearch:
             and value
             and (
                 list(value.keys())[0] in self.array_operators + self.array_selectors
-                or (list(value.keys())[0] in self.match_operators and not utils.isoperator(list(value.values())[0]))
+                or (list(value.keys())[0] in self.match_operators and not self._iscontainer(list(value.values())[0]))
                 if operator_check
                 else True
             )
@@ -147,6 +148,12 @@ class DictSearch:
             if self._eval_exc:
                 return self._exc_truth_value
             raise
+    
+    @staticmethod
+    def _iscontainer(obj):
+        if isinstance(obj, list):
+            return True
+        return False
 
     def _low_level_operator(self, operator, value, search_value):
         operation_map = {
@@ -163,6 +170,7 @@ class DictSearch:
             self.lop_regex: lambda val, search_patt: self._operator_regex(val, search_patt),
             self.lop_expr: lambda val, func: func(val) if isinstance(func(val), bool) else False,
             self.lop_inst: lambda val, search_type: isinstance(val, search_type),
+            self.lop_with: lambda val, search_dict: self._operator_within(val, search_dict),
         }
         # prematurely check if __bool__ is implemented in order to avoid unexpected errors on all() in dict_search()
         if operator in self._low_level_comparison_operators:
@@ -186,8 +194,11 @@ class DictSearch:
         else:
             return False
 
+    def _operator_within(self, val, search_dict):
+        pass
+
     def _high_level_operator(self, operator, data, search_container):
-        if not utils.isoperator(search_container):
+        if not self._iscontainer(search_container):
             raise exceptions.HighLevelOperatorIteratorError
         if not search_container:
             return False
@@ -236,7 +247,7 @@ class DictSearch:
         }
         default_args = operator_map[operator][0], tresh, operator_map[operator][1], operator_map[operator][2]
 
-        if utils.isoperator(search_value):  # match is being used as high level operator
+        if self._iscontainer(search_value):  # match is being used as high level operator
             return utils.shortcircuit_counter(
                 iter(match for search_dict in search_value for match in self._match(data, search_dict)), *default_args
             )
@@ -263,7 +274,7 @@ class DictSearch:
             return [], {}
 
     def _operator_where(self, data, search_value):
-        if not utils.isoperator(search_value) or len(search_value) != 2:
+        if not self._iscontainer(search_value) or len(search_value) != 2:
             raise exceptions.WhereOperatorError
         array_match_dict, match_dict = search_value
         return [sub_dict for sub_dict in self.dict_search(data, array_match_dict)], match_dict

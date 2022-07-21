@@ -105,7 +105,7 @@ def test_unpack_iterator():
 def test_start_iterator():
     port = "Jebel Ali"
     values = list(
-        DictSearch(consumable_iterator=types.GeneratorType).dict_search(
+        DictSearch(consumable_iterators=types.GeneratorType).dict_search(
             data.read_fixtures(), {"port_route": {"$any": {"port": port}}}, {"port_route": 1}
         )
     )

@@ -10,12 +10,6 @@ def isiter(data):
         return False
 
 
-def isoperator(data):
-    if isinstance(data, (list, tuple, set)):
-        return True
-    return False
-
-
 def israngestr(range_str):
     if not constants.RANGE_PATTERN.match(range_str):
         return False

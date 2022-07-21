@@ -139,6 +139,7 @@
     "port_route": [
         "<generator object ports at 0x000001A6AE76D660>",
         [
+            "Antwerp",
             {
                 "port": "Shangai",
                 "days": 28

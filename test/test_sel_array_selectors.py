@@ -1,12 +1,14 @@
 import types
 from pprint import pprint
-from unittest import mock
 
 from pytest import raises as pytest_raises
 
 from src.dict_search.dict_search import DictSearch
 from src.dict_search import exceptions
 from . import data
+
+
+search = DictSearch()
 
 
 def test_index_malformed():
@@ -19,6 +21,15 @@ def test_index_malformed():
         )
 
 
+def test_index_nested_missing_key():
+    values = list(
+        DictSearch().dict_search(
+            data.read_fixtures(), select_dict={"batch": {"products": {"$index": {4: {"missing": 1}}}}}
+        )
+    )
+    assert not values
+
+
 def test_index_include():
     counter = 0
     for d_point in data.read_fixtures():
@@ -27,7 +38,7 @@ def test_index_include():
         if values:
             counter += 1
             assert d_point == original_data
-            assert values[0]["batch"]["products"] == d_point["batch"]["products"][6]
+            assert values[0] == {"batch": {"products": d_point["batch"]["products"][6]}}
     assert counter == 6
 
 
@@ -41,7 +52,7 @@ def test_index_include_nested():
         if values:
             counter += 1
             assert d_point == original_data
-            assert values[0].get("batch").get("products") == {"product": d_point["batch"]["products"][4]["product"]}
+            assert values[0] == {"batch": {"products": {"product": d_point["batch"]["products"][4]["product"]}}}
     assert counter == 6
 
 
@@ -50,8 +61,8 @@ def test_index_include_generator():
     for i, d_point in enumerate(data.read_fixtures()):
         assert isinstance(d_point["port_route"], types.GeneratorType)
         values = list(DictSearch().dict_search(d_point, select_dict={"port_route": {"$index": {0: 1}}}))
-        assert isinstance(d_point["port_route"], list)
-        assert d_point["port_route"] == list(list(data.read_fixtures())[i]["port_route"])
+        assert isinstance(d_point["port_route"], list)  # assert generator has been transformed
+        assert d_point["port_route"] == list(list(data.read_fixtures())[i]["port_route"])  # same values as original
         if values:
             counter += 1
             assert values[0] == {"port_route": d_point["port_route"][0]}
@@ -67,9 +78,8 @@ def test_index_include_nested_generator():
         assert d_point["port_route"] == list(list(data.read_fixtures())[i]["port_route"])
         if values:
             counter += 1
-            assert all(v == {"days": mock.ANY, "port": mock.ANY} for v in d_point["port_route"])
             assert values[0] == {"port_route": {"days": d_point["port_route"][0]["days"]}}
-    assert counter == 8
+    assert counter == 7
 
 
 def test_index_exclude():
@@ -80,8 +90,8 @@ def test_index_exclude():
         if values:
             counter += 1
             assert d_point == original_data
-            assert d_point["batch"]["products"][0] not in values[0]["batch"]["products"]
-            assert d_point["batch"]["products"][1:] == values[0]["batch"]["products"]
+            d_point["batch"]["products"].pop(0)
+            assert values[0] == d_point
     assert counter == 10
 
 
@@ -95,10 +105,8 @@ def test_index_exclude_nested():
         if values:
             counter += 1
             assert d_point == original_data
-            assert len(values[0]["batch"]["products"]) == len(original_data["batch"]["products"])
-            original_data["batch"]["products"][0].pop("product")
-            assert values[0]["batch"]["products"][0] == original_data["batch"]["products"][0]
-            assert values[0].keys() == original_data.keys()
+            d_point["batch"]["products"][0].pop("product")
+            assert values[0] == d_point
     assert counter == 10
 
 
@@ -111,8 +119,8 @@ def test_index_exclude_generator():
         assert d_point["port_route"] == list(list(data.read_fixtures())[i]["port_route"])
         if values:
             counter += 1
-            assert d_point["port_route"][0] not in values[0]["port_route"]
-            assert len(d_point["port_route"]) - 1 == len(values[0]["port_route"])
+            d_point["port_route"].pop(0)
+            assert values[0] == d_point
     assert counter == 8
 
 
@@ -120,15 +128,14 @@ def test_index_exclude_nested_generator():
     counter = 0
     for i, d_point in enumerate(data.read_fixtures()):
         assert isinstance(d_point["port_route"], types.GeneratorType)
-        values = list(DictSearch().dict_search(d_point, select_dict={"port_route": {"$index": {0: {"port": 0}}}}))
+        values = list(search.dict_search(d_point, select_dict={"port_route": {"$index": {0: {"port": 0}}}}))
         assert isinstance(d_point["port_route"], list)
         assert d_point["port_route"] == list(list(data.read_fixtures())[i]["port_route"])
         if values:
             counter += 1
             d_point["port_route"][0].pop("port")
-            assert d_point["port_route"][0] == values[0]["port_route"][0]
-            assert d_point["port_route"][1:] == values[0]["port_route"][1:]
-    assert counter == 8
+            assert values[0] == d_point
+    assert counter == 7
 
 
 def test_range_malformed():
@@ -153,7 +160,7 @@ def test_range_include():
         if values:
             counter += 1
             assert d_point == original_data
-            assert values[0]["batch"]["products"] == d_point["batch"]["products"][:2]
+            assert values[0] == {"batch": {"products": d_point["batch"]["products"][:2]}}
     assert counter == 10
 
 
@@ -189,8 +196,8 @@ def test_range_exclude():
         if values:
             counter += 1
             assert d_point == original_data
-            del d_point["batch"]["products"][:2]
-            assert d_point == original_data
+            del d_point["batch"]["products"][2:]
+            assert values[0] == d_point
 
 
 def test_range_exclude_nested():
@@ -207,7 +214,17 @@ def test_range_exclude_nested():
             counter += 1
             assert d_point == original_data
             [val.pop("product") for val in d_point["batch"]["products"][2:]]
-            assert d_point == original_data
+            assert values[0] == d_point
+
+
+def test_where_malformed():
+    with pytest_raises(exceptions.WhereOperatorError):
+        list(
+            DictSearch().dict_search(
+                data.read_fixtures(),
+                select_dict={"batch": {"products": {"$where": {"product": "Iron"}}}},
+            )
+        )
 
 
 def test_where_included():
@@ -224,10 +241,9 @@ def test_where_included():
             pprint(values)
             counter += 1
             assert d_point == original_data
-            for dp in d_point["batch"]["products"]:
-                if dp["product"] != "Iron":
-                    del dp
-            assert d_point == original_data
+            assert values[0] == {
+                "batch": {"products": [dp for dp in d_point["batch"]["products"] if dp["product"] == "Iron"]}
+            }
     assert counter == 3
 
 
@@ -261,16 +277,18 @@ def test_where_included_nested():
 
 
 def test_where_excluded():
-    values = list(
-        DictSearch().dict_search(
-            data.read_fixtures(),
-            {"batch": {"products": {"$any": {"product": "Cement"}}}},
-            select_dict={
-                "batch": {"products": {"$where": [{"product": "Cement"}, 0]}},
-            },
+    counter = 0
+    for d_point in data.read_fixtures():
+        original_data = d_point.copy()
+        values = list(
+            DictSearch().dict_search(d_point, select_dict={"batch": {"products": {"$where": [{"product": "Iron"}, 0]}}})
         )
-    )
-    pprint(values)
+        if values:
+            counter += 1
+            assert d_point == original_data
+            d_point["batch"]["products"] = [dp for dp in d_point["batch"]["products"] if dp["product"] != "Iron"]
+            assert values[0] == d_point
+    assert counter == 3
 
 
 def test_where_excluded_nested():
@@ -295,3 +313,25 @@ def test_where_excluded_nested():
             assert values[0] == d_point
             counter += 1
     assert counter == 1
+
+
+def test_demo():
+    d = [
+        {"b": {"y": 1}, "c": 2},
+        {"b": {"y": 1, "x": 1, "c": {"x": 3}}, "c": 0},
+        {"b": {"y": 1, "x": 1, "c": 1}, "c": 0},
+        {"b": ({"y": 1, "x": 1}, {"y": 2, "x": 2}), "c": 1},
+        {"b": [{"y": 3}, {"y": 4}, {"x": 2, "y": 5}], "c": 3}
+    ]
+    print("\nOriginal")
+    pprint(d)
+    values = list(DictSearch().dict_search(
+        d,
+        select_dict={"b": {"y": 0}},
+    ))
+    print("\n Values")
+    pprint(values)
+    print("\n Data")
+    pprint(d)
+
+

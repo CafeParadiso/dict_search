@@ -1,17 +1,17 @@
 TODOS
+- remove utils.isoperator
 - rethink select from iterable
 - finish tests
 - improve exception messages. Provide examples
-- uninstall six, pytz, numpy, pandas
-- isort
-- set setup.py in detail (libraries for project vs libraries for module)
+- uninstall all dependencies
+- isort && black -l 120
+- fill setup.py in detail (libraries for project vs libraries for module)
 - check license
-- document properly in README (ipython cells)
+- document properly in README (ipython cells?, jupyter notebook?, dockerfile docs?)
 UPCOMING FEATURES
-- pop empty
+- $within new low level operator to compare values from within ([keys], func=lambda val, val_within: x == y)
 - $anykey $rekey (regex key)
 - $anyval?
 - $index  select more than one arbitrary index?  b = [a[idx] for idx in idxs] ie a [1, 2, 3, 4] -> a[1, 4]
-- $ new low level operator to compare values from within ([keys], func=lambda x, y: x == y)
 - greedy search
 - unpack (return only the values)
