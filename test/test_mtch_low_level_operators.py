@@ -75,3 +75,20 @@ def test_inst():
     values = DictSearch().dict_search(data.data, {"special": {"$inst": list}})
     values = [val for val in values]
     assert len(values) == 2
+
+
+def test_within():
+    d = [
+        {"a": 2, "b": 2},
+        {"a": 2, "b": {"c": 4}},
+        {"a": 2, "b": {"c": 2}},
+        {"a": 2, "b": 4},
+    ]
+    values = list(DictSearch().dict_search(d, {"a": {"$comp": ["b"]}}))
+    print(values)
+    values = list(DictSearch().dict_search(d, {"a": {"$comp": ["b", "c"]}}))
+    print(values)
+    values = list(DictSearch().dict_search(d, {"a": {"$comp": [["b"], lambda x, y: x**2 == y]}}))
+    print(values)
+    values = list(DictSearch().dict_search(d, {"a": {"$comp": [["b", "c"], lambda x, y: x**2 == y]}}))
+    print(values)

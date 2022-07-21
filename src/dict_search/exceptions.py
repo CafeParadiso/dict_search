@@ -8,7 +8,7 @@ class PreconditionError(Exception):
 
 class HighLevelOperatorIteratorError(TypeError):
     def __init__(self):
-        super().__init__("The search value for a high level operator must be a container (but not a dict)")
+        super().__init__("The search value for a high level operator must be a list")
 
 
 class MatchOperatorError(TypeError):
@@ -33,3 +33,13 @@ class ArraySelectorFormatException(ValueError):
 class RangeSelectionOperatorError(ValueError):
     def __init__(self, operator):
         super().__init__(f"Use a 'rangestr' matchin any pattern in {constants.RANGE_PATTERN} not:\n '{operator}'")
+
+
+class CompException(Exception):
+    def __init__(self):
+        super().__init__(
+            "$comp must be either a list of keys to get a value and compare it or \n"
+            "a list of keys and a comparison function with two args, x -> current value, y ->searched value\n"
+            "-{'$comp': ['a']}"
+            "-{'$comp': [['a'], lambda: x, y: x != y]}'"
+        )

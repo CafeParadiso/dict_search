@@ -39,8 +39,8 @@ class DictSearch:
         self.lop_regex = f"{self.operator_char}regex"
         self.lop_expr = f"{self.operator_char}expr"
         self.lop_inst = f"{self.operator_char}inst"
-        self.lop_with = f"{self.operator_char}with"
-        self._initial_data = None
+        self.lop_comp = f"{self.operator_char}comp"
+        self._initial_data = {}
         self.low_level_operators = [val for key, val in self.__dict__.items() if re.match(r"^lop_.*$", key)]
         self._low_level_comparison_operators = [self.lop_ne, self.lop_gt, self.lop_gte, self.lop_lt, self.lop_lte]
 
@@ -76,13 +76,13 @@ class DictSearch:
         if not all(not arg or isinstance(arg, dict) for arg in [match_dict, select_dict]):
             raise exceptions.PreconditionError()
         for data_point in data:
-            if not isinstance(data_point, dict):
+            if not isinstance(data_point, dict) or not data_point:
                 continue
-            self._initial_data = data_point.copy()
+            self._initial_data.clear()
             if all(match for match in self._match(data_point, match_dict)) if match_dict else True:
+                self._initial_data.clear()
                 if select_dict:
                     selected_dict = self._select(data_point, select_dict)
-                    self._initial_data.clear()
                     if not selected_dict:
                         continue
                     yield selected_dict
@@ -90,6 +90,7 @@ class DictSearch:
                     yield data_point
 
     def _match(self, data, match_dict):
+        self._initial_data = self._initial_data if self._initial_data else data.copy()
         if isinstance(match_dict, dict) and match_dict:
             for key, value in match_dict.items():
                 if key in self.low_level_operators:
@@ -110,7 +111,7 @@ class DictSearch:
                     yield False
         else:
             yield self._compare(data, match_dict)
-    
+
     def _assign_consumed_iterator(self, data, key, value, operator_check=True):
         """Assign to original data the consumed generator to avoid bugs while performing matching and after return it
 
@@ -148,7 +149,7 @@ class DictSearch:
             if self._eval_exc:
                 return self._exc_truth_value
             raise
-    
+
     @staticmethod
     def _iscontainer(obj):
         if isinstance(obj, list):
@@ -170,7 +171,7 @@ class DictSearch:
             self.lop_regex: lambda val, search_patt: self._operator_regex(val, search_patt),
             self.lop_expr: lambda val, func: func(val) if isinstance(func(val), bool) else False,
             self.lop_inst: lambda val, search_type: isinstance(val, search_type),
-            self.lop_with: lambda val, search_dict: self._operator_within(val, search_dict),
+            self.lop_comp: lambda val, search_val: self._operator_comp(val, search_val),
         }
         # prematurely check if __bool__ is implemented in order to avoid unexpected errors on all() in dict_search()
         if operator in self._low_level_comparison_operators:
@@ -194,8 +195,24 @@ class DictSearch:
         else:
             return False
 
-    def _operator_within(self, val, search_dict):
-        pass
+    def _operator_comp(self, val, search_val):
+        if not self._iscontainer(search_val):
+            raise exceptions.HighLevelOperatorIteratorError
+        if all(isinstance(x, str) for x in search_val):
+            try:
+                search_val = utils.get_from_list(self._initial_data, search_val)
+            except KeyError:
+                return False
+            else:
+                return self._compare(val, search_val)
+        if len(search_val) != 2:
+            raise exceptions.CompException
+        try:
+            comp_val = utils.get_from_list(self._initial_data, search_val[0])
+        except KeyError:
+            return False
+        else:
+            return search_val[1](val, comp_val)
 
     def _high_level_operator(self, operator, data, search_container):
         if not self._iscontainer(search_container):
@@ -296,7 +313,7 @@ class DictSearch:
 
     def _apply_selection(self, data, selection_dict, selected_dict, prev_keys=None, original_data=None):
         prev_keys = prev_keys if prev_keys else []
-        original_data = data.copy() if not original_data else original_data
+        original_data = original_data if original_data else data.copy()
         if isinstance(selection_dict, dict) and data:
             for key, val in selection_dict.items():
                 if key == self.as_where and prev_keys:
