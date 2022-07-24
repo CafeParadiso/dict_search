@@ -39,6 +39,16 @@ def test_index_eq():
     assert len(results) == 1
 
 
+def test_index_multiple():
+    results = list(
+        DictSearch().dict_search(
+            [{"a": [1, 2, 3, 4, 5]}, {"a": [3, 4, 5, 6, 7, 8]}],
+            {"a": {"$index": [[0, -1], {"$expr": lambda x: x == [1, 5]}]}},
+        )
+    )
+    pprint(results)
+
+
 def test_index_empty_data():
     results = list(
         DictSearch().dict_search(
@@ -192,7 +202,6 @@ def test_where_exception():
         )
 
 
-# Data as generator
 def generator(values):
     for val in range(values):
         yield val

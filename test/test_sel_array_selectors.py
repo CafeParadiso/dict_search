@@ -12,7 +12,7 @@ search = DictSearch()
 
 
 def test_index_malformed():
-    with pytest_raises(exceptions.ArraySelectorFormatException):
+    with pytest_raises(exceptions.IndexOperatorError):
         list(
             DictSearch().dict_search(
                 data.read_fixtures(),
@@ -40,6 +40,17 @@ def test_index_include():
             assert d_point == original_data
             assert values[0] == {"batch": {"products": d_point["batch"]["products"][6]}}
     assert counter == 6
+
+
+def test_index_include_multiple():
+    counter = 0
+    for d_point in data.read_fixtures():
+        original_data = d_point.copy()
+        values = list(
+            DictSearch().dict_search(d_point, select_dict={"batch": {"products": {"$index": [[0, -1], {"product": 0}]}}})
+        )
+        if values:
+            pprint(values)
 
 
 def test_index_include_nested():
@@ -321,17 +332,17 @@ def test_demo():
         {"b": {"y": 1, "x": 1, "c": {"x": 3}}, "c": 0},
         {"b": {"y": 1, "x": 1, "c": 1}, "c": 0},
         {"b": ({"y": 1, "x": 1}, {"y": 2, "x": 2}), "c": 1},
-        {"b": [{"y": 3}, {"y": 4}, {"x": 2, "y": 5}], "c": 3}
+        {"b": [{"y": 3}, {"y": 4}, {"x": 2, "y": 5}], "c": 3},
     ]
     print("\nOriginal")
     pprint(d)
-    values = list(DictSearch().dict_search(
-        d,
-        select_dict={"b": {"y": 0}},
-    ))
+    values = list(
+        DictSearch().dict_search(
+            d,
+            select_dict={"b": {"y": 0}},
+        )
+    )
     print("\n Values")
     pprint(values)
     print("\n Data")
     pprint(d)
-
-

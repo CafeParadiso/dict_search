@@ -1,5 +1,5 @@
 TODOS
-- rethink select from iterable
+- rethink select from iterable ($array)
 - finish tests
 - improve exception messages. Provide examples
 - uninstall all dependencies
@@ -8,8 +8,8 @@ TODOS
 - check license
 - document properly in README (ipython cells?, jupyter notebook?, dockerfile docs?)
 UPCOMING FEATURES
+- coerce any type .__call__() ?
+- flatten (default 0: return all, 1: return lowest k: v possible, 2: return array of values)
 - $anykey $rekey (regex key)
 - $anyval?
-- $index  select more than one arbitrary index?  b = [a[idx] for idx in idxs] ie a [1, 2, 3, 4] -> a[1, 4]
-- greedy search
-- unpack (return only the values)
+- greedy search ($greedy)

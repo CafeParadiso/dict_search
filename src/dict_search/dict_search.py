@@ -1,4 +1,5 @@
 from collections import abc
+from copy import copy
 import re
 
 from . import exceptions
@@ -279,9 +280,11 @@ class DictSearch:
     def _array_selector(self, operator_type, data, search_value):
         if operator_type == self.as_where:
             return self._operator_where(data, search_value)
-        try:
+        elif operator_type == self.as_index and isinstance(search_value, list) and len(search_value) == 2:
+            operator, search_value = search_value[0], search_value[1]
+        elif isinstance(search_value, dict) and len(search_value):
             operator, search_value = list(search_value.items())[0]
-        except AttributeError:
+        else:
             raise exceptions.ArraySelectorFormatException(operator_type)
         try:
             return {self.as_index: self._operator_index, self.as_range: self._operator_range}[operator_type](
@@ -298,7 +301,12 @@ class DictSearch:
 
     @staticmethod
     def _operator_index(data, index):
-        return data[int(index)]
+        if not isinstance(index, list):
+            return data[index]
+        values = []
+        for i in index:
+            values.append(data[i])
+        return values
 
     @staticmethod
     def _operator_range(data, range_str):
@@ -318,8 +326,10 @@ class DictSearch:
             for key, val in selection_dict.items():
                 if key == self.as_where and prev_keys:
                     self._operator_sel_where(data, val, selected_dict, prev_keys, original_data)
-                elif key in [self.as_index, self.as_range] and prev_keys:
-                    self._from_array_selector(key, data, val, selected_dict, prev_keys, original_data)
+                elif key == self.as_index and prev_keys:
+                    self._operator_sel_index(data, val, selected_dict, prev_keys, original_data)
+                elif key == self.as_range and prev_keys:
+                    self._operator_sel_range(data, val, selected_dict, prev_keys, original_data)
                 elif isinstance(data, dict) and key not in data.keys():
                     continue
                 elif val in self.selection_operators and isinstance(data, dict):
@@ -380,16 +390,40 @@ class DictSearch:
         if values:
             self._exclude(selected_dict, prev_keys, original_data, values)
 
-    def _from_array_selector(self, operator_type, data, select_dict, selected_dict, prev_keys, original_data):
-        try:
-            operator, select_dict = list(select_dict.items())[0]
-        except AttributeError:
-            raise exceptions.ArraySelectorFormatException(operator_type)
-        {self.as_index: self._operator_sel_index, self.as_range: self._operator_sel_range}[operator_type](
-            data, operator, select_dict, selected_dict, prev_keys, original_data
-        )
-
-    def _operator_sel_index(self, data, index, select_op, selected_dict, prev_keys, original_data):
+    def _operator_sel_index(self, data, select_op, selected_dict, prev_keys, original_data):
+        if isinstance(select_op, list) and len(select_op) == 2:
+            index, select_op = select_op[0], select_op[1]
+        elif isinstance(select_op, dict) and len(select_op) == 1:
+            index, select_op = list(select_op.items())[0]
+        else:
+            raise exceptions.IndexOperatorError
+        if isinstance(index, list):
+            if select_op in self.selection_operators:
+                excl = lambda: self._index_excl_simple(data, index, selected_dict, prev_keys, original_data)
+                incl = lambda: self._index_incl_simple(data, index, selected_dict, prev_keys)
+                self._build_dict(
+                    select_op, data, selected_dict, prev_keys, original_data, incl_func=incl, excl_func=excl
+                )
+                return
+            values = []
+            for i in index:
+                try:
+                    val = data[i]
+                except IndexError:
+                    continue
+                except (TypeError, KeyError):
+                    return
+                if isinstance(val, dict):
+                    val = self._select(val, select_op)
+                    if not val and self._used == self.sel_include:
+                        continue
+                values.append((i, val))
+            if not values:
+                return
+            incl = lambda: utils.set_from_list(selected_dict, prev_keys, [val[1] for val in values])
+            excl = lambda: self._index_excl_multiple(data, values, selected_dict, prev_keys, original_data)
+            self._build_dict(self._used, None, selected_dict, prev_keys, original_data, incl_func=incl, excl_func=excl)
+            return
         try:
             value = self._operator_index(data, index)
         except (TypeError, IndexError, KeyError):
@@ -397,28 +431,54 @@ class DictSearch:
         if select_op in self.selection_operators:
             excl = lambda: self._index_excl_simple(data, index, selected_dict, prev_keys, original_data)
             self._build_dict(select_op, value, selected_dict, prev_keys, original_data, excl_func=excl)
-        elif isinstance(value, dict):
+            return
+        else:
+            if not isinstance(value, dict):
+                return
             value = self._select(value, select_op)
-            if not value:
+            if not value and self._used == self.sel_include:
                 return
             excl = lambda: self._index_excl_nested(data, index, value, selected_dict, prev_keys, original_data)
-            self._build_dict(self._used, value, selected_dict, prev_keys, original_data, excl_func=excl)
+        self._build_dict(self._used, value, selected_dict, prev_keys, original_data, excl_func=excl)
 
-    def _index_excl(self, data, selected_dict, prev_keys, original_data, func, *args):
-        values = self._try_coerce_list(data[:])
+    def _index_excl_multiple(self, data, values, selected_dict, prev_keys, original_data):
+        data = self._try_coerce_list(data[:])
         try:
-            func(*args)
+            data_copy = copy(data)
         except TypeError:
             return
-        self._exclude(selected_dict, prev_keys, original_data, values)
+        for i, val in values:
+            try:
+                data_copy[i] = val
+            except IndexError:
+                continue
+            except (KeyError, TypeError):
+                return
+        self._exclude(selected_dict, prev_keys, original_data, data_copy)
 
     def _index_excl_simple(self, data, index, selected_dict, prev_keys, original_data):
-        values = self._try_coerce_list(data[:])
         try:
-            del values[index]
+            values = self._try_coerce_list(data[:])
         except TypeError:
             return
+        index = [index] if not isinstance(index, list) else index
+        try:
+            for i in sorted(index, reverse=True):
+                del values[i]
+        except (TypeError, IndexError):
+            return
         self._exclude(selected_dict, prev_keys, original_data, values)
+
+    @staticmethod
+    def _index_incl_simple(data, index, selected_dict, prev_keys):
+        values = []
+        try:
+            for i in index:
+                values.append(data[i])
+        except (TypeError, IndexError, KeyError):
+            return
+        if values:
+            utils.set_from_list(selected_dict, prev_keys, values)
 
     def _index_excl_nested(self, data, index, value, selected_dict, prev_keys, original_data):
         values = self._try_coerce_list(data[:])
@@ -428,7 +488,10 @@ class DictSearch:
             return
         self._exclude(selected_dict, prev_keys, original_data, values)
 
-    def _operator_sel_range(self, data, range_str, select_op, selected_dict, prev_keys, original_data):
+    def _operator_sel_range(self, data, select_op, selected_dict, prev_keys, original_data):
+        if not isinstance(select_op, dict) or len(select_op) != 1:
+            raise exceptions.RangeSelectionOperatorError
+        range_str, select_op = list(select_op.items())[0]
         try:
             values = self._operator_range(data, range_str)
         except TypeError:

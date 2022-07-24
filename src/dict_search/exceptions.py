@@ -32,14 +32,26 @@ class ArraySelectorFormatException(ValueError):
 
 class RangeSelectionOperatorError(ValueError):
     def __init__(self, operator):
-        super().__init__(f"Use a 'rangestr' matchin any pattern in {constants.RANGE_PATTERN} not:\n '{operator}'")
+        super().__init__(f"Use a 'rangestr' matching any pattern in {constants.RANGE_PATTERN} not:\n '{operator}'")
 
 
 class CompException(Exception):
     def __init__(self):
         super().__init__(
+            "\n"
             "$comp must be either a list of keys to get a value and compare it or \n"
             "a list of keys and a comparison function with two args, x -> current value, y ->searched value\n"
             "-{'$comp': ['a']}"
             "-{'$comp': [['a'], lambda: x, y: x != y]}'"
+        )
+
+
+class IndexOperatorError(Exception):
+    def __init__(self):
+        super().__init__(
+            "\n"
+            "$index must be either a dict:\n"
+            "- {index(int): val(any or dict)}\n"
+            "or a list:\n"
+            "- [[index(int)], val(any or dict)]"
         )
