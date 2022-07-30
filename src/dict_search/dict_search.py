@@ -7,6 +7,17 @@ from . import utils
 from pprint import pprint
 
 
+def _copy_data(func):
+    def wrapper(*args, **kwargs):
+        try:
+            data = kwargs["data"][:]
+        except TypeError:
+            return
+        kwargs["data"] = data
+        func(*args, **kwargs)
+    return wrapper
+
+
 class DictSearch:
     def __init__(
         self,
@@ -71,6 +82,7 @@ class DictSearch:
         self.sel_exclude = 0
         self._used = None
         self.selection_operators = [self.sel_include, self.sel_exclude]
+        self.sel_array = f"{self.operator_char}array"
 
     def dict_search(self, data, match_dict=None, select_dict=None):
         data = [data] if isinstance(data, dict) or not utils.isiter(data) else data
@@ -336,7 +348,7 @@ class DictSearch:
                     prev_keys.append(key)
                     self._build_dict(val, data.get(key), selected_dict, prev_keys, original_data)
                     prev_keys.pop(-1)
-                elif utils.isiter(data) and not isinstance(data, (str, bytes, bytearray, abc.Mapping)):
+                elif key == self.sel_array and utils.isiter(data):
                     self._apply_to_container(data, selection_dict, selected_dict, prev_keys, original_data)
                 else:
                     prev_keys.append(key)
@@ -399,7 +411,7 @@ class DictSearch:
             raise exceptions.IndexOperatorError
         if isinstance(index, list):
             if select_op in self.selection_operators:
-                excl = lambda: self._index_excl_simple(data, index, selected_dict, prev_keys, original_data)
+                excl = lambda: self._index_excl_simple(index, selected_dict, prev_keys, original_data, data=data)
                 incl = lambda: self._index_incl_simple(data, index, selected_dict, prev_keys)
                 self._build_dict(
                     select_op, data, selected_dict, prev_keys, original_data, incl_func=incl, excl_func=excl
@@ -429,7 +441,7 @@ class DictSearch:
         except (TypeError, IndexError, KeyError):
             return
         if select_op in self.selection_operators:
-            excl = lambda: self._index_excl_simple(data, index, selected_dict, prev_keys, original_data)
+            excl = lambda: self._index_excl_simple(index, selected_dict, prev_keys, original_data, data=data)
             self._build_dict(select_op, value, selected_dict, prev_keys, original_data, excl_func=excl)
             return
         else:
@@ -442,7 +454,7 @@ class DictSearch:
         self._build_dict(self._used, value, selected_dict, prev_keys, original_data, excl_func=excl)
 
     def _index_excl_multiple(self, data, values, selected_dict, prev_keys, original_data):
-        data = self._try_coerce_list(data[:])
+        data = self._try_coerce_list(data)
         try:
             data_copy = copy(data)
         except TypeError:
@@ -456,11 +468,9 @@ class DictSearch:
                 return
         self._exclude(selected_dict, prev_keys, original_data, data_copy)
 
-    def _index_excl_simple(self, data, index, selected_dict, prev_keys, original_data):
-        try:
-            values = self._try_coerce_list(data[:])
-        except TypeError:
-            return
+    @_copy_data
+    def _index_excl_simple(self, index, selected_dict, prev_keys, original_data, data=None):
+        values = self._try_coerce_list(data)
         index = [index] if not isinstance(index, list) else index
         try:
             for i in sorted(index, reverse=True):
@@ -481,7 +491,7 @@ class DictSearch:
             utils.set_from_list(selected_dict, prev_keys, values)
 
     def _index_excl_nested(self, data, index, value, selected_dict, prev_keys, original_data):
-        values = self._try_coerce_list(data[:])
+        values = self._try_coerce_list(data)
         try:
             values[index] = value
         except TypeError:
@@ -497,30 +507,23 @@ class DictSearch:
         except TypeError:
             return
         if select_op in self.selection_operators:
-            excl = lambda: self._range_excl_simple(data, range_str, selected_dict, prev_keys, original_data)
-            self._build_dict(select_op, values, selected_dict, prev_keys, original_data, excl_func=excl)
+            func = lambda dt: exec(f"del data[{range_str}]", {"data": dt})
         else:
             values = self._select_iter(values, select_op)
             if not values:
                 return
-            excl = lambda: self._range_excl_nested(data, range_str, values, selected_dict, prev_keys, original_data)
-            self._build_dict(self._used, values, selected_dict, prev_keys, original_data, excl_func=excl)
+            func = lambda dt: exec(f"data[{range_str}] = values", {"data": dt, "values": values})
+        excl = lambda: self._range_excl(selected_dict, prev_keys, original_data, func, data=data)
+        self._build_dict(self._used or select_op, values, selected_dict, prev_keys, original_data, excl_func=excl)
 
-    def _range_excl_simple(self, data, range_str, selected_dict, prev_keys, original_data):
-        values = self._try_coerce_list(data[:])
+    @_copy_data
+    def _range_excl(self, selected_dict, prev_keys, original_data, func, data=None):
+        data = self._try_coerce_list(data)
         try:
-            exec(f"del data[{range_str}]", {"data": values})
+            func(data)
         except TypeError:
             return
-        self._exclude(selected_dict, prev_keys, original_data, values)
-
-    def _range_excl_nested(self, data, range_str, values, selected_dict, prev_keys, original_data):
-        data_copy = self._try_coerce_list(data[:])
-        try:
-            exec(f"data[{range_str}] = values", {"data": data_copy, "values": values})
-        except TypeError:
-            return
-        self._exclude(selected_dict, prev_keys, original_data, data_copy)
+        self._exclude(selected_dict, prev_keys, original_data, data)
 
     def _try_coerce_list(self, data):
         if self._coerce_list:
