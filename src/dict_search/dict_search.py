@@ -433,7 +433,7 @@ class DictSearch:
             if not values:
                 return
             incl = lambda: utils.set_from_list(selected_dict, prev_keys, [val[1] for val in values])
-            excl = lambda: self._index_excl_multiple(data, values, selected_dict, prev_keys, original_data)
+            excl = lambda: self._index_excl_multiple(values, selected_dict, prev_keys, original_data, data=data)
             self._build_dict(self._used, None, selected_dict, prev_keys, original_data, incl_func=incl, excl_func=excl)
             return
         try:
@@ -450,23 +450,20 @@ class DictSearch:
             value = self._select(value, select_op)
             if not value and self._used == self.sel_include:
                 return
-            excl = lambda: self._index_excl_nested(data, index, value, selected_dict, prev_keys, original_data)
+            excl = lambda: self._index_excl_nested(index, value, selected_dict, prev_keys, original_data, data=data)
         self._build_dict(self._used, value, selected_dict, prev_keys, original_data, excl_func=excl)
 
-    def _index_excl_multiple(self, data, values, selected_dict, prev_keys, original_data):
+    @_copy_data
+    def _index_excl_multiple(self, values, selected_dict, prev_keys, original_data, data=None):
         data = self._try_coerce_list(data)
-        try:
-            data_copy = copy(data)
-        except TypeError:
-            return
         for i, val in values:
             try:
-                data_copy[i] = val
+                data[i] = val
             except IndexError:
                 continue
             except (KeyError, TypeError):
                 return
-        self._exclude(selected_dict, prev_keys, original_data, data_copy)
+        self._exclude(selected_dict, prev_keys, original_data, data)
 
     @_copy_data
     def _index_excl_simple(self, index, selected_dict, prev_keys, original_data, data=None):
@@ -490,7 +487,8 @@ class DictSearch:
         if values:
             utils.set_from_list(selected_dict, prev_keys, values)
 
-    def _index_excl_nested(self, data, index, value, selected_dict, prev_keys, original_data):
+    @_copy_data
+    def _index_excl_nested(self, index, value, selected_dict, prev_keys, original_data, data=None):
         values = self._try_coerce_list(data)
         try:
             values[index] = value
