@@ -354,7 +354,7 @@ class DictSearch:
                     self._build_dict(val, data.get(key), selected_dict, prev_keys, original_data)
                     prev_keys.pop(-1)
                 elif key == self.sel_array and utils.isiter(data):
-                    self._apply_to_container(data, selection_dict, selected_dict, prev_keys, original_data)
+                    self._apply_to_container(data, selection_dict.get(key), selected_dict, prev_keys, original_data)
                 else:
                     prev_keys.append(key)
                     self._apply_selection(

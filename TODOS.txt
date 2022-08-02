@@ -1,5 +1,4 @@
 TODOS
-- rethink select from iterable ($array)
 - finish tests
 - improve exception messages. Provide examples
 - recursive data copy in select()!!! try to do with static dict (self._initial_data)
