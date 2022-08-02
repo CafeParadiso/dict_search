@@ -1,5 +1,4 @@
 from collections import abc
-from copy import copy
 import re
 
 from . import exceptions
@@ -20,12 +19,12 @@ def _copy_data(func):
 
 class DictSearch:
     def __init__(
-        self,
-        operator_str=None,
-        eval_exc=None,
-        exc_truth_value=False,
-        consumable_iterators=None,
-        coerce_list=False,
+            self,
+            operator_str=None,
+            eval_exc=None,
+            exc_truth_value=False,
+            consumable_iterators=None,
+            coerce_list=False,
     ):
         self.operator_char = operator_str if isinstance(operator_str, str) else "$"
         self._eval_exc = eval_exc
@@ -36,6 +35,7 @@ class DictSearch:
                 consumable_iterators if isinstance(consumable_iterators, list) else [consumable_iterators]
             )
         self._coerce_list = coerce_list
+        self._empty = False
 
         # matching operators
         self.lop_ne = f"{self.operator_char}ne"
@@ -93,10 +93,10 @@ class DictSearch:
                 continue
             self._initial_data.clear()
             if all(match for match in self._match(data_point, match_dict)) if match_dict else True:
-                self._initial_data.clear()
                 if select_dict:
+                    self._empty = False
                     selected_dict = self._select(data_point, select_dict)
-                    if not selected_dict:
+                    if not selected_dict and not self._empty:
                         continue
                     yield selected_dict
                 else:
@@ -137,17 +137,17 @@ class DictSearch:
         except AttributeError:
             return
         if (
-            not isinstance(nested_data, *self._consumable_iterators) and isinstance(nested_data, abc.Iterator)
-            if self._consumable_iterators
-            else isinstance(nested_data, abc.Iterator)
-            and isinstance(value, dict)
-            and value
-            and (
-                list(value.keys())[0] in self.array_operators + self.array_selectors
-                or (list(value.keys())[0] in self.match_operators and not self._iscontainer(list(value.values())[0]))
-                if operator_check
-                else True
-            )
+                not isinstance(nested_data, *self._consumable_iterators) and isinstance(nested_data, abc.Iterator)
+                if self._consumable_iterators
+                else isinstance(nested_data, abc.Iterator)
+                and isinstance(value, dict)
+                and value
+                and (
+                     list(value.keys())[0] in self.array_operators + self.array_selectors
+                     or (list(value.keys())[0] in self.match_operators and not self._iscontainer(list(value.values())[0]))
+                     if operator_check
+                     else True
+                )
         ):
             nested_data = list(nested_data)
             data[key] = nested_data
@@ -302,7 +302,7 @@ class DictSearch:
             return {self.as_index: self._operator_index, self.as_range: self._operator_range}[operator_type](
                 data, operator
             ), search_value
-        except (TypeError, IndexError, KeyError):
+        except (TypeError, IndexError, KeyError, ValueError):
             return [], {}
 
     def _operator_where(self, data, search_value):
@@ -317,7 +317,12 @@ class DictSearch:
             return data[index]
         values = []
         for i in index:
-            values.append(data[i])
+            try:
+                values.append(data[i])
+            except IndexError:
+                continue
+        if not values:
+            raise ValueError
         return values
 
     @staticmethod
@@ -409,52 +414,54 @@ class DictSearch:
             index, select_op = list(select_op.items())[0]
         else:
             raise exceptions.IndexOperatorError
-        if isinstance(index, list):
-            if select_op in self.selection_operators:
-                excl = lambda: self._index_excl_simple(index, selected_dict, prev_keys, original_data, data=data)
-                incl = lambda: self._index_incl_simple(data, index, selected_dict, prev_keys)
-                self._build_dict(
-                    select_op, data, selected_dict, prev_keys, original_data, incl_func=incl, excl_func=excl
-                )
-                return
-            values = []
-            for i in index:
-                try:
-                    val = data[i]
-                except IndexError:
-                    continue
-                except (TypeError, KeyError):
-                    return
-                if isinstance(val, dict):
-                    val = self._select(val, select_op)
-                    if not val and self._used == self.sel_include:
-                        continue
-                values.append((i, val))
-            if not values:
-                return
-            incl = lambda: utils.set_from_list(selected_dict, prev_keys, [val[1] for val in values])
-            excl = lambda: self._index_excl_multiple(values, selected_dict, prev_keys, original_data, data=data)
-            self._build_dict(self._used, None, selected_dict, prev_keys, original_data, incl_func=incl, excl_func=excl)
-            return
-        try:
-            value = self._operator_index(data, index)
-        except (TypeError, IndexError, KeyError):
-            return
         if select_op in self.selection_operators:
+            value = None
+            if select_op == self.sel_include:
+                try:
+                    value = self._operator_index(data, index)
+                except (IndexError, TypeError, KeyError, ValueError):
+                    return
             excl = lambda: self._index_excl_simple(index, selected_dict, prev_keys, original_data, data=data)
             self._build_dict(select_op, value, selected_dict, prev_keys, original_data, excl_func=excl)
             return
-        else:
-            if not isinstance(value, dict):
+        index = [index] if not isinstance(index, list) else index
+        values = []
+        for i in index:
+            try:
+                val = data[i]
+            except (TypeError, KeyError):
                 return
-            value = self._select(value, select_op)
-            if not value and self._used == self.sel_include:
-                return
-            excl = lambda: self._index_excl_nested(index, value, selected_dict, prev_keys, original_data, data=data)
-        self._build_dict(self._used, value, selected_dict, prev_keys, original_data, excl_func=excl)
+            except IndexError:
+                continue
+            if not isinstance(val, dict):
+                continue
+            val = self._select(val, select_op)
+            if not val and self._used == self.sel_include:
+                continue
+            values.append((i, val))
+        if not values:
+            return
+        excl = lambda: self._index_excl_nested(values, selected_dict, prev_keys, original_data, data=data)
+        incl = lambda: utils.set_from_list(
+            selected_dict, prev_keys, values[0][1] if len(values) == 1 else [val[1] for val in values]
+        )
+        self._build_dict(self._used, None, selected_dict, prev_keys, original_data, incl_func=incl, excl_func=excl)
 
     @_copy_data
-    def _index_excl_multiple(self, values, selected_dict, prev_keys, original_data, data=None):
+    def _index_excl_simple(self, index, selected_dict, prev_keys, original_data, data=None):
+        values = self._try_coerce_list(data)
+        index = [index] if not isinstance(index, list) else index
+        for i in sorted(index, reverse=True):
+            try:
+                del values[i]
+            except IndexError:
+                continue
+            except (TypeError, KeyError):
+                return
+        self._exclude(selected_dict, prev_keys, original_data, values)
+
+    @_copy_data
+    def _index_excl_nested(self, values, selected_dict, prev_keys, original_data, data=None):
         data = self._try_coerce_list(data)
         for i, val in values:
             try:
@@ -464,37 +471,6 @@ class DictSearch:
             except (KeyError, TypeError):
                 return
         self._exclude(selected_dict, prev_keys, original_data, data)
-
-    @_copy_data
-    def _index_excl_simple(self, index, selected_dict, prev_keys, original_data, data=None):
-        values = self._try_coerce_list(data)
-        index = [index] if not isinstance(index, list) else index
-        try:
-            for i in sorted(index, reverse=True):
-                del values[i]
-        except (TypeError, IndexError):
-            return
-        self._exclude(selected_dict, prev_keys, original_data, values)
-
-    @staticmethod
-    def _index_incl_simple(data, index, selected_dict, prev_keys):
-        values = []
-        try:
-            for i in index:
-                values.append(data[i])
-        except (TypeError, IndexError, KeyError):
-            return
-        if values:
-            utils.set_from_list(selected_dict, prev_keys, values)
-
-    @_copy_data
-    def _index_excl_nested(self, index, value, selected_dict, prev_keys, original_data, data=None):
-        values = self._try_coerce_list(data)
-        try:
-            values[index] = value
-        except TypeError:
-            return
-        self._exclude(selected_dict, prev_keys, original_data, values)
 
     def _operator_sel_range(self, data, select_op, selected_dict, prev_keys, original_data):
         if not isinstance(select_op, dict) or len(select_op) != 1:
@@ -550,4 +526,6 @@ class DictSearch:
                 return
             if not selected_dict:
                 selected_dict.update(original_data)
+            if len(prev_keys) == 1 and len(selected_dict) == 1 and prev_keys[0] in selected_dict:
+                self._empty = True
             utils.pop_from_list(selected_dict, prev_keys)

@@ -2,14 +2,22 @@ TODOS
 - rethink select from iterable ($array)
 - finish tests
 - improve exception messages. Provide examples
+- recursive data copy in select()!!! try to do with static dict (self._initial_data)
 - uninstall all dependencies
 - isort && black -l 120
 - fill setup.py in detail (libraries for project vs libraries for module)
 - check license
 - document properly in README (ipython cells?, jupyter notebook?, dockerfile docs?)
+- document in module or object docstring
 UPCOMING FEATURES
-- coerce any type .__call__() ?
+- reimplement dict_search as __call__?
+- completenes_check arg to return only documents over which select_dict was fully applied
 - flatten (default 0: return all, 1: return lowest k: v possible, 2: return array of values)
 - $anykey $rekey (regex key)
-- $anyval?
 - greedy search ($greedy)
+- $anyval?
+- coerce_list turn into -> coerce : - arg1 type: type to try the conversion (.__call__())?
+                                    - arg2 dict: converion map  {type: type to convert} pd: from typing import Any
+- coerce only after type error?
+- transform pipeline dict
+- initialization args through .env file or only env variables
