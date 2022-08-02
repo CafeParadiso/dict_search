@@ -25,6 +25,7 @@ class DictSearch:
             exc_truth_value=False,
             consumable_iterators=None,
             coerce_list=False,
+            array_ignore_types=None,
     ):
         self.operator_char = operator_str if isinstance(operator_str, str) else "$"
         self._eval_exc = eval_exc
@@ -35,6 +36,7 @@ class DictSearch:
                 consumable_iterators if isinstance(consumable_iterators, list) else [consumable_iterators]
             )
         self._coerce_list = coerce_list
+        self.array_ignore_types = array_ignore_types
         self._empty = False
 
         # matching operators
@@ -84,7 +86,7 @@ class DictSearch:
         self.selection_operators = [self.sel_include, self.sel_exclude]
         self.sel_array = f"{self.operator_char}array"
 
-    def dict_search(self, data, match_dict=None, select_dict=None):
+    def __call__(self, data, match_dict=None, select_dict=None):
         data = [data] if isinstance(data, dict) or not utils.isiter(data) else data
         if not all(not arg or isinstance(arg, dict) for arg in [match_dict, select_dict]):
             raise exceptions.PreconditionError()
@@ -186,10 +188,9 @@ class DictSearch:
             self.lop_inst: lambda val, search_type: isinstance(val, search_type),
             self.lop_comp: lambda val, search_val: self._operator_comp(val, search_val),
         }
-        # prematurely check if __bool__ is implemented in order to avoid unexpected errors on all() in dict_search()
         if operator in self._low_level_comparison_operators:
             try:
-                bool(value)
+                bool(value)  # avoid unexpected results on all() in __call__()
             except self._eval_exc or Exception:
                 if not self._eval_exc:
                     raise
@@ -309,7 +310,7 @@ class DictSearch:
         if not self._iscontainer(search_value) or len(search_value) != 2:
             raise exceptions.WhereOperatorError
         array_match_dict, match_dict = search_value
-        return [sub_dict for sub_dict in self.dict_search(data, array_match_dict)], match_dict
+        return [sub_dict for sub_dict in self(data, array_match_dict)], match_dict
 
     @staticmethod
     def _operator_index(data, index):
@@ -354,6 +355,8 @@ class DictSearch:
                     self._build_dict(val, data.get(key), selected_dict, prev_keys, original_data)
                     prev_keys.pop(-1)
                 elif key == self.sel_array and utils.isiter(data):
+                    if self.array_ignore_types and isinstance(data, self.array_ignore_types):
+                        continue
                     self._apply_to_container(data, selection_dict.get(key), selected_dict, prev_keys, original_data)
                 else:
                     prev_keys.append(key)
@@ -389,12 +392,12 @@ class DictSearch:
         match_dict, operator = search_value
         if isinstance(operator, dict):
             self._apply_to_container(
-                self.dict_search(data, match_dict), operator, selected_dict, prev_keys, original_data
+                self(data, match_dict), operator, selected_dict, prev_keys, original_data
             )
         else:
             incl = lambda: self.where_incl(match_dict, selected_dict, data, prev_keys)
             excl = lambda: self.where_excl(match_dict, selected_dict, data, prev_keys, original_data)
-            self._build_dict(operator, [], selected_dict, prev_keys, original_data, incl_func=incl, excl_func=excl)
+            self._build_dict(operator, None, selected_dict, prev_keys, original_data, incl_func=incl, excl_func=excl)
 
     def where_incl(self, match_dict, selected_dict, data, prev_keys):
         values = [d_point for d_point in data if all(self._match(d_point, match_dict))]
@@ -402,9 +405,7 @@ class DictSearch:
 
     def where_excl(self, match_dict, selected_dict, data, prev_keys, original_data):
         values = [d_point for d_point in data if not all(self._match(d_point, match_dict))]
-        if values == data:
-            return
-        if values:
+        if values and values != data:
             self._exclude(selected_dict, prev_keys, original_data, values)
 
     def _operator_sel_index(self, data, select_op, selected_dict, prev_keys, original_data):

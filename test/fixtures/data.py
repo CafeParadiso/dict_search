@@ -458,7 +458,7 @@ def build_fixtures(vals):
     for _ in range(vals):
         random.shuffle(taxes)
         random.shuffle(ports_list)
-        used_ports = [{"port": port, "days": random.randint(5, 45)} for port in ports_list[0 : random.randint(0, 5)]]
+        used_ports = [{"port": port, "days": random.randint(5, 45)} for port in ports_list[0: random.randint(0, 5)]]
         document = {
             "id": _,
             "shipping_date": datetime.datetime(2022, random.randint(1, 12), random.randint(1, 28)),
