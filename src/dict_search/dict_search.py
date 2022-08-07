@@ -24,19 +24,19 @@ class DictSearch:
             eval_exc=None,
             exc_truth_value=False,
             consumable_iterators=None,
+            non_consumable_iterators=None,
+            iterator_cast_type=list,
             coerce_list=False,
-            array_ignore_types=None,
+            sel_array_ignored_types=None,
     ):
         self.operator_char = operator_str if isinstance(operator_str, str) else "$"
         self._eval_exc = eval_exc
         self._exc_truth_value = exc_truth_value
         self._consumable_iterators = consumable_iterators
-        if consumable_iterators:
-            self._consumable_iterators = (
-                consumable_iterators if isinstance(consumable_iterators, list) else [consumable_iterators]
-            )
+        self._non_consumable_iterators = non_consumable_iterators
+        self._iterator_cast_type = iterator_cast_type
         self._coerce_list = coerce_list
-        self.array_ignore_types = array_ignore_types
+        self.sel_array_ignored_types = sel_array_ignored_types
         self._empty = False
 
         # matching operators
@@ -87,73 +87,57 @@ class DictSearch:
         self.sel_array = f"{self.operator_char}array"
 
     def __call__(self, data, match_dict=None, select_dict=None):
-        data = [data] if isinstance(data, dict) or not utils.isiter(data) else data
+        data = [data] if isinstance(data, dict) else data
         if not all(not arg or isinstance(arg, dict) for arg in [match_dict, select_dict]):
             raise exceptions.PreconditionError()
         for data_point in data:
             if not isinstance(data_point, dict) or not data_point:
                 continue
-            self._initial_data.clear()
-            if all(match for match in self._match(data_point, match_dict)) if match_dict else True:
-                if select_dict:
-                    self._empty = False
-                    selected_dict = self._select(data_point, select_dict)
-                    if not selected_dict and not self._empty:
-                        continue
-                    yield selected_dict
-                else:
-                    yield data_point
+            self._initial_data = data_point
+            if match_dict and not all(match for match in self._match(data_point, match_dict)):
+                continue
+            if select_dict:
+                self._empty = False
+                selected_dict = self._select(data_point, select_dict)
+                if not selected_dict and not self._empty:
+                    continue
+                yield selected_dict
+            else:
+                yield data_point
 
-    def _match(self, data, match_dict):
-        self._initial_data = self._initial_data if self._initial_data else data.copy()
+    def _match(self, data, match_dict, prev_keys=None):
+        prev_keys = prev_keys if prev_keys else []
         if isinstance(match_dict, dict) and match_dict:
             for key, value in match_dict.items():
                 if key in self.low_level_operators:
                     yield self._low_level_operator(key, data, value)
                 elif key in self.high_level_operators:
-                    yield self._high_level_operator(key, data, value)
+                    yield self._high_level_operator(key, data, value, prev_keys)
                 elif key in self.array_operators:
-                    yield self._array_operators(key, data, value)
+                    yield self._array_operators(key, data, value, prev_keys)
                 elif key in self.match_operators:
-                    yield self._match_operators(key, data, value)
+                    yield self._match_operators(key, data, value, prev_keys)
                 elif key in self.array_selectors:
-                    yield from self._match(*self._array_selector(key, data, value))
-                elif all(isinstance(obj, dict) for obj in [value, data]):
-                    yield from self._match(self._assign_consumed_iterator(data, key, value), value)
-                elif isinstance(data, dict):
-                    yield self._compare(data.get(key), value)
-                else:
+                    yield from self._match(*self._array_selector(key, data, value, prev_keys))
+                elif not isinstance(data, dict) or isinstance(data, dict) and key not in data.keys():
                     yield False
+                elif isinstance(value, dict):
+                    prev_keys.append(key)
+                    yield from self._match(data[key], value, prev_keys)
+                    prev_keys.pop(-1)
+                else:
+                    yield self._compare(data[key], value)
         else:
             yield self._compare(data, match_dict)
 
-    def _assign_consumed_iterator(self, data, key, value, operator_check=True):
-        """Assign to original data the consumed generator to avoid bugs while performing matching and after return it
-
-        It will be applied if the next search operator(arg value) is:
-        -array operator, array selector or match operator being used as array operator
-        This behaviour can be avoided by specfiying an iterator type through the exhaustible_iterator parameter
-        """
-        try:
-            nested_data = data.get(key)
-        except AttributeError:
-            return
-        if (
-                not isinstance(nested_data, *self._consumable_iterators) and isinstance(nested_data, abc.Iterator)
-                if self._consumable_iterators
-                else isinstance(nested_data, abc.Iterator)
-                and isinstance(value, dict)
-                and value
-                and (
-                     list(value.keys())[0] in self.array_operators + self.array_selectors
-                     or (list(value.keys())[0] in self.match_operators and not self._iscontainer(list(value.values())[0]))
-                     if operator_check
-                     else True
-                )
-        ):
-            nested_data = list(nested_data)
-            data[key] = nested_data
-        return nested_data
+    def _assign_consumed_iterator(self, data, prev_keys):
+        if not self._consumable_iterators or not isinstance(data, self._consumable_iterators):
+            return data
+        if self._non_consumable_iterators and isinstance(data, self._non_consumable_iterators):
+            return data
+        data = self._iterator_cast_type.__call__(data)
+        utils.set_from_list(self._initial_data, prev_keys, data)
+        return data
 
     def _compare(self, data, comparison):
         try:
@@ -190,7 +174,7 @@ class DictSearch:
         }
         if operator in self._low_level_comparison_operators:
             try:
-                bool(value)  # avoid unexpected results on all() in __call__()
+                bool(value)  # avoid unexpected results on all() at self.__call__() level
             except self._eval_exc or Exception:
                 if not self._eval_exc:
                     raise
@@ -228,7 +212,7 @@ class DictSearch:
         else:
             return search_val[1](val, comp_val)
 
-    def _high_level_operator(self, operator, data, search_container):
+    def _high_level_operator(self, operator, data, search_container, prev_keys):
         if not self._iscontainer(search_container):
             raise exceptions.HighLevelOperatorIteratorError
         if not search_container:
@@ -239,35 +223,37 @@ class DictSearch:
             self.hop_not: lambda matches: not all(matches),
         }
         return operator_map[operator](
-            match for search_dict in search_container for match in self._match(data, search_dict)
+            match for search_dict in search_container for match in self._match(data, search_dict, prev_keys)
         )
 
-    def _array_operators(self, operator, data, search_value):
+    def _array_operators(self, operator, data, search_value, prev_keys):
         if not utils.isiter(data):
             return False
+        data = self._assign_consumed_iterator(data, prev_keys)
         operator_map = {
             self.aop_all: self._operator_all,
             self.aop_any: self._operator_any,
         }
-        return operator_map[operator](data, search_value)
+        return operator_map[operator](data, search_value, prev_keys)
 
-    def _operator_all(self, data, search_value):
+    def _operator_all(self, data, search_value, prev_keys):
         if isinstance(search_value, dict):
-            values = [match for d_point in data for match in self._match(d_point, search_value)]
+            values = [match for d_point in data for match in self._match(d_point, search_value, prev_keys)]
         else:
             values = [self._compare(d_point, search_value) for d_point in data]
         return False if not values else all(values)
 
-    def _operator_any(self, data, search_value):
+    def _operator_any(self, data, search_value, prev_keys):
         if isinstance(search_value, dict):
-            return any(match for d_point in data for match in self._match(d_point, search_value))
+            return any(match for d_point in data for match in self._match(d_point, search_value, prev_keys))
         return any(self._compare(d_point, search_value) for d_point in data)
 
-    def _match_operators(self, operator, data, search_value):
+    def _match_operators(self, operator, data, search_value, prev_keys):
         try:
-            tresh, search_value = list(search_value.items())[0]
-            assert isinstance(tresh, int)
+            thresh, search_value = list(search_value.items())[0]
         except (AttributeError, IndexError, AssertionError):
+            raise exceptions.MatchOperatorError(search_value)
+        if not isinstance(thresh, int):
             raise exceptions.MatchOperatorError(search_value)
         operator_map = {
             self.mop_match: [lambda m, c: True if m == c else False, lambda m, c: True if m > c else False, False],
@@ -276,29 +262,34 @@ class DictSearch:
             self.mop_matchlt: [lambda m, c: True if m < c else False, lambda m, c: True if m >= c else False, False],
             self.mop_matchlte: [lambda m, c: True if m <= c else False, lambda m, c: True if m > c else False, False],
         }
-        default_args = operator_map[operator][0], tresh, operator_map[operator][1], operator_map[operator][2]
+        default_args = operator_map[operator][0], thresh, operator_map[operator][1], operator_map[operator][2]
 
         if self._iscontainer(search_value):  # match is being used as high level operator
             return utils.shortcircuit_counter(
-                iter(match for search_dict in search_value for match in self._match(data, search_dict)), *default_args
+                iter(
+                    match for search_dict in search_value for match in self._match(data, search_dict, prev_keys)
+                ), *default_args
             )
-        elif isinstance(search_value, dict):  # match is being used as array operator
+        data = self._assign_consumed_iterator(data, prev_keys)
+        if isinstance(search_value, dict):  # match is being used as array operator
             return utils.shortcircuit_counter(
-                iter(all([m for m in self._match(data_point, search_value)]) for data_point in data), *default_args
+                iter(all([m for m in self._match(data_point, search_value, prev_keys)]) for data_point in data),
+                *default_args
             )
-        return utils.shortcircuit_counter(  # match is being used as array op. to compare each value in the iterable
+        return utils.shortcircuit_counter(  # match is being used as array op. to compare
             iter(self._compare(d_point, search_value) for d_point in data), *default_args
         )
 
-    def _array_selector(self, operator_type, data, search_value):
+    def _array_selector(self, operator_type, data, search_value, prev_keys):
         if operator_type == self.as_where:
-            return self._operator_where(data, search_value)
+            return self._operator_where(data, search_value, prev_keys)
         elif operator_type == self.as_index and isinstance(search_value, list) and len(search_value) == 2:
             operator, search_value = search_value[0], search_value[1]
         elif isinstance(search_value, dict) and len(search_value):
             operator, search_value = list(search_value.items())[0]
         else:
             raise exceptions.ArraySelectorFormatException(operator_type)
+        data = self._assign_consumed_iterator(data, prev_keys)
         try:
             return {self.as_index: self._operator_index, self.as_range: self._operator_range}[operator_type](
                 data, operator
@@ -306,10 +297,11 @@ class DictSearch:
         except (TypeError, IndexError, KeyError, ValueError):
             return [], {}
 
-    def _operator_where(self, data, search_value):
+    def _operator_where(self, data, search_value, prev_keys):
         if not self._iscontainer(search_value) or len(search_value) != 2:
             raise exceptions.WhereOperatorError
         array_match_dict, match_dict = search_value
+        data = self._assign_consumed_iterator(data, prev_keys)
         return [sub_dict for sub_dict in self(data, array_match_dict)], match_dict
 
     @staticmethod
@@ -340,39 +332,34 @@ class DictSearch:
     def _apply_selection(self, data, selection_dict, selected_dict, prev_keys=None, original_data=None):
         prev_keys = prev_keys if prev_keys else []
         original_data = original_data if original_data else data.copy()
-        if isinstance(selection_dict, dict) and data:
-            for key, val in selection_dict.items():
-                if key == self.as_where and prev_keys:
-                    self._operator_sel_where(data, val, selected_dict, prev_keys, original_data)
-                elif key == self.as_index and prev_keys:
-                    self._operator_sel_index(data, val, selected_dict, prev_keys, original_data)
-                elif key == self.as_range and prev_keys:
-                    self._operator_sel_range(data, val, selected_dict, prev_keys, original_data)
-                elif isinstance(data, dict) and key not in data.keys():
+        if not isinstance(selection_dict, dict) or not data:
+            return
+        for key, val in selection_dict.items():
+            if key == self.as_where and prev_keys and isinstance(data, abc.Iterable):
+                self._operator_sel_where(data, val, selected_dict, prev_keys, original_data)
+            elif key == self.as_index and prev_keys and isinstance(data, abc.Iterable):
+                self._operator_sel_index(data, val, selected_dict, prev_keys, original_data)
+            elif key == self.as_range and prev_keys and isinstance(data, abc.Iterable):
+                self._operator_sel_range(data, val, selected_dict, prev_keys, original_data)
+            elif key == self.sel_array and isinstance(data, abc.Iterable):
+                if self.sel_array_ignored_types and isinstance(data, self.sel_array_ignored_types):
                     continue
-                elif val in self.selection_operators and isinstance(data, dict):
-                    prev_keys.append(key)
-                    self._build_dict(val, data.get(key), selected_dict, prev_keys, original_data)
-                    prev_keys.pop(-1)
-                elif key == self.sel_array and utils.isiter(data):
-                    if self.array_ignore_types and isinstance(data, self.array_ignore_types):
-                        continue
-                    self._apply_to_container(data, selection_dict.get(key), selected_dict, prev_keys, original_data)
-                else:
-                    prev_keys.append(key)
-                    self._apply_selection(
-                        self._assign_consumed_iterator(data, key, val, operator_check=False),
-                        val,
-                        selected_dict,
-                        prev_keys,
-                        original_data,
-                    )
-                    prev_keys.pop(-1)
+                self._apply_to_container(data, selection_dict[key], selected_dict, prev_keys, original_data)
+            elif not isinstance(data, dict) or key not in data.keys():
+                continue
+            elif val in self.selection_operators and isinstance(data, dict):
+                prev_keys.append(key)
+                self._build_dict(val, data[key], selected_dict, prev_keys, original_data)
+                prev_keys.pop(-1)
+            else:
+                prev_keys.append(key)
+                self._apply_selection(data[key], val, selected_dict, prev_keys, original_data)
+                prev_keys.pop(-1)
 
     def _select_iter(self, data, selection_dict):
         values = []
         for d_point in data:
-            if not isinstance(d_point, dict):
+            if not isinstance(d_point, dict) or not d_point:
                 continue
             sel_dict = self._select(d_point, selection_dict)
             if sel_dict:
@@ -389,6 +376,9 @@ class DictSearch:
     def _operator_sel_where(self, data, search_value, selected_dict, prev_keys, original_data):
         if not isinstance(search_value, list) or len(search_value) != 2:
             raise exceptions.WhereOperatorError
+        data = self._assign_consumed_iterator(data, prev_keys)
+        if len(data) == 0:
+            return
         match_dict, operator = search_value
         if isinstance(operator, dict):
             self._apply_to_container(
@@ -415,6 +405,9 @@ class DictSearch:
             index, select_op = list(select_op.items())[0]
         else:
             raise exceptions.IndexOperatorError
+        data = self._assign_consumed_iterator(data, prev_keys)
+        if len(data) == 0:
+            return
         if select_op in self.selection_operators:
             value = None
             if select_op == self.sel_include:
@@ -444,7 +437,7 @@ class DictSearch:
             return
         excl = lambda: self._index_excl_nested(values, selected_dict, prev_keys, original_data, data=data)
         incl = lambda: utils.set_from_list(
-            selected_dict, prev_keys, values[0][1] if len(values) == 1 else [val[1] for val in values]
+            selected_dict, prev_keys, values[0][1] if len(values) == 1 else [v[1] for v in values]
         )
         self._build_dict(self._used, None, selected_dict, prev_keys, original_data, incl_func=incl, excl_func=excl)
 
@@ -476,6 +469,9 @@ class DictSearch:
     def _operator_sel_range(self, data, select_op, selected_dict, prev_keys, original_data):
         if not isinstance(select_op, dict) or len(select_op) != 1:
             raise exceptions.RangeSelectionOperatorError
+        data = self._assign_consumed_iterator(data, prev_keys)
+        if len(data) == 0:
+            return
         range_str, select_op = list(select_op.items())[0]
         try:
             values = self._operator_range(data, range_str)

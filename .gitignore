@@ -1,12 +1,11 @@
 #PyCharm
 .idea/
-src/*/__pycache__/
 #pytest
 .pytest_cache/
 #build
 build/
 dist/
 src/*.egg-info/
-test/__pycache__/
+**__pycache__/
 # coverage
 .coverage
