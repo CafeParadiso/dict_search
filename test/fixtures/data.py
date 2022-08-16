@@ -423,10 +423,65 @@ class CursedData:
     """Class to emulate bad behavioured objects found in the wild"""
 
     def __bool__(self):
-        raise ValueError("The truth value is ambiguous")
+        raise Exception
 
     def __eq__(self, other):
-        raise ValueError("The truth value is ambiguous")
+        raise Exception
+
+    def __gt__(self, other):
+        raise Exception
+
+    def __lt__(self, other):
+        raise Exception
+
+    def __contains__(self, item):
+        raise Exception
+
+    def __index__(self):
+        raise Exception
+
+
+class CursedDataSyntax:
+    """Class to emulate bad behavioured objects found in the wild"""
+
+    def __bool__(self):
+        raise SyntaxError
+
+    def __eq__(self, other):
+        raise SyntaxError
+
+    def __gt__(self, other):
+        raise SyntaxError
+
+    def __lt__(self, other):
+        raise SyntaxError
+
+    def __contains__(self, item):
+        raise SyntaxError
+
+    def __index__(self):
+        raise SyntaxError
+
+
+class CursedDataPipe:
+    """Class to emulate bad behavioured objects found in the wild"""
+    def __bool__(self):
+        raise BrokenPipeError
+
+    def __eq__(self, other):
+        raise BrokenPipeError
+
+    def __gt__(self, other):
+        raise BrokenPipeError
+
+    def __lt__(self, other):
+        raise BrokenPipeError
+
+    def __contains__(self, item):
+        raise BrokenPipeError
+
+    def __index__(self):
+        raise BrokenPipeError
 
 
 def build_fixtures(vals):
@@ -528,7 +583,7 @@ def build_fixtures(vals):
                 ]
             )
         )
-        with open(path.join("fixtures", f"{_}.json"), "w") as file:
+        with open(path.join("", f"{_}.json"), "w") as file:
             json.dump(document, file, indent=4, default=str)
 
 
@@ -551,7 +606,7 @@ def custom_decoder(dikt):
 
 
 def read_fixtures():
-    directory = path.join(path.dirname(__file__), "fixtures")
-    for file in listdir(directory):
+    directory = path.join(path.dirname(__file__), "")
+    for file in list(filter(lambda x: ".json" in x, listdir(directory))):
         with open(path.join(directory, file), "r") as fp:
             yield json.load(fp, object_hook=custom_decoder)

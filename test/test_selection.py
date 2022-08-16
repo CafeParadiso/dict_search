@@ -1,13 +1,12 @@
 from unittest import mock
 
 from src.dict_search.dict_search import DictSearch
-from . import data as test_data
-from pprint import pprint
+from .fixtures import data as test_data
 
 
 def test_malformed():
     values = list(
-        DictSearch().dict_search(
+        DictSearch().__call__(
             test_data.read_fixtures(),
             select_dict={"id": "1"},
         )
@@ -17,7 +16,7 @@ def test_malformed():
 
 def test_mixed_include():
     values = list(
-        DictSearch().dict_search(
+        DictSearch().__call__(
             test_data.read_fixtures(),
             select_dict={"id": 1, "batch": 0},
         )
@@ -28,21 +27,21 @@ def test_mixed_include():
 def test_mixed_exclude():
     for d_point in test_data.read_fixtures():
         initial_keys = list(d_point.keys())
-        values = list(DictSearch().dict_search(d_point, select_dict={"id": 0, "batch": 1}))
+        values = list(DictSearch().__call__(d_point, select_dict={"id": 0, "batch": 1}))
         initial_keys.remove("id")
         assert initial_keys == list(values[0].keys())
 
 
 def test_include_missing_key():
     values = list(
-        DictSearch().dict_search(
+        DictSearch().__call__(
             test_data.read_fixtures(),
             select_dict={"missing": 1},
         )
     )
     assert not values
     values = list(
-        DictSearch().dict_search(
+        DictSearch().__call__(
             test_data.read_fixtures(),
             select_dict={"id": 1, "missing": 1},
         )
@@ -52,7 +51,7 @@ def test_include_missing_key():
 
 def test_include_one():
     values = list(
-        DictSearch().dict_search(
+        DictSearch().__call__(
             test_data.read_fixtures(),
             select_dict={"id": 1},
         )
@@ -62,7 +61,7 @@ def test_include_one():
 
 def test_include_multiple():
     values = list(
-        DictSearch().dict_search(
+        DictSearch().__call__(
             test_data.read_fixtures(),
             select_dict={"paid": 1, "id": 1},
         )
@@ -72,7 +71,7 @@ def test_include_multiple():
 
 def test_include_nested():
     values = list(
-        DictSearch().dict_search(
+        DictSearch().__call__(
             test_data.read_fixtures(),
             select_dict={"info": {"origin": 1}, "id": 1},
         )
@@ -82,10 +81,10 @@ def test_include_nested():
 
 def test_include_in_list():
     values = list(
-        DictSearch().dict_search(
+        DictSearch().__call__(
             test_data.read_fixtures(),
             select_dict={
-                "batch": {"products": {"types": {"price": 1}}},
+                "batch": {"products": {"types": {"$array": {"price": 1}}}},
                 "id": 1,
             },
         )
@@ -102,9 +101,9 @@ def test_include_in_list():
 def test_include_in_iterator():
     data = list(test_data.read_fixtures())
     values = list(
-        DictSearch().dict_search(
+        DictSearch().__call__(
             data,
-            select_dict={"port_route": {"port": 1}},
+            select_dict={"port_route": {"$array": {"port": 1}}},
         )
     )
     assert len(values) == 8
@@ -113,7 +112,7 @@ def test_include_in_iterator():
 
 def test_exclude_missing_key():
     values = list(
-        DictSearch().dict_search(
+        DictSearch().__call__(
             test_data.read_fixtures(),
             select_dict={"missing": 0},
         )
@@ -122,7 +121,7 @@ def test_exclude_missing_key():
     for d_point in test_data.read_fixtures():
         keys = list(d_point.keys())
         values = list(
-            DictSearch().dict_search(
+            DictSearch().__call__(
                 d_point,
                 select_dict={"id": 0, "missing": 0},
             )
@@ -137,7 +136,7 @@ def test_exclude_one():
     for d_point in test_data.read_fixtures():
         keys = list(d_point.keys())
         values = list(
-            DictSearch().dict_search(
+            DictSearch().__call__(
                 d_point,
                 select_dict={"batch": 0},
             )
@@ -154,7 +153,7 @@ def test_exclude_multiple():
     for d_point in test_data.read_fixtures():
         initial_keys = list(d_point.keys())
         values = list(
-            DictSearch().dict_search(
+            DictSearch().__call__(
                 d_point,
                 select_dict={"batch": 0, "id": 0},
             )
@@ -172,7 +171,7 @@ def test_exclude_nested():
         keys = list(d_point.keys())
         info_keys = list(d_point["info"].keys())
         values = list(
-            DictSearch().dict_search(
+            DictSearch().__call__(
                 d_point,
                 select_dict={"info": {"origin": 0}, "id": 0},
             )
@@ -191,9 +190,9 @@ def test_exclude_in_list():
     for d_point in test_data.read_fixtures():
         keys = list(d_point.keys())
         values = list(
-            DictSearch().dict_search(
+            DictSearch().__call__(
                 d_point,
-                select_dict={"batch": {"products": {"product": 0}}},
+                select_dict={"batch": {"products": {"$array": {"product": 0}}}},
             )
         )
         assert values
@@ -208,9 +207,9 @@ def test_exclude_in_iterator():
     for d_point in test_data.read_fixtures():
         keys = list(d_point.keys())
         values = list(
-            DictSearch().dict_search(
+            DictSearch().__call__(
                 d_point,
-                select_dict={"port_route": {"port": 0}},
+                select_dict={"port_route": {"$array": {"port": 0}}},
             )
         )
         if values:

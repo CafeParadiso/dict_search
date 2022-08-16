@@ -3,16 +3,16 @@ from pytest import raises as pytest_raises
 from src.dict_search.dict_search import DictSearch
 from src.dict_search import exceptions
 
-from . import data
+from .fixtures import data
 
 
 def test_high_level_operator_exception():
     with pytest_raises(exceptions.HighLevelOperatorIteratorError):
-        list(DictSearch().dict_search(data.data, {"$and": {"assets": {"non_cur": {"$lt": 3922}}}}))
+        list(DictSearch().__call__(data.data, {"$and": {"assets": {"non_cur": {"$lt": 3922}}}}))
 
 
 def test_malformed_high_level_operator():
-    values = DictSearch().dict_search(
+    values = DictSearch().__call__(
         [{"assets": "a"}, {"assets": 2}, {"assets": [1, 32]}], {"$and": [1, {"assets": "a"}], "missing": [1, 2]}
     )
     results = [val for val in values]
@@ -20,7 +20,7 @@ def test_malformed_high_level_operator():
 
 
 def test_and():
-    values = DictSearch().dict_search(
+    values = DictSearch().__call__(
         data.data, {"$and": [{"assets": {"non_cur": {"$lt": 3922}}}, {"fy": {"$in": [2011]}}]}
     )
     values = [val for val in values]
@@ -28,7 +28,7 @@ def test_and():
 
 
 def test_or():
-    values = DictSearch().dict_search(
+    values = DictSearch().__call__(
         data.data, {"$or": [{"liab": {"non_cur": {"a": {"$gt": 10000}}}}, {"assets": {"curr": {"a": 1}}}]}
     )
     values = [val for val in values]
@@ -36,7 +36,7 @@ def test_or():
 
 
 def test_not():
-    values = DictSearch().dict_search(
+    values = DictSearch().__call__(
         data.data,
         {
             "$not": [
@@ -50,7 +50,7 @@ def test_not():
 
 
 def test_nested_high_operator():
-    values = DictSearch().dict_search(
+    values = DictSearch().__call__(
         data.complex_data,
         {
             "$or": [
@@ -72,13 +72,14 @@ def test_nested_high_operator():
 
 def test_emtpy_search_container():
     for op in [DictSearch().hop_or, DictSearch().hop_and, DictSearch().hop_not]:
-        values = list(DictSearch().dict_search([{"a": 1, "b": 0}, {"a": 0, "b": 1}], {op: []}))
+        print(op)
+        values = list(DictSearch().__call__([{"a": 1, "b": 0}, {"a": 0, "b": 1}], {op: ()}))
         assert not values
 
 
 def test_high_level_op_empty_data():
     values = list(
-        DictSearch().dict_search(
+        DictSearch().__call__(
             [{"a": {"b": 1}}, {"a": None}],
             {"a": {"$and": [{"b": {"$inst": int}}, {"b": 0}]}},
         )

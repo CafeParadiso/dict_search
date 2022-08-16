@@ -1,20 +1,39 @@
 import re
 
 from src.dict_search.dict_search import DictSearch
+from src.dict_search import low_level_operators as llop
 
-from . import data
+from .fixtures import data
+from .utils import TestCase
+
+search = DictSearch()
 
 
-def test_ne():
-    values = DictSearch().__call__(data.data, {"fy": {"$ne": 2014}})
-    assert len([val for val in values]) == 6
+class LowLevelOperators(TestCase):
+    def test_ne(self):
+        print("a")
+        s = DictSearch(
+            low_level_ops_config={
+                "ne": {
+                    "exc": (SyntaxError, BrokenPipeError),
+                    "exc_val": {SyntaxError: True, BrokenPipeError: True},
+                    "ignored": int,
+                    "allowed": object,
+                }
+            },
+            #low_level_glob_exc_val=True
+        )
+        d = [{"id": data.CursedDataSyntax()}, {"id": 3}, {"id": "1"}, {"id": data.CursedDataPipe()}]
+        values = list(s(d, {"id": {"$ne": 3}}))
+        print(values)
 
+    @staticmethod
+    def test_lt():
+        values = DictSearch().__call__(data.data, {"liab": {"cur": {"$lt": 3000}}})
+        values = [val for val in values]
+        assert len(values) == 3
+        assert all([True if val["liab"]["cur"] < 3000 else False for val in values])
 
-def test_lt():
-    values = DictSearch().__call__(data.data, {"liab": {"cur": {"$lt": 3000}}})
-    values = [val for val in values]
-    assert len(values) == 3
-    assert all([True if val["liab"]["cur"] < 3000 else False for val in values])
 
 
 def test_lte():
