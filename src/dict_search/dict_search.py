@@ -1,8 +1,8 @@
 from collections import abc
 import re
 from typing import Type
-from typing import Union
 
+from . constants import *
 from . import exceptions
 from . import low_level_operators as lop
 from . import utils
@@ -24,34 +24,32 @@ def _copy_data(func):
 class DictSearch:
     def __init__(
         self,
-        operator_str: str =None,
-        low_level_custom_op: dict[str, Type[lop.LowLevelOperator]] = None,
+        operator_str: str = None,
+        low_level_custom_ops: dict[str, Type[lop.LowLevelOperator]] = None,
         low_level_glob_exc: Type[Exception] = None,
-        low_level_oper_exc: dict[
-            Type[lop.LowLevelOperator], Union[Type[Exception], tuple[Type[Exception], ...], None]
-        ] = None,
         low_level_glob_exc_val: bool = False,
-        low_level_exc_value: dict = None,
+        low_level_ops_config: dict = None,
         consumable_iterators=None,
         non_consumable_iterators=None,
         iterator_cast_type=list,
         coerce_list=False,
         sel_array_ignored_types=None,
+        container_type=list,
     ):
         self.operator_str = operator_str if isinstance(operator_str, str) else "$"
-        self.low_level_custom_op = low_level_custom_op or {}
         self.low_level_glob_exc = low_level_glob_exc
-        self.low_level_oper_exc = low_level_oper_exc or {}
         self.low_level_glob_exc_val = low_level_glob_exc_val
-        self.low_level_exc_value = low_level_exc_value or {}
         self._consumable_iterators = consumable_iterators
         self._non_consumable_iterators = non_consumable_iterators
         self._iterator_cast_type = iterator_cast_type
         self._coerce_list = coerce_list
         self.sel_array_ignored_types = sel_array_ignored_types
+        self.container_type = container_type
         self._empty = False
+        self._initial_data = {}
 
         # matching operators
+        self.lop_eq = f"{self.operator_str}eq"
         self.lop_ne = f"{self.operator_str}ne"
         self.lop_gt = f"{self.operator_str}gt"
         self.lop_gte = f"{self.operator_str}gte"
@@ -66,11 +64,8 @@ class DictSearch:
         self.lop_expr = f"{self.operator_str}expr"
         self.lop_inst = f"{self.operator_str}inst"
         self.lop_comp = f"{self.operator_str}comp"
-        self._lop_map = {}
-        self._lop_eq = None
-        self._initial_data = {}
         self.low_level_operators = [val for key, val in self.__dict__.items() if re.match(r"^lop_.*$", key)]
-        self._low_level_comparison_operators = [self.lop_ne, self.lop_gt, self.lop_gte, self.lop_lt, self.lop_lte]
+        self._lop_map = {}
 
         self.hop_and = f"{self.operator_str}and"
         self.hop_or = f"{self.operator_str}or"
@@ -92,6 +87,13 @@ class DictSearch:
         self.as_range = f"{self.operator_str}range"
         self.as_where = f"{self.operator_str}where"
         self.array_selectors = [val for key, val in self.__dict__.items() if re.match(r"^as_.*$", key)]
+        self._all_match_ops = (
+            *self.low_level_operators,
+            *self.high_level_operators,
+            *self.array_operators,
+            *self.match_operators,
+            *self.array_selectors,
+        )
 
         # select
         self.sel_include = 1
@@ -100,7 +102,58 @@ class DictSearch:
         self.selection_operators = [self.sel_include, self.sel_exclude]
         self.sel_array = f"{self.operator_str}array"
 
-        self.set_low_level_ops()
+        self.low_level_custom_ops = self._set_low_level_custom_ops(low_level_custom_ops) if low_level_custom_ops else {}
+        self.low_level_ops_config = self._set_low_level_ops_config(low_level_ops_config) if low_level_ops_config else {}
+        self.init_low_level_ops()
+
+    def _set_low_level_custom_ops(self, low_level_custom_ops: dict):
+        parsed = {}
+        for k, v in low_level_custom_ops:
+            custom_op = f"{self.operator_str}{k}"
+            if custom_op in self._all_match_ops:
+                raise Exception(f"Your custom operator '{custom_op}' collides with an existing one")
+            parsed[custom_op] = v
+        return parsed
+
+    def _set_low_level_ops_config(self, low_level_ops_config: dict):
+        parsed = {}
+        for k, v in low_level_ops_config.items():
+            k = f"{self.operator_str}{k}"
+            if k not in [*self._all_match_ops, *self.low_level_custom_ops.keys()]:
+                raise Exception(f"'{k}' does not match with any existing operator")
+            if not isinstance(v, dict) or not v or not all(key in LOP_CONF_KEYS for key in v):
+                raise Exception(f"Configure your operator with a dict containing any of these keys {LOP_CONF_KEYS}")
+            parsed[k] = v
+        return parsed
+
+    def init_low_level_ops(self):
+        self._lop_map = {
+            self.lop_eq: lop.Equal,
+            self.lop_ne: lop.NotEqual,
+            self.lop_gt: lop.Greater,
+            self.lop_gte: lop.GreaterEq,
+            self.lop_lt: lop.LessThen,
+            self.lop_lte: lop.LessThenEq,
+            self.lop_is: lop.Is,
+            self.lop_in: lop.In,
+            self.lop_nin: lop.NotIn,
+            self.lop_cont: lop.Contains,
+            self.lop_ncont: lop.NotContains,
+            self.lop_regex: lop.Regex,
+            self.lop_expr: lop.Function,
+            self.lop_inst: lop.IsInstance,
+            self.lop_comp: lop.Compare,
+            **self.low_level_custom_ops,
+        }
+        for operator, operator_class in self._lop_map.items():
+            self._lop_map[operator] = operator_class(
+                self,
+                expected_exc=self.low_level_ops_config.get(operator, {}).get(LOP_CONF_EXC) or self.low_level_glob_exc,
+                exc_value=self.low_level_ops_config.get(operator, {}).get(LOP_CONF_EXC_VAL)
+                or self.low_level_glob_exc_val,
+                ignored_types=self.low_level_ops_config.get(operator, {}).get(LOP_CONF_IG_TYPE),
+                allowed_types=self.low_level_ops_config.get(operator, {}).get(LOP_CONF_ALL_TYPE),
+            )
 
     def __call__(self, data, match_dict=None, select_dict=None):
         data = [data] if isinstance(data, dict) else data
@@ -110,22 +163,21 @@ class DictSearch:
             if not isinstance(data_point, dict) or not data_point:
                 continue
             self._initial_data = data_point
-            if match_dict and not all(match for match in self._match(data_point, match_dict)):
+            if match_dict and not all(self._match(data_point, match_dict)):
                 continue
+            result = data_point
             if select_dict:
                 self._empty = False
-                selected_dict = self._select(data_point, select_dict)
-                if not selected_dict and not self._empty:
+                result = self._select(data_point, select_dict)
+                if not result and not self._empty:
                     continue
-                yield selected_dict
-            else:
-                yield data_point
+            yield result
 
     def _match(self, data, match_dict, prev_keys=None):
         prev_keys = prev_keys if prev_keys else []
         if isinstance(match_dict, dict) and match_dict:
             for key, value in match_dict.items():
-                if key in self.low_level_operators:
+                if key in self._lop_map:
                     yield self._low_level_operator(key, data, value)
                 elif key in self.high_level_operators:
                     yield self._high_level_operator(key, data, value, prev_keys)
@@ -142,9 +194,9 @@ class DictSearch:
                     yield from self._match(data[key], value, prev_keys)
                     prev_keys.pop(-1)
                 else:
-                    yield self._lop_eq(data[key], value)
+                    yield self._low_level_operator(self.lop_eq, data[key], value)
         else:
-            yield self._lop_eq(data, match_dict)
+            yield self._low_level_operator(self.lop_eq, data, match_dict)
 
     def _assign_consumed_iterator(self, data, prev_keys):
         if not self._consumable_iterators or not isinstance(data, self._consumable_iterators):
@@ -155,49 +207,12 @@ class DictSearch:
         utils.set_from_list(self._initial_data, prev_keys, data)
         return data
 
-    @staticmethod
-    def _iscontainer(obj):
-        if isinstance(obj, list):
-            return True
-        return False
-
-    def set_low_level_ops(self):
-        self._lop_map = {
-            self.lop_ne: self._set_low_level_op(lop.NotEqual),
-            self.lop_gt: self._set_low_level_op(lop.Greater),
-            self.lop_gte: self._set_low_level_op(lop.GreaterEq),
-            self.lop_lt: self._set_low_level_op(lop.LessThen),
-            self.lop_lte: self._set_low_level_op(lop.LessThenEq),
-            self.lop_is: self._set_low_level_op(lop.Is),
-            self.lop_in: self._set_low_level_op(lop.In),
-            self.lop_nin: self._set_low_level_op(lop.NotIn),
-            self.lop_cont: self._set_low_level_op(lop.Contains),
-            self.lop_ncont: self._set_low_level_op(lop.NotContains),
-            self.lop_regex: self._set_low_level_op(lop.Regex),
-            self.lop_expr: self._set_low_level_op(lop.Function),
-            self.lop_inst: self._set_low_level_op(lop.IsInstance),
-            self.lop_comp: self._set_low_level_op(lop.Compare),
-            **{f"{self.operator_str}{k}": self._set_low_level_op(v) for k, v in self.low_level_custom_op.items()}
-        }
-        self._lop_eq = self._set_low_level_op(lop.Equal)
-
-    def _set_low_level_op(self, operator_class):
-        return operator_class(
-            self,
-            expected_exc=self.low_level_oper_exc[operator_class]
-            if operator_class in self.low_level_oper_exc.keys()
-            else self.low_level_glob_exc,
-            exc_value=self.low_level_exc_value.get(operator_class) or self.low_level_glob_exc_val,
-        )
-
     def _low_level_operator(self, operator, value, search_value):
         return self._lop_map[operator](value, search_value)
 
     def _high_level_operator(self, operator, data, search_container, prev_keys):
-        if not self._iscontainer(search_container):
-            raise exceptions.HighLevelOperatorIteratorError
-        if not search_container:
-            return False
+        if not isinstance(search_container, self.container_type) or not search_container:
+            raise exceptions.HighLevelOperatorIteratorError(self.container_type)
         operator_map = {
             self.hop_and: lambda matches: all(matches),
             self.hop_or: lambda matches: any(matches),
@@ -208,7 +223,7 @@ class DictSearch:
         )
 
     def _array_operators(self, operator, data, search_value, prev_keys):
-        if not utils.isiter(data):
+        if not isinstance(data, abc.Iterable):
             return False
         data = self._assign_consumed_iterator(data, prev_keys)
         operator_map = {
@@ -221,13 +236,13 @@ class DictSearch:
         if isinstance(search_value, dict):
             values = [match for d_point in data for match in self._match(d_point, search_value, prev_keys)]
         else:
-            values = [self._lop_eq(d_point, search_value) for d_point in data]
+            values = [self._low_level_operator(self.lop_eq, d_point, search_value) for d_point in data]
         return False if not values else all(values)
 
     def _operator_any(self, data, search_value, prev_keys):
         if isinstance(search_value, dict):
             return any(match for d_point in data for match in self._match(d_point, search_value, prev_keys))
-        return any(self._lop_eq(d_point, search_value) for d_point in data)
+        return any(self._low_level_operator(self.lop_eq, d_point, search_value) for d_point in data)
 
     def _match_operators(self, operator, data, search_value, prev_keys):
         try:
@@ -245,7 +260,7 @@ class DictSearch:
         }
         default_args = operator_map[operator][0], thresh, operator_map[operator][1], operator_map[operator][2]
 
-        if self._iscontainer(search_value):  # match is being used as high level operator
+        if isinstance(search_value, self.container_type):  # match is being used as high level operator
             return utils.shortcircuit_counter(
                 iter(match for search_dict in search_value for match in self._match(data, search_dict, prev_keys)),
                 *default_args,
@@ -257,7 +272,7 @@ class DictSearch:
                 *default_args,
             )
         return utils.shortcircuit_counter(  # match is being used as array op. to compare
-            iter(self._lop_eq(d_point, search_value) for d_point in data), *default_args
+            iter(self._low_level_operator(self.lop_eq, d_point, search_value) for d_point in data), *default_args
         )
 
     def _array_selector(self, operator_type, data, search_value, prev_keys):
@@ -278,7 +293,7 @@ class DictSearch:
             return [], {}
 
     def _operator_where(self, data, search_value, prev_keys):
-        if not self._iscontainer(search_value) or len(search_value) != 2:
+        if not isinstance(search_value, self.container_type) or len(search_value) != 2:
             raise exceptions.WhereOperatorError
         array_match_dict, match_dict = search_value
         data = self._assign_consumed_iterator(data, prev_keys)
@@ -300,7 +315,7 @@ class DictSearch:
 
     @staticmethod
     def _operator_range(data, range_str):
-        if not isinstance(range_str, str) or not utils.israngestr(range_str):
+        if not isinstance(range_str, str) or not RANGE_PATTERN.match(range_str):
             raise exceptions.RangeSelectionOperatorError(range_str)
         return eval(f"data[{range_str}]", {"data": data})
 

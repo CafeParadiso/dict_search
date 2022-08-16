@@ -1,19 +1,4 @@
-from . import constants
 from pprint import pprint
-
-
-def isiter(data):
-    try:
-        iter(data)
-        return True
-    except TypeError:
-        return False
-
-
-def israngestr(range_str):
-    if not constants.RANGE_PATTERN.match(range_str):
-        return False
-    return True
 
 
 def shortcircuit_counter(generator, check, tresh, eager_check, eager_value):

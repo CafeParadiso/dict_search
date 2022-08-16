@@ -1,26 +1,49 @@
 import abc
 import re
-import typing
+from typing import Union
+from typing import Type
 
 from . import exceptions
 from . import utils
 
 
 class LowLevelOperator(abc.ABC):
-    expected_exc: typing.Union[Exception, tuple] = None
+    expected_exc: Union[Exception, tuple] = None
     exc_value: bool = None
+    allowed_types: Union[Type, tuple] = None
+    ignored_types: Union[Type, tuple] = None
 
-    def __init__(self, search_instance, expected_exc=None, exc_value=False):
+    def __init__(self, search_instance, expected_exc=None, exc_value=None, allowed_types=None, ignored_types=None):
         self.search_instance = search_instance
         self.expected_exc = self.expected_exc or expected_exc
         self.exc_value = self.exc_value or exc_value
+        self.allowed_types = self.allowed_types or allowed_types
+        self.ignored_types = self.ignored_types or ignored_types
+        if self.ignored_types:
+            self.implementation = self._ignored_types(self.implementation)
+        if self.allowed_types:
+            self.implementation = self._allowed_types(self.implementation)
+
+    def _allowed_types(self, func):
+        def wrapper(val, arg):
+            if not isinstance(val, self.allowed_types):
+                return False
+            func(val, arg)
+        return wrapper
+
+    def _ignored_types(self, func):
+        def wrapper(val, arg):
+            if isinstance(val, self.ignored_types):
+                return False
+            func(val, arg)
+        return wrapper
 
     def __call__(self, val, arg) -> bool:
         try:
             return self.implementation(val, arg)
         except Exception as e:
             if self.expected_exc and isinstance(e, self.expected_exc):
-                return self.exc_value[type(e)] if isinstance(self.exc_value, dict) else self.exc_value
+                return self.exc_value.get(type(e), False) if isinstance(self.exc_value, dict) else self.exc_value
             raise
 
     @abc.abstractmethod
@@ -104,8 +127,8 @@ class IsInstance(LowLevelOperator):
 
 class Compare(LowLevelOperator):
     def implementation(self, val, search_val) -> bool:
-        if not self.search_instance._iscontainer(search_val):
-            raise exceptions.HighLevelOperatorIteratorError
+        if not isinstance(search_val, self.search_instance.container_type):
+            raise exceptions.HighLevelOperatorIteratorError(self.search_instance.container_type)
         if all(isinstance(x, str) for x in search_val):
             try:
                 search_val = utils.get_from_list(self.search_instance._initial_data, search_val)

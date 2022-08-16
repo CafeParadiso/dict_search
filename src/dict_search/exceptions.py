@@ -7,8 +7,8 @@ class PreconditionError(SyntaxError):
 
 
 class HighLevelOperatorIteratorError(SyntaxError):
-    def __init__(self):
-        super().__init__("The search value for a high level operator must be a list")
+    def __init__(self, container_type):
+        super().__init__(f"The search value for a high level operator must be a non empty {container_type}")
 
 
 class MatchOperatorError(SyntaxError):
