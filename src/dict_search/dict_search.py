@@ -1,11 +1,17 @@
 from collections import abc
-import re
-from typing import Type
+from types import ModuleType
+from typing import Type, Union
 
-from . constants import *
+from . import constants as c
 from . import exceptions
-from . import low_level_operators as lop
 from . import utils
+from .operators import ALL_OPERATOR_TYPES, Operator
+from .operators import array_operators as aop
+from .operators import array_selectors as asop
+from .operators import exceptions as op_exceptions
+from .operators import get_operators
+from .operators import high_level_operators as hop
+from .operators import low_level_operators as lop
 from pprint import pprint
 
 
@@ -24,141 +30,121 @@ def _copy_data(func):
 class DictSearch:
     def __init__(
         self,
-        operator_str: str = None,
-        low_level_custom_ops: dict[str, Type[lop.LowLevelOperator]] = None,
-        low_level_glob_exc: Type[Exception] = None,
-        low_level_glob_exc_val: bool = False,
-        low_level_ops_config: dict = None,
+        ops_str: str = None,
+        ops_global_exc: Union[Type[Exception], tuple[..., Type[Exception]]] = None,
+        ops_global_allowed_type: Union[Type[type], tuple[..., Type[type]]] = None,
+        ops_global_ignored_type: Union[Type[type], tuple[..., Type[type]]] = None,
+        ops_custom: dict[str, Type[Operator]] = None,
+        ops_config: dict = None,
+        container_type=list,
         consumable_iterators=None,
         non_consumable_iterators=None,
         iterator_cast_type=list,
         coerce_list=False,
         sel_array_ignored_types=None,
-        container_type=list,
     ):
-        self.operator_str = operator_str if isinstance(operator_str, str) else "$"
-        self.low_level_glob_exc = low_level_glob_exc
-        self.low_level_glob_exc_val = low_level_glob_exc_val
+        self.ops_str = ops_str if isinstance(ops_str, str) else "$"
+        self.ops_global_exc = ops_global_exc
+        self.ops_global_allowed_type = ops_global_allowed_type
+        self.ops_global_ignored_type = ops_global_ignored_type
+        self.container_type = container_type
         self._consumable_iterators = consumable_iterators
         self._non_consumable_iterators = non_consumable_iterators
         self._iterator_cast_type = iterator_cast_type
         self._coerce_list = coerce_list
         self.sel_array_ignored_types = sel_array_ignored_types
-        self.container_type = container_type
-        self._empty = False
         self._initial_data = {}
 
-        # matching operators
-        self.lop_eq = f"{self.operator_str}eq"
-        self.lop_ne = f"{self.operator_str}ne"
-        self.lop_gt = f"{self.operator_str}gt"
-        self.lop_gte = f"{self.operator_str}gte"
-        self.lop_lt = f"{self.operator_str}lt"
-        self.lop_lte = f"{self.operator_str}lte"
-        self.lop_is = f"{self.operator_str}is"
-        self.lop_in = f"{self.operator_str}in"
-        self.lop_nin = f"{self.operator_str}nin"
-        self.lop_cont = f"{self.operator_str}cont"
-        self.lop_ncont = f"{self.operator_str}ncont"
-        self.lop_regex = f"{self.operator_str}regex"
-        self.lop_expr = f"{self.operator_str}expr"
-        self.lop_inst = f"{self.operator_str}inst"
-        self.lop_comp = f"{self.operator_str}comp"
-        self.low_level_operators = [val for key, val in self.__dict__.items() if re.match(r"^lop_.*$", key)]
-        self._lop_map = {}
+        self.all_match_ops = {}
+        self.low_level_operators = self.__set_match_ops(lop)
+        self.high_level_operators = self.__set_match_ops(hop)
+        self.array_operators = self.__set_match_ops(aop)
+        self.array_selectors = self.__set_match_ops(asop)
 
-        self.hop_and = f"{self.operator_str}and"
-        self.hop_or = f"{self.operator_str}or"
-        self.hop_not = f"{self.operator_str}not"
-        self.high_level_operators = [val for key, val in self.__dict__.items() if re.match(r"^hop_.*$", key)]
-
-        self.aop_all = f"{self.operator_str}all"
-        self.aop_any = f"{self.operator_str}any"
-        self.array_operators = [val for key, val in self.__dict__.items() if re.match(r"^aop_.*$", key)]
-
-        self.mop_match = f"{self.operator_str}match"
-        self.mop_matchgt = f"{self.operator_str}matchgt"
-        self.mop_matchgte = f"{self.operator_str}matchgte"
-        self.mop_matchlt = f"{self.operator_str}matchlt"
-        self.mop_matchlte = f"{self.operator_str}matchlte"
-        self.match_operators = [val for key, val in self.__dict__.items() if re.match(r"^mop_.*$", key)]
-
-        self.as_index = f"{self.operator_str}index"
-        self.as_range = f"{self.operator_str}range"
-        self.as_where = f"{self.operator_str}where"
-        self.array_selectors = [val for key, val in self.__dict__.items() if re.match(r"^as_.*$", key)]
-        self._all_match_ops = (
-            *self.low_level_operators,
-            *self.high_level_operators,
-            *self.array_operators,
-            *self.match_operators,
-            *self.array_selectors,
-        )
-
-        # select
+        # select attributes
+        self.sel_array = f"{self.ops_str}array"
         self.sel_include = 1
         self.sel_exclude = 0
+        self._empty = False
         self._used = None
         self.selection_operators = [self.sel_include, self.sel_exclude]
-        self.sel_array = f"{self.operator_str}array"
 
-        self.low_level_custom_ops = self._set_low_level_custom_ops(low_level_custom_ops) if low_level_custom_ops else {}
-        self.low_level_ops_config = self._set_low_level_ops_config(low_level_ops_config) if low_level_ops_config else {}
-        self.init_low_level_ops()
+        # init steps
+        self.ops_custom = self.__set_ops_custom(ops_custom or {})
+        self.ops_config = self.__set_ops_config(ops_config or {})
+        self._class_config_keys = set(filter(lambda x: x != Operator and not isinstance(x, str), self.ops_config))
+        self.__init_operators()
+        self.__set_ops_names_attrs()
 
-    def _set_low_level_custom_ops(self, low_level_custom_ops: dict):
+    def __set_match_ops(self, ops_module: ModuleType):
+        ops_names = []
+        ops_classes = get_operators(ops_module)
+        for op_class in ops_classes:
+            op_name = f"{self.ops_str}{op_class.name}"
+            self.all_match_ops[op_name] = op_class
+            ops_names.append(op_name)
+        return ops_names
+
+    def __set_ops_custom(self, value: dict):
         parsed = {}
-        for k, v in low_level_custom_ops:
-            custom_op = f"{self.operator_str}{k}"
-            if custom_op in self._all_match_ops:
-                raise Exception(f"Your custom operator '{custom_op}' collides with an existing one")
+        for k, v in value.items():
+            if not isinstance(k, str):
+                raise exceptions.CustomOpsKeyError(self.ops_str)
+            custom_op = f"{self.ops_str}{k}"
+            if custom_op in self.all_match_ops:
+                raise exceptions.CustomOpsExistingKey(custom_op)
+            if not isinstance(v, type) or not issubclass(v, Operator):
+                raise exceptions.CustomOpsValueError
             parsed[custom_op] = v
+        self.low_level_operators.extend(parsed)
+        self.all_match_ops.update(parsed)
         return parsed
 
-    def _set_low_level_ops_config(self, low_level_ops_config: dict):
+    def __set_ops_config(self, ops_config):
         parsed = {}
-        for k, v in low_level_ops_config.items():
-            k = f"{self.operator_str}{k}"
-            if k not in [*self._all_match_ops, *self.low_level_custom_ops.keys()]:
-                raise Exception(f"'{k}' does not match with any existing operator")
-            if not isinstance(v, dict) or not v or not all(key in LOP_CONF_KEYS for key in v):
-                raise Exception(f"Configure your operator with a dict containing any of these keys {LOP_CONF_KEYS}")
+        for k, v in ops_config.items():
+            if isinstance(k, str):
+                k = f"{self.ops_str}{k}"
+                if k not in self.all_match_ops:
+                    raise exceptions.OpsConfigNonExistingKey(k, self.ops_str)
+            elif not isinstance(k, type) or k not in ALL_OPERATOR_TYPES:
+                raise exceptions.OpsConfigKeyError
+            if not isinstance(v, dict) or not v or not all(key in c.LOP_CONF_KEYS for key in v):
+                raise exceptions.OpsConfigValueError
             parsed[k] = v
         return parsed
 
-    def init_low_level_ops(self):
-        self._lop_map = {
-            self.lop_eq: lop.Equal,
-            self.lop_ne: lop.NotEqual,
-            self.lop_gt: lop.Greater,
-            self.lop_gte: lop.GreaterEq,
-            self.lop_lt: lop.LessThen,
-            self.lop_lte: lop.LessThenEq,
-            self.lop_is: lop.Is,
-            self.lop_in: lop.In,
-            self.lop_nin: lop.NotIn,
-            self.lop_cont: lop.Contains,
-            self.lop_ncont: lop.NotContains,
-            self.lop_regex: lop.Regex,
-            self.lop_expr: lop.Function,
-            self.lop_inst: lop.IsInstance,
-            self.lop_comp: lop.Compare,
-            **self.low_level_custom_ops,
-        }
-        for operator, operator_class in self._lop_map.items():
-            self._lop_map[operator] = operator_class(
-                self,
-                expected_exc=self.low_level_ops_config.get(operator, {}).get(LOP_CONF_EXC) or self.low_level_glob_exc,
-                exc_value=self.low_level_ops_config.get(operator, {}).get(LOP_CONF_EXC_VAL)
-                or self.low_level_glob_exc_val,
-                ignored_types=self.low_level_ops_config.get(operator, {}).get(LOP_CONF_IG_TYPE),
-                allowed_types=self.low_level_ops_config.get(operator, {}).get(LOP_CONF_ALL_TYPE),
-            )
+    def __set_ops_names_attrs(self):
+        for op_name, op_instance in self.all_match_ops.items():
+            setattr(self, f"op_{op_instance.name}", op_name)
+
+    def __init_operators(self) -> None:
+        for k, v in self.all_match_ops.items():
+            op_instance = v(self, self.ops_global_exc, self.ops_global_allowed_type, self.ops_global_ignored_type)
+            if Operator in self.ops_config:
+                op_instance = self.__init_from_config(Operator, v, op_instance)
+            base_class_config = tuple(filter(lambda x: issubclass(v.__base__, x), self._class_config_keys))
+            if base_class_config:
+                op_instance = self.__init_from_config(base_class_config[0], v, op_instance)
+            if k in self.ops_config:
+                op_instance = self.__init_from_config(k, v, op_instance)
+            self.all_match_ops[k] = op_instance
+
+    def __init_from_config(self, key, op_class, op_instance):
+        return op_class(
+            self,
+            expected_exc=self.ops_config.get(key, {}).get(c.LOP_CONF_EXC, op_instance.expected_exc),
+            allowed_types=self.ops_config.get(key, {}).get(c.LOP_CONF_ALL_TYPE, op_instance.allowed_types),
+            ignored_types=self.ops_config.get(key, {}).get(c.LOP_CONF_IG_TYPE, op_instance.ignored_types),
+            default_return=self.ops_config.get(key, {}).get(c.LOP_CONF_DEF_RET, op_instance.default_return),
+        )
 
     def __call__(self, data, match_dict=None, select_dict=None):
         data = [data] if isinstance(data, dict) else data
         if not all(not arg or isinstance(arg, dict) for arg in [match_dict, select_dict]):
-            raise exceptions.PreconditionError()
+            raise exceptions.PreconditionError
+        if match_dict:
+            self.__parse_match_dict(match_dict)
         for data_point in data:
             if not isinstance(data_point, dict) or not data_point:
                 continue
@@ -173,30 +159,14 @@ class DictSearch:
                     continue
             yield result
 
-    def _match(self, data, match_dict, prev_keys=None):
-        prev_keys = prev_keys if prev_keys else []
-        if isinstance(match_dict, dict) and match_dict:
-            for key, value in match_dict.items():
-                if key in self._lop_map:
-                    yield self._low_level_operator(key, data, value)
-                elif key in self.high_level_operators:
-                    yield self._high_level_operator(key, data, value, prev_keys)
-                elif key in self.array_operators:
-                    yield self._array_operators(key, data, value, prev_keys)
-                elif key in self.match_operators:
-                    yield self._match_operators(key, data, value, prev_keys)
-                elif key in self.array_selectors:
-                    yield from self._match(*self._array_selector(key, data, value, prev_keys))
-                elif not isinstance(data, dict) or isinstance(data, dict) and key not in data.keys():
-                    yield False
-                elif isinstance(value, dict):
-                    prev_keys.append(key)
-                    yield from self._match(data[key], value, prev_keys)
-                    prev_keys.pop(-1)
-                else:
-                    yield self._low_level_operator(self.lop_eq, data[key], value)
-        else:
-            yield self._low_level_operator(self.lop_eq, data, match_dict)
+    def __parse_match_dict(self, match_dict):
+        for k, v in match_dict.items():
+            if k in self.all_match_ops:
+                self.all_match_ops[k].precondition(v)
+            if isinstance(v, dict):
+                self.__parse_match_dict(v)
+            elif isinstance(v, self.container_type):
+                [self.__parse_match_dict(d) for d in v if isinstance(d, dict)]
 
     def _assign_consumed_iterator(self, data, prev_keys):
         if not self._consumable_iterators or not isinstance(data, self._consumable_iterators):
@@ -207,117 +177,28 @@ class DictSearch:
         utils.set_from_list(self._initial_data, prev_keys, data)
         return data
 
-    def _low_level_operator(self, operator, value, search_value):
-        return self._lop_map[operator](value, search_value)
-
-    def _high_level_operator(self, operator, data, search_container, prev_keys):
-        if not isinstance(search_container, self.container_type) or not search_container:
-            raise exceptions.HighLevelOperatorIteratorError(self.container_type)
-        operator_map = {
-            self.hop_and: lambda matches: all(matches),
-            self.hop_or: lambda matches: any(matches),
-            self.hop_not: lambda matches: not all(matches),
-        }
-        return operator_map[operator](
-            match for search_dict in search_container for match in self._match(data, search_dict, prev_keys)
-        )
-
-    def _array_operators(self, operator, data, search_value, prev_keys):
-        if not isinstance(data, abc.Iterable):
-            return False
-        data = self._assign_consumed_iterator(data, prev_keys)
-        operator_map = {
-            self.aop_all: self._operator_all,
-            self.aop_any: self._operator_any,
-        }
-        return operator_map[operator](data, search_value, prev_keys)
-
-    def _operator_all(self, data, search_value, prev_keys):
-        if isinstance(search_value, dict):
-            values = [match for d_point in data for match in self._match(d_point, search_value, prev_keys)]
+    def _match(self, data, match_dict, prev_keys=None):
+        prev_keys = prev_keys if prev_keys else []
+        if isinstance(match_dict, dict) and match_dict:
+            for key, value in match_dict.items():
+                if key in self.low_level_operators:
+                    yield self.all_match_ops[key](data, value)
+                elif key in self.high_level_operators:
+                    yield self.all_match_ops[key](data, value, prev_keys)
+                elif key in self.array_operators:
+                    yield self.all_match_ops[key](data, value, prev_keys)
+                elif key in self.array_selectors:
+                    yield from self._match(*self.all_match_ops[key](data, value, prev_keys))
+                elif not isinstance(data, dict) or isinstance(data, dict) and key not in data.keys():
+                    yield False
+                elif isinstance(value, dict):
+                    prev_keys.append(key)
+                    yield from self._match(data[key], value, prev_keys)
+                    prev_keys.pop(-1)
+                else:
+                    yield self.all_match_ops[self.op_eq](data[key], value)
         else:
-            values = [self._low_level_operator(self.lop_eq, d_point, search_value) for d_point in data]
-        return False if not values else all(values)
-
-    def _operator_any(self, data, search_value, prev_keys):
-        if isinstance(search_value, dict):
-            return any(match for d_point in data for match in self._match(d_point, search_value, prev_keys))
-        return any(self._low_level_operator(self.lop_eq, d_point, search_value) for d_point in data)
-
-    def _match_operators(self, operator, data, search_value, prev_keys):
-        try:
-            thresh, search_value = list(search_value.items())[0]
-        except (AttributeError, IndexError, AssertionError):
-            raise exceptions.MatchOperatorError(search_value)
-        if not isinstance(thresh, int):
-            raise exceptions.MatchOperatorError(search_value)
-        operator_map = {
-            self.mop_match: [lambda m, c: True if m == c else False, lambda m, c: True if m > c else False, False],
-            self.mop_matchgt: [lambda m, c: True if m > c else False, lambda m, c: True if m > c else False, True],
-            self.mop_matchgte: [lambda m, c: True if m >= c else False, lambda m, c: True if m >= c else False, True],
-            self.mop_matchlt: [lambda m, c: True if m < c else False, lambda m, c: True if m >= c else False, False],
-            self.mop_matchlte: [lambda m, c: True if m <= c else False, lambda m, c: True if m > c else False, False],
-        }
-        default_args = operator_map[operator][0], thresh, operator_map[operator][1], operator_map[operator][2]
-
-        if isinstance(search_value, self.container_type):  # match is being used as high level operator
-            return utils.shortcircuit_counter(
-                iter(match for search_dict in search_value for match in self._match(data, search_dict, prev_keys)),
-                *default_args,
-            )
-        data = self._assign_consumed_iterator(data, prev_keys)
-        if isinstance(search_value, dict):  # match is being used as array operator
-            return utils.shortcircuit_counter(
-                iter(all([m for m in self._match(data_point, search_value, prev_keys)]) for data_point in data),
-                *default_args,
-            )
-        return utils.shortcircuit_counter(  # match is being used as array op. to compare
-            iter(self._low_level_operator(self.lop_eq, d_point, search_value) for d_point in data), *default_args
-        )
-
-    def _array_selector(self, operator_type, data, search_value, prev_keys):
-        if operator_type == self.as_where:
-            return self._operator_where(data, search_value, prev_keys)
-        elif operator_type == self.as_index and isinstance(search_value, list) and len(search_value) == 2:
-            operator, search_value = search_value[0], search_value[1]
-        elif isinstance(search_value, dict) and len(search_value):
-            operator, search_value = list(search_value.items())[0]
-        else:
-            raise exceptions.ArraySelectorFormatException(operator_type)
-        data = self._assign_consumed_iterator(data, prev_keys)
-        try:
-            return {self.as_index: self._operator_index, self.as_range: self._operator_range}[operator_type](
-                data, operator
-            ), search_value
-        except (TypeError, IndexError, KeyError, ValueError):
-            return [], {}
-
-    def _operator_where(self, data, search_value, prev_keys):
-        if not isinstance(search_value, self.container_type) or len(search_value) != 2:
-            raise exceptions.WhereOperatorError
-        array_match_dict, match_dict = search_value
-        data = self._assign_consumed_iterator(data, prev_keys)
-        return [sub_dict for sub_dict in self(data, array_match_dict)], match_dict
-
-    @staticmethod
-    def _operator_index(data, index):
-        if not isinstance(index, list):
-            return data[index]
-        values = []
-        for i in index:
-            try:
-                values.append(data[i])
-            except IndexError:
-                continue
-        if not values:
-            raise ValueError
-        return values
-
-    @staticmethod
-    def _operator_range(data, range_str):
-        if not isinstance(range_str, str) or not RANGE_PATTERN.match(range_str):
-            raise exceptions.RangeSelectionOperatorError(range_str)
-        return eval(f"data[{range_str}]", {"data": data})
+            yield self.all_match_ops[self.op_eq](data, match_dict)
 
     def _select(self, data, selection_dict):
         selected_dict = {}
@@ -330,11 +211,11 @@ class DictSearch:
         if not isinstance(selection_dict, dict) or not data:
             return
         for key, val in selection_dict.items():
-            if key == self.as_where and prev_keys and isinstance(data, abc.Iterable):
+            if key == self.op_where and prev_keys and isinstance(data, abc.Iterable):
                 self._operator_sel_where(data, val, selected_dict, prev_keys, original_data)
-            elif key == self.as_index and prev_keys and isinstance(data, abc.Iterable):
+            elif key == self.op_index and prev_keys and isinstance(data, abc.Iterable):
                 self._operator_sel_index(data, val, selected_dict, prev_keys, original_data)
-            elif key == self.as_range and prev_keys and isinstance(data, abc.Iterable):
+            elif key == self.op_range and prev_keys and isinstance(data, abc.Iterable):
                 self._operator_sel_range(data, val, selected_dict, prev_keys, original_data)
             elif key == self.sel_array and isinstance(data, abc.Iterable):
                 if self.sel_array_ignored_types and isinstance(data, self.sel_array_ignored_types):
@@ -370,7 +251,7 @@ class DictSearch:
 
     def _operator_sel_where(self, data, search_value, selected_dict, prev_keys, original_data):
         if not isinstance(search_value, list) or len(search_value) != 2:
-            raise exceptions.WhereOperatorError
+            raise op_exceptions.WhereOperatorError
         data = self._assign_consumed_iterator(data, prev_keys)
         if len(data) == 0:
             return
@@ -397,16 +278,15 @@ class DictSearch:
         elif isinstance(select_op, dict) and len(select_op) == 1:
             index, select_op = list(select_op.items())[0]
         else:
-            raise exceptions.IndexOperatorError
+            raise op_exceptions.IndexOperatorError
         data = self._assign_consumed_iterator(data, prev_keys)
         if len(data) == 0:
             return
         if select_op in self.selection_operators:
             value = None
             if select_op == self.sel_include:
-                try:
-                    value = self._operator_index(data, index)
-                except (IndexError, TypeError, KeyError, ValueError):
+                value, empty = self.all_match_ops[self.op_index].implementation(data, index, None)
+                if empty == {}:
                     return
             excl = lambda: self._index_excl_simple(index, selected_dict, prev_keys, original_data, data=data)
             self._build_dict(select_op, value, selected_dict, prev_keys, original_data, excl_func=excl)
@@ -460,15 +340,12 @@ class DictSearch:
         self._exclude(selected_dict, prev_keys, original_data, data)
 
     def _operator_sel_range(self, data, select_op, selected_dict, prev_keys, original_data):
-        if not isinstance(select_op, dict) or len(select_op) != 1:
-            raise exceptions.RangeSelectionOperatorError
         data = self._assign_consumed_iterator(data, prev_keys)
         if len(data) == 0:
             return
         range_str, select_op = list(select_op.items())[0]
-        try:
-            values = self._operator_range(data, range_str)
-        except TypeError:
+        values, empty = self.all_match_ops[self.op_range].implementation(data, range_str, None)
+        if empty == {}:
             return
         if select_op in self.selection_operators:
             func = lambda dt: exec(f"del data[{range_str}]", {"data": dt})

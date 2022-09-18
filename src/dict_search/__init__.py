@@ -1,2 +1,3 @@
 from .dict_search import DictSearch
-from . import low_level_operators
+from .operators.bases import Operator, LowLevelOperator, HighLevelOperator, ArrayOperator, ArraySelector
+from . import constants

@@ -1,16 +1,3 @@
-from pprint import pprint
-
-
-def shortcircuit_counter(generator, check, tresh, eager_check, eager_value):
-    count = 0
-    for match in generator:
-        if match:
-            count += 1
-            if eager_check(count, tresh):
-                return eager_value
-    return check(count, tresh)
-
-
 def get_from_list(dikt, keys):
     if not isinstance(dikt, dict) or not dikt:
         raise KeyError

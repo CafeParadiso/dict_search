@@ -1,57 +1,47 @@
-from . import constants
+from .constants import LOP_CONF_KEYS, LOP_CONF_EXC
+from .operators import ALL_OPERATOR_TYPES, Operator
 
 
-class PreconditionError(SyntaxError):
+class PreconditionError(Exception):
     def __init__(self):
         super().__init__("Provide a dict to perform the matching or select")
 
 
-class HighLevelOperatorIteratorError(SyntaxError):
-    def __init__(self, container_type):
-        super().__init__(f"The search value for a high level operator must be a non empty {container_type}")
-
-
-class MatchOperatorError(SyntaxError):
-    def __init__(self, search_operator):
+class CustomOpsKeyError(Exception):
+    def __init__(self, ops_str):
         super().__init__(
-            f"Any match operator must be a dict like {{'$match_op': count(int): search_val}}, not:\n {search_operator}"
+                    f"Pass a 'str' as key a of your operator dict.\n"
+                    f"As an example, 'op' would be parsed to '{ops_str}op'"
+                )
+
+
+class CustomOpsExistingKey(Exception):
+    def __init__(self, custom_op):
+        super().__init__(f"Your custom operator '{custom_op}' collides with an existing one")
+
+
+class CustomOpsValueError(Exception):
+    def __init__(self):
+        super().__init__(f"All custom operators should be a subclass of '{Operator.__name__}'")
+
+
+class OpsConfigNonExistingKey(Exception):
+    def __init__(self, op_name, ops_str):
+        super().__init__(
+            f"You provided the name for an operator that does not exist, '{op_name}'.\n"
+            f"Use the name of the operator withouth its operator string:\n"
+            f"{{'op': {{{LOP_CONF_EXC}: TypeError}}}} not {{'{ops_str}op': {{{LOP_CONF_EXC}: TypeError}}}}"
         )
 
 
-class WhereOperatorError(SyntaxError):
+class OpsConfigKeyError(Exception):
     def __init__(self):
         super().__init__(
-            "The search value for 'where' must be a list of two elements: [{array_match_condition}, {match_dict}]"
+            f"Use as config keys the name of existing operators or operator types in {ALL_OPERATOR_TYPES}:\n"
+            f"{{{Operator}: {{{LOP_CONF_EXC}: TypeError}}}}"
         )
 
 
-class ArraySelectorFormatException(SyntaxError):
-    def __init__(self, operator):
-        super().__init__(f"Use a dict as '{operator}' operator to match")
-
-
-class RangeSelectionOperatorError(SyntaxError):
-    def __init__(self, operator):
-        super().__init__(f"Use a 'rangestr' matching any pattern in {constants.RANGE_PATTERN} not:\n '{operator}'")
-
-
-class CompException(SyntaxError):
+class OpsConfigValueError(Exception):
     def __init__(self):
-        super().__init__(
-            "\n"
-            "$comp must be either a list of keys to get a value and compare it or \n"
-            "a list of keys and a comparison function with two args, x -> current value, y ->searched value\n"
-            "-{'$comp': ['a']}"
-            "-{'$comp': [['a'], lambda: x, y: x != y]}'"
-        )
-
-
-class IndexOperatorError(SyntaxError):
-    def __init__(self):
-        super().__init__(
-            "\n"
-            "$index must be either a dict:\n"
-            "- {index(int): val(any or dict)}\n"
-            "or a list:\n"
-            "- [[index(int)], val(any or dict)]"
-        )
+        super().__init__(f"Configure your operator with a dict containing any of these keys\n:{LOP_CONF_KEYS}")
