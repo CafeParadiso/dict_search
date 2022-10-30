@@ -17,7 +17,7 @@ LOP_CONF_KEYS = [LOP_CONF_EXC, LOP_CONF_ALL_TYPE, LOP_CONF_IG_TYPE, LOP_CONF_DEF
 def __set_operators__():
     for __module in [_low_level_operators, _high_level_operators, _array_operators, _array_selectors]:
         for __op_class in _get_operators(__module):
-            setattr(_sys.modules[__name__], f"op_{__op_class.name}".upper(), __op_class.name)
+            setattr(_sys.modules[__name__], f"op__{__op_class.name}".upper(), __op_class.name)
 
 
 __set_operators__()

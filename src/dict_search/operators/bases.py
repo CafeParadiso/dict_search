@@ -1,131 +1,31 @@
-from abc import ABC
-from abc import abstractmethod
-from collections.abc import Iterable
-
 import logging
+from abc import ABC, abstractmethod
+from collections.abc import Iterable, Iterator
+from functools import partial
+from pprint import pprint
+from types import FunctionType
 from typing import Any, Type, Union
 
 from . import exceptions
 
 
 class Operator(ABC):
-    """Base class for all operators"""
-    default_return: Any = None  # Set value in your specific implementation
-
     @property
     @abstractmethod
-    def name(self) -> str:
+    def name(self) -> str:  # pragma: no cover
         """The name of our operator. Implement as class attribute"""
-
-    def __init__(
-        self,
-        search_instance,
-        expected_exc: dict[Type[Exception], Any] = None,
-        allowed_types: Union[Type, tuple[..., Type]] = None,
-        ignored_types: Union[Type, tuple[..., Type]] = None,
-        default_return: Any = None
-    ):
-        if self.default_return is None:
-            raise NotImplementedError(f"Implement 'default_return' as a class atribute")
-        self.search_instance = search_instance
-        self.default_return = default_return or self.default_return
-        self._isdecorated_expected = False
-        self.expected_exc = expected_exc
-        self._isdecorated_ignored = False
-        self.ignored_types = ignored_types
-        self._isdecorated_allowed = False
-        self.allowed_types = allowed_types
+        raise NotImplementedError
 
     @property
-    def expected_exc(self):
-        return self._expected_exc
-
-    @expected_exc.setter
-    def expected_exc(self, expected_exc: dict[Type[Exception], Any]):
-        if not expected_exc:
-            self._expected_exc = None
-        elif isinstance(expected_exc, type) and issubclass(expected_exc, Exception):
-            self._expected_exc = {expected_exc: self.default_return}
-        elif isinstance(expected_exc, tuple):
-            exc_dict = {}
-            for v in expected_exc:
-                if isinstance(v, type) and issubclass(v, Exception):
-                    exc_dict[v] = self.default_return
-                elif isinstance(v, dict) and all(isinstance(k, type) and issubclass(k, Exception) for k in v):
-                    exc_dict.update(v)
-                else:
-                    raise Exception("'Expected_exc' should be configured with an tuple of 'type' and/or 'dict'")
-            self._expected_exc = exc_dict
-        else:
-            raise Exception(
-                "'Expected_exc' should be:\n-Exception\n-{exception: val}\n-tuple[..., Exception or {Excption:val}]"
-            )
-        if self.expected_exc and not self._isdecorated_expected:
-            self.__raise_exc = self.__expected_exc_wrapper(self.__raise_exc)
-            self._isdecorated_expected = True
-
-    def __expected_exc_wrapper(self, func):
-        def wrapper(exc: Exception):
-            exc_type = type(exc)
-            if exc_type in self.expected_exc:
-                return self.expected_exc[exc_type]
-            for expected_exc_type, return_val in self.expected_exc.items():
-                if isinstance(exc_type, expected_exc_type):
-                    return return_val
-            func(exc)
-        return wrapper
-
-    @property
-    def ignored_types(self):
-        return self._ignored_types
-
-    @ignored_types.setter
-    def ignored_types(self, value):
-        self._ignored_types = self.__validate_conf_types("allowed_types", value)
-        if self._ignored_types and not self._isdecorated_ignored:
-            self.implementation = self.__ignored_wrapper(self.implementation)
-            self._isdecorated_ignored = True
-
-    def __ignored_wrapper(self, func):
-        def wrapper(data, *args):
-            if isinstance(data, self.ignored_types):
-                return self.default_return
-            return func(data, *args)
-        return wrapper
-
-    @property
-    def allowed_types(self):
-        return self._allowed_types
-
-    @allowed_types.setter
-    def allowed_types(self, value):
-        self._allowed_types = self.__validate_conf_types("ignored_types", value)
-        if self._allowed_types and not self._isdecorated_allowed:
-            self.implementation = self.__allowed_wrapper(self.implementation)
-            self._isdecorated_allowed = True
-
-    def __allowed_wrapper(self, func):
-        def wrapper(data, *args):
-            if not isinstance(data, self.allowed_types):
-                return self.default_return
-            return func(data, *args)
-        return wrapper
-
-    @staticmethod
-    def __validate_conf_types(attr, val):
-        if val and not (isinstance(val, type) or isinstance(val, tuple) and all(isinstance(v, type) for v in val)):
-            raise Exception(f"'{attr}' should be type or tuple[..., type]")
-        return val
-
-    def __call__(self, data, *args, **kwargs) -> Any:
-        try:
-            return self.implementation(data, *args, **kwargs)
-        except Exception as e:
-            return self.__raise_exc(e)
+    @abstractmethod
+    def initial_default_return(self) -> Any:  # pragma: no cover
+        """Initial value for default return. Implement as class attribute"""
+        raise NotImplementedError
 
     @abstractmethod
-    def implementation(self, data, *args, **kwargs) -> Any:
+    def implementation(self, data, *args, **kwargs) -> Any:  # pragma: no cover
         """Write your operator logic here."""
+        raise NotImplementedError
 
     def precondition(self, match_query: Any) -> None:
         """Implement this method if you need to verify the user input for the operator.
@@ -134,40 +34,180 @@ class Operator(ABC):
         You should raise an exception if any precondition fails.
         """
 
-    @staticmethod
-    def __raise_exc(e: Exception):
-        raise e
+    def log(self, result: Any) -> None:
+        """Logs the result of your implementation function at info level, overwrite the method if needed."""
+        logging.info(f"{result}")
+
+    def __call__(self, data, *args, **kwargs) -> Any:
+        logging.debug(f"{self.name}")
+        result = self.implementation(data, *args, **kwargs)
+        self.log(result)
+        return result
+
+    def __new__(cls, *args, **kwargs):
+        instance = super().__new__(cls)
+        base_classes = {cl for cl in cls.__mro__ if cl not in [Operator, ABC, object]}
+        implemented_attrs = set(
+            key for cl in base_classes for key in cl.__dict__.keys() if not any(key.startswith(s) for s in ["_", "__"])
+        )
+        class_attrs = {Operator.name.fget.__name__, Operator.initial_default_return.fget.__name__}
+        overridable_attrs = {Operator.implementation.__name__, Operator.precondition.__name__, Operator.log.__name__}
+        implemented_attrs = implemented_attrs - overridable_attrs - class_attrs
+
+        for attr in class_attrs:
+            if isinstance(getattr(cls, attr), (property, FunctionType)):
+                raise exceptions.OperatorImplementationAttrTypeError(cls, attr)
+        for attr in implemented_attrs:
+            if attr in Operator.__dict__:
+                raise exceptions.OperatorImplementationOverrideError(attr)
+        if not isinstance(cls.name, str):
+            raise exceptions.OperatorImplementationNameError(cls, Operator.name.fget.__name__)
+        return instance
+
+    def __init__(
+        self,
+        expected_exc: Union[Type[Exception], tuple[..., Type[Exception]], dict] = None,
+        allowed_types: Union[Type, tuple[..., Type]] = None,
+        ignored_types: Union[Type, tuple[..., Type]] = None,
+        default_return: Any = None,
+    ):
+        self.__implementation_wrappers = {
+            Operator.expected_exc.fget.__name__: None,
+            Operator.ignored_types.fget.__name__: None,
+            Operator.allowed_types.fget.__name__: None,
+        }
+        self.default_return = default_return if default_return is not None else self.initial_default_return
+        self.expected_exc = expected_exc
+        self.ignored_types = ignored_types
+        self.allowed_types = allowed_types
+
+    @property
+    def default_return(self):
+        return self._default_return
+
+    @default_return.setter
+    def default_return(self, value):
+        if not isinstance(value, type(self.initial_default_return)):
+            raise exceptions.OperatorDefaultReturnError(
+                Operator.default_return.fget.__name__,
+                Operator.initial_default_return.fget.__name__,
+                self.initial_default_return,
+            )
+        self._default_return = value
+
+    @property
+    def expected_exc(self):
+        return self._expected_exc
+
+    @expected_exc.setter
+    def expected_exc(self, expected_exc: Union[Type[Exception], tuple[..., Type[Exception]]]):
+        func_name = Operator.expected_exc.fget.__name__
+        is_exc = lambda x: isinstance(x, type) and issubclass(x, Exception)
+        if expected_exc is None:
+            self._expected_exc = None
+        elif is_exc(expected_exc):
+            self._expected_exc = {expected_exc: self.initial_default_return}
+        elif isinstance(expected_exc, tuple) and all(map(is_exc, expected_exc)):
+            self._expected_exc = {exc: self.initial_default_return for exc in expected_exc}
+        elif (
+            isinstance(expected_exc, dict)
+            and all(map(is_exc, expected_exc))
+            and all(isinstance(v, type(self.initial_default_return)) for v in expected_exc.values())
+        ):
+            self._expected_exc = expected_exc
+        else:
+            raise exceptions.OperatorExpectedExcArgError(func_name, type(self.initial_default_return))
+        self.__implementation_wrappers[func_name] = None if not expected_exc else self.__expected_exc
+        self.__wrap_implementation()
+
+    def __expected_exc(self, func, *args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except tuple(self.expected_exc.keys()) as e:
+            exc_type = type(e)
+            if exc_type in self.expected_exc:
+                return self.expected_exc[exc_type]
+            return [v for k, v in self.expected_exc.items() if issubclass(exc_type, k)][0]
+
+    @property
+    def ignored_types(self):
+        return self._ignored_types
+
+    @ignored_types.setter
+    def ignored_types(self, value):
+        self.__set_type_checkers(value, Operator.ignored_types.fget.__name__, self.__ignored_types)
+
+    def __ignored_types(self, func, data, *args):
+        if isinstance(data, self.ignored_types):
+            logging.info(f"Type ignored: {type(data)}")
+            return self.default_return
+        return func(data, *args)
+
+    @property
+    def allowed_types(self):
+        return self._allowed_types
+
+    @allowed_types.setter
+    def allowed_types(self, value):
+        self.__set_type_checkers(value, Operator.allowed_types.fget.__name__, self.__allowed_types)
+
+    def __allowed_types(self, func, data, *args):
+        if not isinstance(data, self.allowed_types):
+            return self.default_return
+        return func(data, *args)
+
+    def __set_type_checkers(self, value, func_name, func):
+        if value and not (
+            isinstance(value, type) or isinstance(value, tuple) and all(isinstance(v, type) for v in value)
+        ):
+            raise exceptions.OperatoTypeCheckerError(func_name)
+        setattr(self, f"_{func_name}", value)
+        self.__implementation_wrappers[func_name] = func if value else None
+        self.__wrap_implementation()
+
+    def __wrap_implementation(self):
+        self.implementation = partial(type(self).implementation, self)
+        for func in filter(lambda x: x is not None, self.__implementation_wrappers.values()):
+            self.implementation = partial(func, self.implementation)
 
 
-class LowLevelOperator(Operator, ABC):
-    default_return = False
+class SearchOperator(Operator, ABC):
+    def __init__(self, search_instance, *args, **kwargs):
+        self.search_instance = search_instance
+        super().__init__(*args, **kwargs)
 
 
-class HighLevelOperator(Operator, ABC):
-    default_return = False
+class LowLevelOperator(SearchOperator, ABC):
+    initial_default_return = False
+
+
+class HighLevelOperator(SearchOperator, ABC):
+    initial_default_return = False
 
     def implementation(self, data, match_query, prev_keys) -> Any:
         return iter(
-            match for search_dict in match_query for match in self.search_instance._match(data, search_dict, prev_keys)
+            match
+            for search_dict in match_query
+            for match in self.search_instance._apply_match(data, search_dict, prev_keys)
         )
 
     def precondition(self, search_container):
         if not isinstance(search_container, self.search_instance.container_type) or not search_container:
-            raise exceptions.HighLevelOperatorIteratorError(self.search_instance.container_type)
+            raise exceptions.HighLevelOperatorIteratorError(self.search_instance.container_type, search_container)
 
 
-class ArrayOperator(Operator, ABC):
-    default_return = False
+class ArrayOperator(SearchOperator, ABC):
+    initial_default_return = False
 
-    def __call__(self, val: Any, arg: Any, prev_keys: list[str, ...]) -> bool:
-        if not isinstance(val, Iterable):
-            return False
-        val = self.search_instance._assign_consumed_iterator(val, prev_keys)
-        return super().__call__(val, arg, prev_keys)
+    def __call__(self, data: Any, arg: Any, prev_keys: list[str, ...]) -> bool:
+        data = self.search_instance._assign_consumed_iterator(data, prev_keys)
+        if isinstance(data, Iterator):
+            Warning(f"Operator {self.name} was called with")
+        return super().__call__(data, arg, prev_keys)
 
 
-class ArraySelector(Operator, ABC):
-    default_return = [], {}
+class ArraySelector(SearchOperator, ABC):
+    initial_default_return = [], {}
 
     def __call__(self, data, search_value, prev_keys) -> (Any, dict):
         data = self.search_instance._assign_consumed_iterator(data, prev_keys)
@@ -175,7 +215,7 @@ class ArraySelector(Operator, ABC):
 
     def precondition(self, value):
         if not isinstance(value, self.search_instance.container_type):
-            raise exceptions.ArraySelectorFormatException(self.name)
+            raise exceptions.ArraySelectorFormatException(f"{self.search_instance.ops_str}{self.name}")
 
 
 class ShortcircuitMixin(ABC):
@@ -191,19 +231,24 @@ class ShortcircuitMixin(ABC):
 
     def precondition(self, value: Any):
         if not isinstance(value, dict) or not value:
-            raise Exception(f"The value for '{self.name}' should be a dict {{int: {{match_dict}}}}")
+            raise exceptions.MatchOperatorError(self.name)
         thresh, search_container = list(value.items())[0]
         if not isinstance(thresh, int):
-            raise exceptions.MatchOperatorError(search_container)
+            raise exceptions.MatchOperatorError(self.name)
+        return thresh, search_container
 
 
 class MatchOperator(HighLevelOperator, Operator, ShortcircuitMixin, ABC):
+    def precondition(self, value):
+        thresh, search_container = ShortcircuitMixin.precondition(self, value)
+        super().precondition(search_container)
+        if len(search_container) < thresh:
+            raise exceptions.MatchOperatorCountMismatch(thresh, search_container)
+
     def implementation(self, data, match_query, prev_keys) -> bool:
         thresh, search_value = list(match_query.items())[0]
         iterable = iter(
-            match
-            for search_dict in search_value
-            for match in self.search_instance._match(data, search_dict, prev_keys)
+            all(self.search_instance._apply_match(data, search_dict, prev_keys)) for search_dict in search_value
         )
         return self.shortcircuit_counter(thresh, iterable, *self.shortcircuit_args())
 
@@ -211,25 +256,13 @@ class MatchOperator(HighLevelOperator, Operator, ShortcircuitMixin, ABC):
     def shortcircuit_args(self):
         f"""Arguments needed by '{self.shortcircuit_counter.__name__}' determined by the operator"""
 
-    def precondition(self, value: Any) -> None:
-        ShortcircuitMixin.precondition(self, value)
-        super().precondition(list(value.values())[0])
-
 
 class CountOperator(ArrayOperator, ShortcircuitMixin, ABC):
     def implementation(self, data, match_query, prev_keys) -> Any:
         thresh, search_value = list(match_query.items())[0]
-        data = self.search_instance._assign_consumed_iterator(data, prev_keys)
-        if isinstance(search_value, dict):  # match is being used as array operator
-            iterable = iter(
-                all([m for m in self.search_instance._match(data_point, search_value, prev_keys)])
-                for data_point in data
-            )
-        else:  # match is being used as array op. to compare each value in the array
-            iterable = iter(
-                self.search_instance.all_match_ops[self.search_instance.op_eq](d_point, search_value)
-                for d_point in data
-            )
+        iterable = iter(
+            all(self.search_instance._apply_match(data_point, search_value, prev_keys)) for data_point in data
+        )
         return self.shortcircuit_counter(thresh, iterable, *self.shortcircuit_args())
 
     @abstractmethod
@@ -237,5 +270,5 @@ class CountOperator(ArrayOperator, ShortcircuitMixin, ABC):
         f"""Arguments needed by '{self.shortcircuit_counter.__name__}' determined by the operator"""
 
     def precondition(self, value: Any):
+        super().precondition(value)
         ShortcircuitMixin.precondition(self, value)
-

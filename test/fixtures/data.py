@@ -342,7 +342,7 @@ complex_data = [
     },
 ]
 
-range_data = [
+slice_data = [
     {
         "mixed": {
             "a": [0, 1, 2, 0, 1, 2],
@@ -465,6 +465,7 @@ class CursedDataSyntax:
 
 class CursedDataPipe:
     """Class to emulate bad behavioured objects found in the wild"""
+
     def __bool__(self):
         raise BrokenPipeError
 
@@ -513,7 +514,7 @@ def build_fixtures(vals):
     for _ in range(vals):
         random.shuffle(taxes)
         random.shuffle(ports_list)
-        used_ports = [{"port": port, "days": random.randint(5, 45)} for port in ports_list[0: random.randint(0, 5)]]
+        used_ports = [{"port": port, "days": random.randint(5, 45)} for port in ports_list[0 : random.randint(0, 5)]]
         document = {
             "id": _,
             "shipping_date": datetime.datetime(2022, random.randint(1, 12), random.randint(1, 28)),

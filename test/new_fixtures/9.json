@@ -1,0 +1,126 @@
+{
+    "id": 9,
+    "info": {
+        "origin": "Haiti",
+        "iterms": "CIP",
+        "paid": "yss",
+        "arrival": "2022-11-02 00:00:00"
+    },
+    "cargo": {
+        "products": [
+            {
+                "uuid": "23e759db-b52a-4b49-986a-d69cb66ac6d6",
+                "product": "Porsche",
+                "weight": 760,
+                "suspicious": "yes",
+                "origin": "Sudan",
+                "status": "Partial",
+                "variations": [
+                    {
+                        "type": "D",
+                        "units": 87
+                    },
+                    {
+                        "type": "A",
+                        "units": 12
+                    }
+                ]
+            },
+            {
+                "uuid": "affff8b4-eda4-4e37-82f4-21e3963ad390",
+                "product": "Kawasaki",
+                "weight": 1071,
+                "suspicious": "no",
+                "origin": "USA",
+                "due_delivery": "2022-09-07 00:00:00",
+                "status": "ToProcess",
+                "size": "12X12X9"
+            },
+            {
+                "uuid": "fb9dee9a-a690-4f43-9254-3a4a57f7972f",
+                "product": "BMW",
+                "weight": 874,
+                "suspicious": "<__main__.CursedData object at 0x00000234E7110070>",
+                "origin": "Italy",
+                "due_delivery": "2022-11-30 00:00:00",
+                "status": "Partial",
+                "size": "8X8X9",
+                "transport_cost": 1357
+            },
+            {
+                "uuid": "44f76d30-34f2-4c3a-817f-37c15515a213",
+                "product": "Porsche",
+                "weight": 874,
+                "suspicious": "<__main__.CursedData object at 0x00000234E7110130>",
+                "origin": "Albania",
+                "due_delivery": "2022-09-17 00:00:00",
+                "size": "14X11X14"
+            },
+            {
+                "uuid": "12121a08-19fe-4d66-ba10-58305899c1b7",
+                "product": "Porsche",
+                "weight": 870,
+                "suspicious": "no",
+                "origin": "Indonesia",
+                "status": "Partial"
+            }
+        ]
+    },
+    "ports": [
+        {
+            "port": "Valencia",
+            "days": 10
+        },
+        {
+            "port": "Jebel Ali",
+            "days": 25
+        },
+        {
+            "port": "Manila",
+            "days": 31
+        },
+        {
+            "port": "Cape Town",
+            "days": 32
+        },
+        {
+            "port": "Rotterdam",
+            "days": 19
+        },
+        {
+            "port": "Shangai",
+            "days": 5
+        },
+        {
+            "port": "Shenzen",
+            "days": 16
+        },
+        "Busan"
+    ],
+    "combustible_usage(L)": 9642,
+    "checksum": [
+        3,
+        "(2+0j)"
+    ],
+    "reviewed": "<__main__.CursedData object at 0x00000234E7110220>",
+    "taxes": [
+        {
+            "type": "Bribe",
+            "value": 11
+        },
+        {
+            "type": "VAT",
+            "value": 11,
+            "legal": false
+        },
+        {
+            "type": "Special Tax",
+            "value": 6
+        },
+        {
+            "type": "Imp_tariff",
+            "value": 10
+        }
+    ],
+    "crew": 17
+}

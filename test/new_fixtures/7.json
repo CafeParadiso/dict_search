@@ -1,0 +1,127 @@
+{
+    "id": 7,
+    "info": {
+        "origin": "Peru",
+        "ITerms": "DAP",
+        "paid": "no",
+        "arrival": "2022-06-28 00:00:00"
+    },
+    "cargo": {
+        "products": [
+            {
+                "uuid": "44b48f77-4a64-4217-84ce-40ff120255ec",
+                "product": "Mustang",
+                "weight": 727,
+                "suspicious": "yes",
+                "origin": "Peru",
+                "due_delivery": "2022-09-06 00:00:00",
+                "status": "Finished",
+                "variations": [
+                    {
+                        "type": "B",
+                        "units": 51
+                    },
+                    {
+                        "type": "C",
+                        "units": 14
+                    },
+                    {
+                        "type": "D",
+                        "units": 23
+                    }
+                ],
+                "transport_cost": 1378
+            },
+            {
+                "uuid": "6c36d7c3-1717-4b50-adcf-a95604ae033b",
+                "product": "Aston Martin",
+                "weight": 1220,
+                "suspicious": "yes",
+                "origin": "Italy",
+                "due_delivery": "2022-10-18 00:00:00",
+                "status": "ToProcess",
+                "variations": [
+                    {
+                        "type": "B",
+                        "units": 37
+                    },
+                    {
+                        "type": "A",
+                        "units": 26
+                    },
+                    {
+                        "type": "B",
+                        "units": 7
+                    },
+                    {
+                        "type": "A",
+                        "units": 19
+                    },
+                    {
+                        "type": "A",
+                        "units": 42
+                    }
+                ],
+                "size": "11X10X8"
+            },
+            {
+                "uuid": "4546bac7-b8e4-410b-ac49-619a4087659e",
+                "product": "Maybach",
+                "weight": 1459,
+                "suspicious": "no",
+                "origin": "Indonesia",
+                "status": "ToProcess"
+            },
+            {
+                "uuid": "5dc82206-5240-47b6-b57c-e96b141a0ada",
+                "product": "Bentley",
+                "weight": 829,
+                "suspicious": "no",
+                "origin": "USA",
+                "status": "Finished",
+                "size": "10X8X8",
+                "transport_cost": 1011
+            },
+            {
+                "uuid": "7d6470ea-ea38-4b46-8968-485d8ddf82b5",
+                "product": "Aston Martin",
+                "weight": 1160,
+                "suspicious": "no",
+                "origin": "Indonesia",
+                "status": "Finished",
+                "size": "10X10X12"
+            },
+            {
+                "uuid": "199849a1-beb1-4730-aa67-78c7df4688f5",
+                "product": "Audi",
+                "weight": 1274,
+                "suspicious": "no",
+                "origin": "Haiti",
+                "due_delivery": "2022-09-11 00:00:00",
+                "status": "ToProcess",
+                "size": "6X12X10",
+                "transport_cost": 1393
+            }
+        ]
+    },
+    "ports": [],
+    "combustible_usage(L)": 14134,
+    "checksum": [
+        2.2,
+        1,
+        3,
+        3.3,
+        2,
+        2.2
+    ],
+    "reviewed": false,
+    "banned_countries": [
+        "Russia",
+        "Haiti",
+        "Italy"
+    ],
+    "personnel": {
+        "crew": 7,
+        "cleanup": 5
+    }
+}

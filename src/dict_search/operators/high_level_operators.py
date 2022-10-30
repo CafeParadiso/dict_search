@@ -1,6 +1,6 @@
-from .bases import HighLevelOperator, MatchOperator
-
 from typing import Any
+
+from .bases import HighLevelOperator, MatchOperator
 
 
 class And(HighLevelOperator):

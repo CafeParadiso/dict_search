@@ -3,9 +3,7 @@ from ast import parse as _ast_parse
 from inspect import getsource as _getsource
 from types import ModuleType as _ModuleType
 
-
-from .bases import LowLevelOperator, HighLevelOperator, ArrayOperator, ArraySelector, Operator
-
+from .bases import ArrayOperator, ArraySelector, HighLevelOperator, LowLevelOperator, Operator
 
 ALL_OPERATOR_TYPES = [LowLevelOperator, HighLevelOperator, ArrayOperator, ArraySelector, Operator]
 

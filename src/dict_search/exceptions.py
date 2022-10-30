@@ -7,12 +7,21 @@ class PreconditionError(Exception):
         super().__init__("Provide a dict to perform the matching or select")
 
 
+class SelectValueError(Exception):
+    def __init__(self):
+        super().__init__(f"Use operators or keys with a value of 0 or 1 in your select query")
+
+
+class SelectMixedError(Exception):
+    def __init__(self):
+        super().__init__("Do not mix inclusion and exclusion in the same query")
+
+
 class CustomOpsKeyError(Exception):
     def __init__(self, ops_str):
         super().__init__(
-                    f"Pass a 'str' as key a of your operator dict.\n"
-                    f"As an example, 'op' would be parsed to '{ops_str}op'"
-                )
+            f"Pass a 'str' as key a of your operator dict.\n" f"As an example, 'op' would be parsed to '{ops_str}op'"
+        )
 
 
 class CustomOpsExistingKey(Exception):

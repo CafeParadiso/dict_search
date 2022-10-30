@@ -1,0 +1,87 @@
+{
+    "id": 0,
+    "info": {
+        "origin": "Spain",
+        "Terms": "DDP",
+        "paid": "yss",
+        "arrival": "2022-08-26 00:00:00"
+    },
+    "cargo": {
+        "products": [
+            {
+                "uuid": "008f2fd4-3d94-497a-b877-fccc0a31eb30",
+                "product": "Mustang",
+                "weight": 785,
+                "suspicious": "<__main__.CursedData object at 0x00000234E70BDDF0>",
+                "origin": "Italy",
+                "due_delivery": "2022-06-20 00:00:00",
+                "variations": [
+                    {
+                        "type": "A",
+                        "units": 95
+                    },
+                    {
+                        "type": "D",
+                        "units": 78
+                    }
+                ],
+                "transport_cost": 1904
+            },
+            {
+                "uuid": "4096603f-8149-4d0d-bfe0-d958390de47d",
+                "product": "Audi",
+                "weight": 1115,
+                "suspicious": "yes",
+                "origin": "Spain",
+                "due_delivery": "2022-06-17 00:00:00",
+                "size": "7X10X13",
+                "transport_cost": 1969
+            }
+        ]
+    },
+    "ports": [
+        {
+            "port": "Shenzen",
+            "days": 11
+        },
+        {
+            "port": "Jebel Ali",
+            "days": 30
+        },
+        {
+            "port": "Valencia",
+            "days": 39
+        },
+        {
+            "port": "Shangai",
+            "days": 8
+        },
+        {
+            "port": "Busan",
+            "days": 22
+        },
+        {
+            "port": "Los Angeles",
+            "days": 34
+        },
+        {
+            "port": "Cape Town",
+            "days": 5
+        },
+        "Rotterdam"
+    ],
+    "combustible_usage(L)": 10288,
+    "checksum": [
+        2.2,
+        1.1,
+        1,
+        "(1+0j)",
+        3,
+        "3"
+    ],
+    "reviewed": 1,
+    "personnel": {
+        "crew": 5,
+        "cleanup": 5
+    }
+}

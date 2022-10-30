@@ -1,22 +1,15 @@
 from typing import Any as TypeAny
 
-from .bases import ArrayOperator
-from .bases import CountOperator
+from .bases import ArrayOperator, CountOperator
 
 
 class All(ArrayOperator):
     name = "all"
 
     def implementation(self, data: TypeAny, search_value: TypeAny, prev_keys: list[str]) -> bool:
-        if isinstance(search_value, dict):
-            values = [
-                match for d_point in data for match in self.search_instance._match(d_point, search_value, prev_keys)
-            ]
-        else:
-            values = [
-                self.search_instance.all_match_ops[self.search_instance.op_eq](d_point, search_value)
-                for d_point in data
-            ]
+        values = [
+            match for d_point in data for match in self.search_instance._apply_match(d_point, search_value, prev_keys)
+        ]
         return False if not values else all(values)
 
 
@@ -24,13 +17,8 @@ class Any(ArrayOperator):
     name = "any"
 
     def implementation(self, data, search_value, prev_keys) -> bool:
-        if isinstance(search_value, dict):
-            return any(
-                match for d_point in data for match in self.search_instance._match(d_point, search_value, prev_keys)
-            )
         return any(
-            self.search_instance.all_match_ops[self.search_instance.op_eq](d_point, search_value)
-            for d_point in data
+            match for d_point in data for match in self.search_instance._apply_match(d_point, search_value, prev_keys)
         )
 
 

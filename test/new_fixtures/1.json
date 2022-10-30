@@ -1,0 +1,47 @@
+{
+    "id": 1,
+    "info": {
+        "origin": "Zimbawe",
+        "icoterms": "DDP",
+        "paid": "yss",
+        "arrival": "2022-11-14 00:00:00"
+    },
+    "cargo": {
+        "products": [
+            {
+                "uuid": "81719c70-abbb-489b-9590-6fc8618a9ede",
+                "product": "Kawasaki",
+                "weight": 1282,
+                "suspicious": "no",
+                "origin": "Zimbawe",
+                "due_delivery": "2022-11-27 00:00:00",
+                "status": "Finished",
+                "variations": [
+                    {
+                        "type": "B",
+                        "units": 100
+                    },
+                    {
+                        "type": "D",
+                        "units": 63
+                    }
+                ]
+            }
+        ]
+    },
+    "ports": [],
+    "combustible_usage(L)": 12289,
+    "checksum": [
+        "2",
+        "1",
+        "2",
+        "3"
+    ],
+    "reviewed": 0,
+    "passengers": {
+        "cabin": {
+            "crew": 18
+        },
+        "leisure": 0
+    }
+}

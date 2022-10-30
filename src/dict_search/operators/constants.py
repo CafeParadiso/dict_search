@@ -1,7 +1,6 @@
 import re
 
-
-RANGE_PATTERN = re.compile(
+SLICING_PATTERN = re.compile(
     r"^(-?\d+)::?$|"
     r"^:(-?\d+):?$|"
     r"^::(-?\d+)$|"

@@ -1,8 +1,12 @@
+import inspect
 import re
+from collections.abc import Hashable
+from types import FunctionType
+from typing import Any
 
-from .bases import LowLevelOperator
-from . import exceptions
 from .. import utils
+from . import exceptions
+from .bases import LowLevelOperator
 
 
 class Equal(LowLevelOperator):
@@ -85,12 +89,14 @@ class NotContains(LowLevelOperator):
 class Regex(LowLevelOperator):
     name = "regex"
 
+    def precondition(self, match_query: Any) -> None:
+        if not isinstance(match_query, (re.Pattern, str)):
+            raise exceptions.RegexOperatorException(self.name, match_query)
+
     def implementation(self, val, search_pattern) -> bool:
         if isinstance(search_pattern, re.Pattern):
             return True if search_pattern.search(val) else False
-        elif isinstance(search_pattern, str):
-            return True if re.compile(search_pattern).search(val) else False
-        return False
+        return True if re.compile(search_pattern).search(val) else False
 
 
 class Function(LowLevelOperator):
@@ -110,21 +116,29 @@ class IsInstance(LowLevelOperator):
 class Compare(LowLevelOperator):
     name = "comp"
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.keys = None
+        self.func = None
+
+    def precondition(self, match_query: Any) -> None:
+        if not isinstance(match_query, self.search_instance.container_type) or len(match_query) != 2:
+            raise exceptions.CompOperatorTypeError(self.name, self.search_instance)
+        self.keys, self.func = match_query[0], match_query[1]
+        if not (isinstance(self.keys, Hashable) or isinstance(self.keys, list)):
+            raise exceptions.CompOperatorFirstArgError(self.name)
+        self.keys = self.keys if isinstance(self.keys, list) else [self.keys]
+        if not all(isinstance(k, Hashable) for k in self.keys):
+            raise exceptions.CompOperatorFirstArgError(self.name)
+        if not isinstance(self.func, FunctionType):
+            raise exceptions.CompOperatorSecondArgError(self.name)
+
     def implementation(self, val, search_val) -> bool:
-        if not isinstance(search_val, self.search_instance.container_type):
-            raise exceptions.HighLevelOperatorIteratorError(self.search_instance.container_type)
-        if all(isinstance(x, str) for x in search_val):
-            try:
-                search_val = utils.get_from_list(self.search_instance._initial_data, search_val)
-            except KeyError:
-                return False
-            else:
-                return self.implementation(val, search_val)
-        if len(search_val) != 2:
-            raise exceptions.CompException
         try:
-            comp_val = utils.get_from_list(self.search_instance._initial_data, search_val[0])
+            search_val = utils.get_from_list(self.search_instance._initial_data, self.keys)
         except KeyError:
             return False
-        else:
-            return search_val[1](val, comp_val)
+        result = self.func(val, search_val)
+        if not isinstance(result, bool):
+            raise exceptions.CompOperatorReturnTypeError(self.name, type(result))
+        return result

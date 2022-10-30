@@ -1,0 +1,157 @@
+{
+    "id": 2,
+    "info": {
+        "origin": "Peru",
+        "incoterms": "CPT",
+        "paid": "NO",
+        "arrival": "2022-07-08 00:00:00"
+    },
+    "cargo": {
+        "products": [
+            {
+                "uuid": "31f19308-54bc-4cd8-9fcb-ae4abf6fda03",
+                "product": "Mustang",
+                "weight": 1319,
+                "suspicious": "no",
+                "origin": "USA",
+                "status": "Expired",
+                "transport_cost": 1485
+            },
+            {
+                "uuid": "abd146cb-a1d5-4540-8601-6b44a2c95b31",
+                "product": "BMW",
+                "weight": 717,
+                "suspicious": "<__main__.CursedData object at 0x00000234E710B0D0>",
+                "origin": "Peru",
+                "due_delivery": "2022-06-26 00:00:00",
+                "status": "Partial",
+                "variations": [
+                    {
+                        "type": "C",
+                        "units": 26
+                    },
+                    {
+                        "type": "B",
+                        "units": 80
+                    },
+                    {
+                        "type": "D",
+                        "units": 59
+                    }
+                ]
+            },
+            {
+                "uuid": "b6bf2d72-741e-4a07-9da6-f2c9cc3e9f17",
+                "product": "Mustang",
+                "weight": 985,
+                "suspicious": "yes",
+                "origin": "Peru",
+                "due_delivery": "2022-06-13 00:00:00",
+                "status": "Finished",
+                "variations": [
+                    {
+                        "type": "D",
+                        "units": 79
+                    }
+                ]
+            },
+            {
+                "uuid": "e8d1bebe-7fd1-4c68-b8e0-5a82aa8a41db",
+                "product": "Kawasaki",
+                "weight": 606,
+                "suspicious": "<__main__.CursedData object at 0x00000234E710B220>",
+                "origin": "Albania",
+                "due_delivery": "2022-10-23 00:00:00",
+                "variations": [
+                    {
+                        "type": "A",
+                        "units": 78
+                    },
+                    {
+                        "type": "C",
+                        "units": 25
+                    }
+                ],
+                "transport_cost": 1755
+            },
+            {
+                "uuid": "26502fca-a54b-41b8-b9a2-f5b50f19c8ab",
+                "product": "Bentley",
+                "weight": 640,
+                "suspicious": "yes",
+                "origin": "Haiti",
+                "due_delivery": "2022-08-09 00:00:00",
+                "status": "Expired",
+                "variations": [
+                    {
+                        "type": "D",
+                        "units": 95
+                    },
+                    {
+                        "type": "D",
+                        "units": 5
+                    },
+                    {
+                        "type": "D",
+                        "units": 44
+                    },
+                    {
+                        "type": "B",
+                        "units": 89
+                    },
+                    {
+                        "type": "B",
+                        "units": 89
+                    }
+                ],
+                "transport_cost": 1735
+            }
+        ]
+    },
+    "ports": [
+        {
+            "port": "Jebel Ali",
+            "days": 25
+        },
+        {
+            "port": "Shenzen",
+            "days": 20
+        },
+        {
+            "port": "Busan",
+            "days": 13
+        },
+        {
+            "port": "Cape Town",
+            "days": 36
+        },
+        {
+            "port": "Valencia",
+            "days": 10
+        },
+        "Shenzen"
+    ],
+    "combustible_usage(L)": 8591,
+    "checksum": [
+        2,
+        2
+    ],
+    "taxes": [
+        {
+            "type": "Bribe",
+            "value": 11
+        },
+        {
+            "type": "Bribe",
+            "value": 11,
+            "legal": true
+        }
+    ],
+    "reviewed": true,
+    "passengers": {
+        "cabin": {
+            "crew": 19
+        },
+        "leisure": 0
+    }
+}

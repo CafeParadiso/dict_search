@@ -1,0 +1,85 @@
+{
+    "id": 3,
+    "info": {
+        "origin": "Italy",
+        "icoterms": "EXWFCA",
+        "paid": "N",
+        "arrival": "2022-10-29 00:00:00"
+    },
+    "cargo": {
+        "products": [
+            {
+                "uuid": "c4d56b5d-b215-4795-b830-af32a7b706a9",
+                "product": "Aston Martin",
+                "weight": 1061,
+                "suspicious": "yes",
+                "origin": "Sudan",
+                "size": "10X9X8",
+                "transport_cost": 1218
+            },
+            {
+                "uuid": "b8d8c1a5-3ee0-406b-ba4f-8b1d04531f97",
+                "product": "Porsche",
+                "weight": 518,
+                "suspicious": "no",
+                "origin": "Italy",
+                "due_delivery": "2022-06-15 00:00:00",
+                "variations": [
+                    {
+                        "type": "D",
+                        "units": 91
+                    },
+                    {
+                        "type": "B",
+                        "units": 65
+                    }
+                ]
+            },
+            {
+                "uuid": "976d4353-b6fe-4c0d-a435-ad8f28c4892c",
+                "product": "Kawasaki",
+                "weight": 1353,
+                "suspicious": "no",
+                "origin": "Peru",
+                "transport_cost": 1092
+            }
+        ]
+    },
+    "ports": [
+        {
+            "port": "Shangai",
+            "days": 41
+        },
+        {
+            "port": "Cape Town",
+            "days": 28
+        },
+        {
+            "port": "Jebel Ali",
+            "days": 39
+        },
+        "Rotterdam"
+    ],
+    "combustible_usage(L)": 9376,
+    "checksum": [
+        "3",
+        "2"
+    ],
+    "reviewed": 0,
+    "taxes": [
+        {
+            "type": "Bribe",
+            "value": 11
+        },
+        {
+            "type": "Bribe",
+            "value": 11
+        }
+    ],
+    "passengers": {
+        "cabin": {
+            "crew": 13
+        },
+        "leisure": 0
+    }
+}

@@ -1,0 +1,155 @@
+{
+    "id": 6,
+    "info": {
+        "origin": "USA",
+        "Inco": "EXWFCA",
+        "paid": "yss",
+        "arrival": "2022-11-08 00:00:00"
+    },
+    "cargo": {
+        "products": [
+            {
+                "uuid": "6b754d58-837c-44d4-a18f-e7f82c0ce4af",
+                "product": "Audi",
+                "weight": 767,
+                "suspicious": "no",
+                "origin": "Zimbawe",
+                "variations": [
+                    {
+                        "type": "A",
+                        "units": 63
+                    },
+                    {
+                        "type": "A",
+                        "units": 16
+                    },
+                    {
+                        "type": "B",
+                        "units": 8
+                    },
+                    {
+                        "type": "C",
+                        "units": 87
+                    }
+                ],
+                "transport_cost": 1455
+            },
+            {
+                "uuid": "a5686f32-436f-438b-8931-49be0d07d26c",
+                "product": "Kawasaki",
+                "weight": 819,
+                "suspicious": "yes",
+                "origin": "Peru",
+                "status": "Finished",
+                "variations": [
+                    {
+                        "type": "B",
+                        "units": 29
+                    }
+                ]
+            },
+            {
+                "uuid": "3a5acca1-764c-4f96-a1d8-b951f76ab4a0",
+                "product": "BMW",
+                "weight": 1189,
+                "suspicious": "no",
+                "origin": "Albania",
+                "status": "ToProcess"
+            },
+            {
+                "uuid": "0106e2f1-7b4d-451f-9e66-0a908f038cb3",
+                "product": "Aston Martin",
+                "weight": 762,
+                "suspicious": "no",
+                "origin": "Albania",
+                "variations": [
+                    {
+                        "type": "B",
+                        "units": 70
+                    },
+                    {
+                        "type": "A",
+                        "units": 64
+                    },
+                    {
+                        "type": "A",
+                        "units": 70
+                    },
+                    {
+                        "type": "A",
+                        "units": 96
+                    }
+                ],
+                "transport_cost": 1726
+            },
+            {
+                "uuid": "febe66e3-4a11-4a17-839d-b3a421baad3d",
+                "product": "Kawasaki",
+                "weight": 848,
+                "suspicious": "<__main__. Data object at 0x00000234E710E1C0>",
+                "origin": "Albania",
+                "variations": [
+                    {
+                        "type": "A",
+                        "units": 40
+                    },
+                    {
+                        "type": "D",
+                        "units": 80
+                    },
+                    {
+                        "type": "D",
+                        "units": 82
+                    },
+                    {
+                        "type": "D",
+                        "units": 2
+                    },
+                    {
+                        "type": "B",
+                        "units": 38
+                    }
+                ],
+                "size": "8X14X10",
+                "transport_cost": 1611
+            },
+            {
+                "uuid": "0ed1ad9f-7137-4ae2-9539-ca01f1d861f0",
+                "product": "Audi",
+                "weight": 804,
+                "suspicious": "yes",
+                "origin": "Sudan",
+                "due_delivery": "2022-10-12 00:00:00",
+                "status": "Finished",
+                "variations": [
+                    {
+                        "type": "C",
+                        "units": 90
+                    },
+                    {
+                        "type": "B",
+                        "units": 4
+                    },
+                    {
+                        "type": "A",
+                        "units": 89
+                    }
+                ],
+                "size": "9X11X13"
+            }
+        ]
+    },
+    "ports": [],
+    "combustible_usage(L)": 14523,
+    "checksum": [
+        "(2+0j)",
+        2.2
+    ],
+    "reviewed": "<__main__.CursedData object at 0x00000234E710E2E0>",
+    "banned_countries": [
+        "Peru",
+        "Russia",
+        "Spain"
+    ],
+    "crew": 11
+}

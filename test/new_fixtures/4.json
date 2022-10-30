@@ -1,0 +1,48 @@
+{
+    "id": 4,
+    "info": {
+        "origin": "Russia",
+        "iterms": "DPU",
+        "paid": "Y",
+        "arrival": "2022-11-17 00:00:00"
+    },
+    "cargo": {
+        "products": [
+            {
+                "uuid": "c0868109-916a-4d66-884e-2a4855cfae4f",
+                "product": "BMW",
+                "weight": 862,
+                "suspicious": "no",
+                "origin": "Russia",
+                "status": "Expired",
+                "variations": [
+                    {
+                        "type": "C",
+                        "units": 37
+                    },
+                    {
+                        "type": "C",
+                        "units": 57
+                    }
+                ],
+                "size": "6X9X8"
+            }
+        ]
+    },
+    "ports": [
+        {
+            "port": "Rotterdam",
+            "days": 35
+        },
+        "Busan"
+    ],
+    "combustible_usage(L)": 12753,
+    "checksum": [
+        3.3,
+        "1",
+        3.3,
+        3.3
+    ],
+    "reviewed": "<__main__.CursedData object at 0x00000234E710BA90>",
+    "crew": 7
+}

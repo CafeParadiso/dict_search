@@ -1,13 +1,23 @@
-from .bases import ArraySelector
-from .constants import RANGE_PATTERN
+from collections.abc import Iterator
+
 from . import exceptions
+from .bases import ArraySelector
+from .constants import SLICING_PATTERN
 
 
 class Where(ArraySelector):
     name = "where"
 
     def implementation(self, data, search_value, match_dict):
-        return [sub_dict for sub_dict in self.search_instance(data, search_value)], match_dict
+        if isinstance(data, Iterator):
+            raise exceptions.WhereIteratorException(self.name, data)
+        prev_match_query = self.search_instance.match_query
+        try:
+            self.search_instance.match_query = search_value
+            matched_data = list(filter(lambda x: x is not None, map(lambda x: self.search_instance(x), data)))
+        finally:
+            self.search_instance.match_query = prev_match_query
+        return matched_data, match_dict
 
     def precondition(self, value):
         if not isinstance(value, self.search_instance.container_type) or len(value) != 2:
@@ -34,25 +44,16 @@ class Index(ArraySelector):
         return values, match_dict
 
 
-class Range(ArraySelector):
-    name = "range"
+class Slice(ArraySelector):
+    name = "slice"
 
-    def implementation(self, data, range_str, match_dict):
-        try:
-            return eval(f"data[{range_str}]", {"data": data}), match_dict
-        except IndexError:
-            return self.default_return
+    def implementation(self, data, slice_str, match_dict):
+        return eval(f"data[{slice_str}]", {"data": data}), match_dict
 
     def precondition(self, value):
         super().precondition(value)
         if len(value) != 2:
-
-            raise exceptions.RangeSelectionOperatorError(value)
-        range_str = value[0]
-        if not isinstance(range_str, str) or not RANGE_PATTERN.match(range_str):
-            raise exceptions.RangeSelectionOperatorError(range_str)
-
-    @staticmethod
-    def select_precondition(value):
-        if not isinstance(value, dict) or len(value) != 1:
-            raise exceptions.RangeSelectionOperatorError(value)
+            raise exceptions.SliceSelectionOperatorError(value)
+        slice_str = value[0]
+        if not isinstance(slice_str, str) or not SLICING_PATTERN.match(slice_str):
+            raise exceptions.SliceSelectionOperatorError(slice_str)

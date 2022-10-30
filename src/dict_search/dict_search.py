@@ -30,29 +30,32 @@ def _copy_data(func):
 class DictSearch:
     def __init__(
         self,
+        match_query: dict = None,
+        select_query: dict = None,
         ops_str: str = None,
         ops_global_exc: Union[Type[Exception], tuple[..., Type[Exception]]] = None,
         ops_global_allowed_type: Union[Type[type], tuple[..., Type[type]]] = None,
         ops_global_ignored_type: Union[Type[type], tuple[..., Type[type]]] = None,
-        ops_custom: dict[str, Type[Operator]] = None,
+        ops_custom: Union[Type[Operator], list[..., Type[Operator]]] = None,
         ops_config: dict = None,
         container_type=list,
         consumable_iterators=None,
         non_consumable_iterators=None,
-        iterator_cast_type=list,
+        cast_type_iterators=list,
         coerce_list=False,
         sel_array_ignored_types=None,
     ):
-        self.ops_str = ops_str if isinstance(ops_str, str) else "$"
-        self.ops_global_exc = ops_global_exc
-        self.ops_global_allowed_type = ops_global_allowed_type
-        self.ops_global_ignored_type = ops_global_ignored_type
+        # TODO set accessibility
+        self.ops_str = ops_str if isinstance(ops_str, str) else "$"  # public - runtime setting -> recalculate
+        self.ops_global_exc = ops_global_exc  # public - runtime setting -> recalculate ?
+        self.ops_global_allowed_type = ops_global_allowed_type  # public - runtime setting -> recalculate ?
+        self.ops_global_ignored_type = ops_global_ignored_type  # public - runtime setting -> recalculate ?
         self.container_type = container_type
-        self._consumable_iterators = consumable_iterators
-        self._non_consumable_iterators = non_consumable_iterators
-        self._iterator_cast_type = iterator_cast_type
-        self._coerce_list = coerce_list
-        self.sel_array_ignored_types = sel_array_ignored_types
+        self.consumable_iterators = consumable_iterators
+        self.non_consumable_iterators = non_consumable_iterators
+        self.cast_type_iterators = cast_type_iterators  # public ?
+        self._coerce_list = coerce_list  # public ?
+        self.sel_array_ignored_types = sel_array_ignored_types  # public ?
         self._initial_data = {}
 
         self.all_match_ops = {}
@@ -70,11 +73,19 @@ class DictSearch:
         self.selection_operators = [self.sel_include, self.sel_exclude]
 
         # init steps
-        self.ops_custom = self.__set_ops_custom(ops_custom or {})
-        self.ops_config = self.__set_ops_config(ops_config or {})
-        self._class_config_keys = set(filter(lambda x: x != Operator and not isinstance(x, str), self.ops_config))
+        self.__set_ops_custom(ops_custom or [])
+        self._ops_config = self.__set_ops_config(ops_config or {})
+        self._class_config_keys = set(filter(lambda x: x != Operator and not isinstance(x, str), self._ops_config))
         self.__init_operators()
         self.__set_ops_names_attrs()
+
+        self.__inner_call__ = None
+        self._call_layers = {
+            self.__wrap_select: None,
+            self.__wrap_match: None,
+        }
+        self.select_query = select_query
+        self.match_query = match_query
 
     def __set_match_ops(self, ops_module: ModuleType):
         ops_names = []
@@ -85,20 +96,16 @@ class DictSearch:
             ops_names.append(op_name)
         return ops_names
 
-    def __set_ops_custom(self, value: dict):
-        parsed = {}
-        for k, v in value.items():
-            if not isinstance(k, str):
-                raise exceptions.CustomOpsKeyError(self.ops_str)
-            custom_op = f"{self.ops_str}{k}"
-            if custom_op in self.all_match_ops:
-                raise exceptions.CustomOpsExistingKey(custom_op)
-            if not isinstance(v, type) or not issubclass(v, Operator):
+    def __set_ops_custom(self, ops_custom: Union[Type[Operator], list[..., Type[Operator]]]):
+        ops_custom = ops_custom if isinstance(ops_custom, list) else [ops_custom]
+        for op in ops_custom:
+            if not isinstance(op, type) or not issubclass(op, Operator):
                 raise exceptions.CustomOpsValueError
-            parsed[custom_op] = v
-        self.low_level_operators.extend(parsed)
-        self.all_match_ops.update(parsed)
-        return parsed
+            op_name = f"{self.ops_str}{op.name}"
+            if op_name in self.all_match_ops:
+                raise exceptions.CustomOpsExistingKey(op_name)
+            self.all_match_ops[op_name] = op
+            self.low_level_operators.append(op_name)
 
     def __set_ops_config(self, ops_config):
         parsed = {}
@@ -114,70 +121,124 @@ class DictSearch:
             parsed[k] = v
         return parsed
 
-    def __set_ops_names_attrs(self):
-        for op_name, op_instance in self.all_match_ops.items():
-            setattr(self, f"op_{op_instance.name}", op_name)
-
     def __init_operators(self) -> None:
         for k, v in self.all_match_ops.items():
             op_instance = v(self, self.ops_global_exc, self.ops_global_allowed_type, self.ops_global_ignored_type)
-            if Operator in self.ops_config:
-                op_instance = self.__init_from_config(Operator, v, op_instance)
+            if Operator in self._ops_config:
+                op_instance = self.__set_from_config(Operator, op_instance)
             base_class_config = tuple(filter(lambda x: issubclass(v.__base__, x), self._class_config_keys))
             if base_class_config:
-                op_instance = self.__init_from_config(base_class_config[0], v, op_instance)
-            if k in self.ops_config:
-                op_instance = self.__init_from_config(k, v, op_instance)
+                op_instance = self.__set_from_config(base_class_config[0], op_instance)
+            if k in self._ops_config:
+                op_instance = self.__set_from_config(k, op_instance)
             self.all_match_ops[k] = op_instance
 
-    def __init_from_config(self, key, op_class, op_instance):
-        return op_class(
-            self,
-            expected_exc=self.ops_config.get(key, {}).get(c.LOP_CONF_EXC, op_instance.expected_exc),
-            allowed_types=self.ops_config.get(key, {}).get(c.LOP_CONF_ALL_TYPE, op_instance.allowed_types),
-            ignored_types=self.ops_config.get(key, {}).get(c.LOP_CONF_IG_TYPE, op_instance.ignored_types),
-            default_return=self.ops_config.get(key, {}).get(c.LOP_CONF_DEF_RET, op_instance.default_return),
-        )
+    def __set_from_config(self, key, op_instance):
+        op_instance.expected_exc = self._ops_config.get(key, {}).get(c.LOP_CONF_EXC, op_instance.expected_exc)
+        op_instance.allowed_types = self._ops_config.get(key, {}).get(c.LOP_CONF_ALL_TYPE, op_instance.allowed_types)
+        op_instance.ignored_types = self._ops_config.get(key, {}).get(c.LOP_CONF_IG_TYPE, op_instance.ignored_types)
+        op_instance.default_return = self._ops_config.get(key, {}).get(c.LOP_CONF_DEF_RET, op_instance.default_return)
+        return op_instance
 
-    def __call__(self, data, match_dict=None, select_dict=None):
-        data = [data] if isinstance(data, dict) else data
-        if not all(not arg or isinstance(arg, dict) for arg in [match_dict, select_dict]):
+    def __set_ops_names_attrs(self):
+        for op_name, op_instance in self.all_match_ops.items():
+            setattr(self, f"op__{op_instance.name}", op_name)
+
+    def __set_query_dict(self, value, func):
+        if value is None:
+            self._call_layers[func] = None
+        elif isinstance(value, dict):
+            self._call_layers[func] = func
+        else:
             raise exceptions.PreconditionError
-        if match_dict:
-            self.__parse_match_dict(match_dict)
-        for data_point in data:
-            if not isinstance(data_point, dict) or not data_point:
-                continue
-            self._initial_data = data_point
-            if match_dict and not all(self._match(data_point, match_dict)):
-                continue
-            result = data_point
-            if select_dict:
-                self._empty = False
-                result = self._select(data_point, select_dict)
-                if not result and not self._empty:
-                    continue
-            yield result
+        self.__layer_funcs()
+        return value
 
-    def __parse_match_dict(self, match_dict):
+    @property
+    def select_query(self):
+        return self._select_query
+
+    def __wrap_select(self, func):
+        def wrapper(data):
+            self._empty = False
+            result = self._select(data, self.select_query)
+            if result or self._empty:
+                return func(result)
+
+        return wrapper
+
+    @select_query.setter
+    def select_query(self, value):
+        self._used = None
+        self._select_query = self.__set_query_dict(value, self.__wrap_select)
+        if isinstance(value, dict):
+            self.__parse_select_query(value)
+
+    @property
+    def match_query(self):
+        return self._match_query
+
+    def __wrap_match(self, func):
+        def wrapper(data):
+            if self._match(data, self.match_query):
+                return func(data)
+
+        return wrapper
+
+    @match_query.setter
+    def match_query(self, value):
+        self._match_query = self.__set_query_dict(value, self.__wrap_match)
+        if isinstance(value, dict):
+            self.__parse_match_query(value)
+
+    def __layer_funcs(self):
+        self.__inner_call__ = lambda x: x
+        for val in self._call_layers.values():
+            if val:
+                self.__inner_call__ = val(self.__inner_call__)
+
+    def __call__(self, data):
+        self._initial_data = data
+        if isinstance(data, dict):
+            return self.__inner_call__(data)
+
+    def __parse_match_query(self, match_dict):
         for k, v in match_dict.items():
             if k in self.all_match_ops:
                 self.all_match_ops[k].precondition(v)
             if isinstance(v, dict):
-                self.__parse_match_dict(v)
+                self.__parse_match_query(v)
             elif isinstance(v, self.container_type):
-                [self.__parse_match_dict(d) for d in v if isinstance(d, dict)]
+                [self.__parse_match_query(d) for d in v if isinstance(d, dict)]
+
+    def __parse_select_query(self, select_query):
+        for k, v in select_query.items():
+            if k in self.all_match_ops:
+                pass
+            elif isinstance(v, dict):
+                self.__parse_select_query(v)
+            else:
+                if v not in [self.sel_include, self.sel_exclude]:
+                    raise exceptions.SelectValueError
+                if self._used is None:
+                    self._used = v
+                elif self._used != v:
+                    raise exceptions.SelectMixedError
 
     def _assign_consumed_iterator(self, data, prev_keys):
-        if not self._consumable_iterators or not isinstance(data, self._consumable_iterators):
+        if not self.consumable_iterators or not isinstance(data, self.consumable_iterators):
             return data
-        if self._non_consumable_iterators and isinstance(data, self._non_consumable_iterators):
+        if self.non_consumable_iterators and isinstance(data, self.non_consumable_iterators):
             return data
-        data = self._iterator_cast_type.__call__(data)
+        data = self.cast_type_iterators.__call__(data)
         utils.set_from_list(self._initial_data, prev_keys, data)
         return data
 
-    def _match(self, data, match_dict, prev_keys=None):
+    def _match(self, data, match_query):
+        if all(self._apply_match(data, match_query)):
+            return data
+
+    def _apply_match(self, data, match_dict, prev_keys=None):
         prev_keys = prev_keys if prev_keys else []
         if isinstance(match_dict, dict) and match_dict:
             for key, value in match_dict.items():
@@ -188,17 +249,17 @@ class DictSearch:
                 elif key in self.array_operators:
                     yield self.all_match_ops[key](data, value, prev_keys)
                 elif key in self.array_selectors:
-                    yield from self._match(*self.all_match_ops[key](data, value, prev_keys))
+                    yield from self._apply_match(*self.all_match_ops[key](data, value, prev_keys))
                 elif not isinstance(data, dict) or isinstance(data, dict) and key not in data.keys():
                     yield False
                 elif isinstance(value, dict):
                     prev_keys.append(key)
-                    yield from self._match(data[key], value, prev_keys)
+                    yield from self._apply_match(data[key], value, prev_keys)
                     prev_keys.pop(-1)
                 else:
-                    yield self.all_match_ops[self.op_eq](data[key], value)
+                    yield self.all_match_ops[self.op__eq](data[key], value)
         else:
-            yield self.all_match_ops[self.op_eq](data, match_dict)
+            yield self.all_match_ops[self.op__eq](data, match_dict)
 
     def _select(self, data, selection_dict):
         selected_dict = {}
@@ -206,22 +267,24 @@ class DictSearch:
         return selected_dict
 
     def _apply_selection(self, data, selection_dict, selected_dict, prev_keys=None, original_data=None):
+        # TODO if not data:
+        #   return
         prev_keys = prev_keys if prev_keys else []
         original_data = original_data if original_data else data.copy()
-        if not isinstance(selection_dict, dict) or not data:
+        if not isinstance(selection_dict, dict) or not data:  # TODO if not data:
             return
         for key, val in selection_dict.items():
-            if key == self.op_where and prev_keys and isinstance(data, abc.Iterable):
+            if key == self.op__where and prev_keys and isinstance(data, abc.Iterable):
                 self._operator_sel_where(data, val, selected_dict, prev_keys, original_data)
-            elif key == self.op_index and prev_keys and isinstance(data, abc.Iterable):
+            elif key == self.op__index and prev_keys and isinstance(data, abc.Iterable):
                 self._operator_sel_index(data, val, selected_dict, prev_keys, original_data)
-            elif key == self.op_range and prev_keys and isinstance(data, abc.Iterable):
-                self._operator_sel_range(data, val, selected_dict, prev_keys, original_data)
+            elif key == self.op__slice and prev_keys and isinstance(data, abc.Iterable):
+                self._operator_sel_slice(data, val, selected_dict, prev_keys, original_data)
             elif key == self.sel_array and isinstance(data, abc.Iterable):
                 if self.sel_array_ignored_types and isinstance(data, self.sel_array_ignored_types):
                     continue
                 self._apply_to_container(data, selection_dict[key], selected_dict, prev_keys, original_data)
-            elif not isinstance(data, dict) or key not in data.keys():
+            elif not isinstance(data, dict) or key not in data:
                 continue
             elif val in self.selection_operators and isinstance(data, dict):
                 prev_keys.append(key)
@@ -257,18 +320,19 @@ class DictSearch:
             return
         match_dict, operator = search_value
         if isinstance(operator, dict):
-            self._apply_to_container(self(data, match_dict), operator, selected_dict, prev_keys, original_data)
+            values = [d_point for d_point in data if self._match(d_point, match_dict) is not None]
+            self._apply_to_container(values, operator, selected_dict, prev_keys, original_data)
         else:
             incl = lambda: self.where_incl(match_dict, selected_dict, data, prev_keys)
             excl = lambda: self.where_excl(match_dict, selected_dict, data, prev_keys, original_data)
             self._build_dict(operator, None, selected_dict, prev_keys, original_data, incl_func=incl, excl_func=excl)
 
     def where_incl(self, match_dict, selected_dict, data, prev_keys):
-        values = [d_point for d_point in data if all(self._match(d_point, match_dict))]
+        values = [d_point for d_point in data if self._match(d_point, match_dict) is not None]
         utils.set_from_list(selected_dict, prev_keys, values) if values else None
 
     def where_excl(self, match_dict, selected_dict, data, prev_keys, original_data):
-        values = [d_point for d_point in data if not all(self._match(d_point, match_dict))]
+        values = [d_point for d_point in data if not self._match(d_point, match_dict) is not None]
         if values and values != data:
             self._exclude(selected_dict, prev_keys, original_data, values)
 
@@ -285,7 +349,7 @@ class DictSearch:
         if select_op in self.selection_operators:
             value = None
             if select_op == self.sel_include:
-                value, empty = self.all_match_ops[self.op_index].implementation(data, index, None)
+                value, empty = self.all_match_ops[self.op__index].implementation(data, index, None)
                 if empty == {}:
                     return
             excl = lambda: self._index_excl_simple(index, selected_dict, prev_keys, original_data, data=data)
@@ -339,26 +403,26 @@ class DictSearch:
                 return
         self._exclude(selected_dict, prev_keys, original_data, data)
 
-    def _operator_sel_range(self, data, select_op, selected_dict, prev_keys, original_data):
+    def _operator_sel_slice(self, data, select_op, selected_dict, prev_keys, original_data):
         data = self._assign_consumed_iterator(data, prev_keys)
         if len(data) == 0:
             return
-        range_str, select_op = list(select_op.items())[0]
-        values, empty = self.all_match_ops[self.op_range].implementation(data, range_str, None)
+        slice_str, select_op = list(select_op.items())[0]
+        values, empty = self.all_match_ops[self.op__slice].implementation(data, slice_str, None)
         if empty == {}:
             return
         if select_op in self.selection_operators:
-            func = lambda dt: exec(f"del data[{range_str}]", {"data": dt})
+            func = lambda dt: exec(f"del data[{slice_str}]", {"data": dt})
         else:
             values = self._select_iter(values, select_op)
             if not values:
                 return
-            func = lambda dt: exec(f"data[{range_str}] = values", {"data": dt, "values": values})
-        excl = lambda: self._range_excl(selected_dict, prev_keys, original_data, func, data=data)
+            func = lambda dt: exec(f"data[{slice_str}] = values", {"data": dt, "values": values})
+        excl = lambda: self._slice_excl(selected_dict, prev_keys, original_data, func, data=data)
         self._build_dict(self._used or select_op, values, selected_dict, prev_keys, original_data, excl_func=excl)
 
     @_copy_data
-    def _range_excl(self, selected_dict, prev_keys, original_data, func, data=None):
+    def _slice_excl(self, selected_dict, prev_keys, original_data, func, data=None):
         data = self._try_coerce_list(data)
         try:
             func(data)
