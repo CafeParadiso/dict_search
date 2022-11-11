@@ -1,5 +1,7 @@
 [tool.black]
 line-length = 120
+[tool.pytest.ini_options]
+log-cli = 1
 [build-system]
 requires = [
     "setuptools>=42",

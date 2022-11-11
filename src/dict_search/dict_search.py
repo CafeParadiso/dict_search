@@ -243,11 +243,11 @@ class DictSearch:
         if isinstance(match_dict, dict) and match_dict:
             for key, value in match_dict.items():
                 if key in self.low_level_operators:
-                    yield self.all_match_ops[key](data, value)
+                    yield self.all_match_ops[key].implementation(data, value)
                 elif key in self.high_level_operators:
-                    yield self.all_match_ops[key](data, value, prev_keys)
+                    yield self.all_match_ops[key].implementation(data, value, prev_keys)
                 elif key in self.array_operators:
-                    yield self.all_match_ops[key](data, value, prev_keys)
+                    yield self.all_match_ops[key].implementation(data, value, prev_keys)
                 elif key in self.array_selectors:
                     yield from self._apply_match(*self.all_match_ops[key](data, value, prev_keys))
                 elif not isinstance(data, dict) or isinstance(data, dict) and key not in data.keys():
@@ -257,9 +257,9 @@ class DictSearch:
                     yield from self._apply_match(data[key], value, prev_keys)
                     prev_keys.pop(-1)
                 else:
-                    yield self.all_match_ops[self.op__eq](data[key], value)
+                    yield self.all_match_ops[self.op__eq].implementation(data[key], value)
         else:
-            yield self.all_match_ops[self.op__eq](data, match_dict)
+            yield self.all_match_ops[self.op__eq].implementation(data, match_dict)
 
     def _select(self, data, selection_dict):
         selected_dict = {}

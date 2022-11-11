@@ -1,7 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Iterator
-from functools import partial
+from collections.abc import Iterator
+from functools import partial, cache
 from pprint import pprint
 from types import FunctionType
 from typing import Any, Type, Union
@@ -27,22 +27,16 @@ class Operator(ABC):
         """Write your operator logic here."""
         raise NotImplementedError
 
-    def precondition(self, match_query: Any) -> None:
-        """Implement this method if you need to verify the user input for the operator.
-
-        This method will be executed by the search object before running the whole search.
-        You should raise an exception if any precondition fails.
-        """
-
     def log(self, result: Any) -> None:
         """Logs the result of your implementation function at info level, overwrite the method if needed."""
         logging.info(f"{result}")
 
     def __call__(self, data, *args, **kwargs) -> Any:
-        logging.debug(f"{self.name}")
-        result = self.implementation(data, *args, **kwargs)
-        self.log(result)
-        return result
+        # logging.debug(f"{self.name}")
+        # result = self.implementation(data, *args, **kwargs)
+        # self.log(result)
+        # return result
+        return self.implementation(data, *args, **kwargs)
 
     def __new__(cls, *args, **kwargs):
         instance = super().__new__(cls)
@@ -51,7 +45,7 @@ class Operator(ABC):
             key for cl in base_classes for key in cl.__dict__.keys() if not any(key.startswith(s) for s in ["_", "__"])
         )
         class_attrs = {Operator.name.fget.__name__, Operator.initial_default_return.fget.__name__}
-        overridable_attrs = {Operator.implementation.__name__, Operator.precondition.__name__, Operator.log.__name__}
+        overridable_attrs = {Operator.implementation.__name__, Operator.log.__name__}
         implemented_attrs = implemented_attrs - overridable_attrs - class_attrs
 
         for attr in class_attrs:
@@ -139,7 +133,6 @@ class Operator(ABC):
 
     def __ignored_types(self, func, data, *args):
         if isinstance(data, self.ignored_types):
-            logging.info(f"Type ignored: {type(data)}")
             return self.default_return
         return func(data, *args)
 
@@ -176,6 +169,13 @@ class SearchOperator(Operator, ABC):
         self.search_instance = search_instance
         super().__init__(*args, **kwargs)
 
+    def precondition(self, match_query: Any) -> None:
+        """Implement this method if you need to verify the user input for the operator.
+
+        This method will be executed by the search object before running the whole search.
+        You should raise an exception if any precondition fails.
+        """
+
 
 class LowLevelOperator(SearchOperator, ABC):
     initial_default_return = False
@@ -208,6 +208,10 @@ class ArrayOperator(SearchOperator, ABC):
 
 class ArraySelector(SearchOperator, ABC):
     initial_default_return = [], {}
+
+    def implementation(self, data, search_value, prev_keys) -> (Any, dict):
+        data = self.search_instance._assign_consumed_iterator(data, prev_keys)
+        return data, search_value[0], search_value[1]
 
     def __call__(self, data, search_value, prev_keys) -> (Any, dict):
         data = self.search_instance._assign_consumed_iterator(data, prev_keys)
