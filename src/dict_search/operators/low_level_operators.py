@@ -1,4 +1,3 @@
-import inspect
 import re
 from collections.abc import Hashable
 from types import FunctionType
@@ -6,6 +5,7 @@ from typing import Any
 
 from .. import utils
 from . import exceptions
+from .constants import CONTAINER_TYPE
 from .bases import LowLevelOperator
 
 
@@ -122,8 +122,8 @@ class Compare(LowLevelOperator):
         self.func = None
 
     def precondition(self, match_query: Any) -> None:
-        if not isinstance(match_query, self.search_instance.container_type) or len(match_query) != 2:
-            raise exceptions.CompOperatorTypeError(self.name, self.search_instance)
+        if not isinstance(match_query, CONTAINER_TYPE) or len(match_query) != 2:
+            raise exceptions.CompOperatorTypeError(self.name, CONTAINER_TYPE)
         self.keys, self.func = match_query[0], match_query[1]
         if not (isinstance(self.keys, Hashable) or isinstance(self.keys, list)):
             raise exceptions.CompOperatorFirstArgError(self.name)
@@ -133,9 +133,9 @@ class Compare(LowLevelOperator):
         if not isinstance(self.func, FunctionType):
             raise exceptions.CompOperatorSecondArgError(self.name)
 
-    def implementation(self, val, search_val) -> bool:
+    def implementation(self, val, search_val, initial_data) -> bool:
         try:
-            search_val = utils.get_from_list(self.search_instance._initial_data, self.keys)
+            search_val = utils.get_from_list(initial_data, self.keys)
         except KeyError:
             return False
         result = self.func(val, search_val)

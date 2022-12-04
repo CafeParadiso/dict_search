@@ -29,8 +29,9 @@ class EqMp:
         return x == y
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import timeit
+
     eq = EqCall()
     eq_m = EqMeth()
     eq_mp = EqMp()

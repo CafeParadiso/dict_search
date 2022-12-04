@@ -54,25 +54,38 @@ def pop_from_list(dikt, keys):
     return set_from_list(dikt, keys[:-1], {k: v for k, v in prev_val.items() if k != keys[-1]})
 
 
-# def greedy_search(dikt, keys, max_depth=10):
-#     keys = [keys] if not isinstance(keys, list) else keys
-#     return __recursive_greedy_serch(dikt, keys, max_depth)
-#
-#
-# def __recursive_greedy_serch(dikt, keys, max_depth, current_depth=None, found_keys=None):
-#     current_depth = 0 if not current_depth else current_depth
-#     found_keys = [] if not found_keys else found_keys
-#     # if len(keys) == 1:
-#     #     if keys[0] in dikt:
-#     #         return dikt[keys[0]]
-#     # current_depth += 1
-#     for k in dikt:
-#         return __recursive_greedy_serch()
-#
-#
-# if __name__ == "__main__":
-#     a = {"a": {"b": 3}, "c": {"d": [0, 1, "miaw"]}}
-#     # a = {"a": {"b": 3}, "c": {"d": 2}}
-#     keys = ["c", "d", [0]]
-#     v = get_from_list(a, keys)
-#     print(v)
+def greedy_search(dikt, keys, max_depth=10):
+    keys = [keys] if not isinstance(keys, list) else keys
+    return __recursive_greedy_serch(dikt, keys, max_depth)
+
+
+def __recursive_greedy_serch(
+    dikt: dict,
+    keys: list,
+    max_depth: int,
+    depth: int = 0,
+    found_keys: list = None,
+    initial_keys: list = None,
+):
+    found_keys = [] if not found_keys else found_keys
+    initial_keys = keys if not initial_keys else initial_keys
+    if found_keys == initial_keys:
+        return dikt[found_keys[-1]]
+    if depth == max_depth:
+        return
+    depth += 1
+    if keys[0] in dikt:
+        found_keys.append(keys[0])
+        return __recursive_greedy_serch(dikt, keys[1:], max_depth, depth, found_keys, initial_keys)
+    for v in filter(lambda x: isinstance(x, dict), dikt.values()):
+        value = __recursive_greedy_serch(v, keys, max_depth, depth, found_keys, initial_keys)
+        if value:
+            return value
+
+
+if __name__ == "__main__":
+    a = {"a": {"b": 3}, "c": {"d": [0, 1, "miaw"]}}
+    # a = {"a": {"b": 3}, "c": {"d": 2}}
+    keys = ["d"]
+    v = greedy_search(a, keys)
+    print(v)

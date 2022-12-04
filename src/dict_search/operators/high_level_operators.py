@@ -1,62 +1,22 @@
-from typing import Any
-
-from .bases import HighLevelOperator, MatchOperator
+from .bases import HighLevelOperator
 
 
 class And(HighLevelOperator):
     name = "and"
 
-    def implementation(self, data, match_query, prev_keys) -> bool:
-        matches = super().implementation(data, match_query, prev_keys)
-        return all(matches)
+    def implementation(self, data) -> bool:
+        return all(data)
 
 
 class Or(HighLevelOperator):
     name = "or"
 
-    def implementation(self, data, match_query, prev_keys) -> bool:
-        matches = super().implementation(data, match_query, prev_keys)
-        return any(matches)
+    def implementation(self, data) -> bool:
+        return any(data)
 
 
 class Not(HighLevelOperator):
     name = "not"
 
-    def implementation(self, data, match_query, prev_keys) -> bool:
-        matches = super().implementation(data, match_query, prev_keys)
-        return not all(matches)
-
-
-class Match(MatchOperator):
-    name = "match"
-
-    def shortcircuit_args(self):
-        return lambda c, t: True if c == t else False, lambda c, t: True if c > t else False, False
-
-
-class Matchgt(MatchOperator):
-    name = "matchgt"
-
-    def shortcircuit_args(self):
-        return lambda c, t: True if c > t else False, lambda c, t: True if c > t else False, True
-
-
-class Matchgte(MatchOperator):
-    name = "matchgte"
-
-    def shortcircuit_args(self):
-        return lambda c, t: True if c >= t else False, lambda c, t: True if c >= t else False, True
-
-
-class Matchlt(MatchOperator):
-    name = "matchlt"
-
-    def shortcircuit_args(self):
-        return lambda c, t: True if c < t else False, lambda c, t: True if c >= t else False, False
-
-
-class Matchlte(MatchOperator):
-    name = "matchlte"
-
-    def shortcircuit_args(self):
-        return lambda c, t: True if c <= t else False, lambda c, t: True if c > t else False, False
+    def implementation(self, data) -> bool:
+        return not all(data)

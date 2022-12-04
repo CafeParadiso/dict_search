@@ -1,4 +1,4 @@
-from src.dict_search import Operator, SearchOperator
+from src.dict_search import Operator
 from test.utils import TestCase, TestOpModulo
 from test.new_fixtures import CursedData
 from src.dict_search.operators import exceptions
@@ -66,7 +66,7 @@ class TestOperatorImplementation(TestCase):
                 self.name_key: "test",
                 self.implementation_key: lambda: ...,
                 Operator.log.__name__: lambda: ...,
-                SearchOperator.precondition.__name__: lambda: ...,
+                Operator.precondition.__name__: lambda: ...,
                 "extra": lambda: ...,
             },
         )

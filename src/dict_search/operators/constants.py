@@ -10,3 +10,5 @@ SLICING_PATTERN = re.compile(
     r"^(-?\d+):(-?\d+):(-?\d+)$|"
     r"^:$"
 )
+
+CONTAINER_TYPE = list

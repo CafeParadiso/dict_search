@@ -8,10 +8,12 @@ from . import utils
 from .operators import ALL_OPERATOR_TYPES, Operator
 from .operators import array_operators as aop
 from .operators import array_selectors as asop
+from .operators import count_operators as cop
 from .operators import exceptions as op_exceptions
 from .operators import get_operators
 from .operators import high_level_operators as hop
 from .operators import low_level_operators as lop
+from .operators import match_operators as mop
 from pprint import pprint
 
 
@@ -63,6 +65,8 @@ class DictSearch:
         self.high_level_operators = self.__set_match_ops(hop)
         self.array_operators = self.__set_match_ops(aop)
         self.array_selectors = self.__set_match_ops(asop)
+        self.count_operators = self.__set_match_ops(cop)
+        self.match_operators = self.__set_match_ops(mop)
 
         # select attributes
         self.sel_array = f"{self.ops_str}array"
@@ -96,6 +100,13 @@ class DictSearch:
             ops_names.append(op_name)
         return ops_names
 
+    def __set_array_selectors(self, func):
+        def wrapper(data, value, prev_keys, *args):
+            value, match_dict = value[0], value[1]
+            data = self._assign_consumed_iterator(data, prev_keys)
+            return func(data, value, *args), match_dict
+        return wrapper
+
     def __set_ops_custom(self, ops_custom: Union[Type[Operator], list[..., Type[Operator]]]):
         ops_custom = ops_custom if isinstance(ops_custom, list) else [ops_custom]
         for op in ops_custom:
@@ -123,7 +134,7 @@ class DictSearch:
 
     def __init_operators(self) -> None:
         for k, v in self.all_match_ops.items():
-            op_instance = v(self, self.ops_global_exc, self.ops_global_allowed_type, self.ops_global_ignored_type)
+            op_instance = v(self.ops_global_exc, self.ops_global_allowed_type, self.ops_global_ignored_type)
             if Operator in self._ops_config:
                 op_instance = self.__set_from_config(Operator, op_instance)
             base_class_config = tuple(filter(lambda x: issubclass(v.__base__, x), self._class_config_keys))
@@ -131,6 +142,8 @@ class DictSearch:
                 op_instance = self.__set_from_config(base_class_config[0], op_instance)
             if k in self._ops_config:
                 op_instance = self.__set_from_config(k, op_instance)
+            if k in self.array_selectors:
+                op_instance.implementation = self.__set_array_selectors(op_instance.implementation)
             self.all_match_ops[k] = op_instance
 
     def __set_from_config(self, key, op_instance):
@@ -242,14 +255,35 @@ class DictSearch:
         prev_keys = prev_keys if prev_keys else []
         if isinstance(match_dict, dict) and match_dict:
             for key, value in match_dict.items():
-                if key in self.low_level_operators:
+                if key == self.op__comp:
+                    yield self.all_match_ops[key].implementation(data, value, self._initial_data)
+                elif key == self.op__where:
+                    yield from self._apply_match(*self.all_match_ops[key].implementation(data, value, prev_keys, self))
+                elif key in self.low_level_operators:
                     yield self.all_match_ops[key].implementation(data, value)
                 elif key in self.high_level_operators:
-                    yield self.all_match_ops[key].implementation(data, value, prev_keys)
+                    iterable = iter(
+                        match
+                        for search_dict in value
+                        for match in self._apply_match(data, search_dict, prev_keys)
+                    )
+                    yield self.all_match_ops[key].implementation(iterable)
+                elif key in self.match_operators:
+                    thresh, search_value = list(value.items())[0]
+                    iterable = iter(
+                        all(self._apply_match(data, search_dict, prev_keys)) for search_dict in search_value
+                    )
+                    yield self.all_match_ops[key].implementation(iterable, thresh)
                 elif key in self.array_operators:
-                    yield self.all_match_ops[key].implementation(data, value, prev_keys)
+                    data = self._assign_consumed_iterator(data, prev_keys)
+                    iterable = iter(match for d_point in data for match in self._apply_match(d_point, value, prev_keys))
+                    yield self.all_match_ops[key].implementation(iterable, value)
+                elif key in self.count_operators:
+                    thresh, search_value = list(value.items())[0]
+                    iterable = iter(all(self._apply_match(data_point, search_value, prev_keys)) for data_point in data)
+                    yield self.all_match_ops[key].implementation(thresh, iterable)
                 elif key in self.array_selectors:
-                    yield from self._apply_match(*self.all_match_ops[key](data, value, prev_keys))
+                    yield from self._apply_match(*self.all_match_ops[key].implementation(data, value, prev_keys))
                 elif not isinstance(data, dict) or isinstance(data, dict) and key not in data.keys():
                     yield False
                 elif isinstance(value, dict):
@@ -349,8 +383,8 @@ class DictSearch:
         if select_op in self.selection_operators:
             value = None
             if select_op == self.sel_include:
-                value, empty = self.all_match_ops[self.op__index].implementation(data, index, None)
-                if empty == {}:
+                value = self.all_match_ops[self.op__index].implementation(data, (index, {}), prev_keys)[0]
+                if value == []:  # TODO think how to signal empty value empty
                     return
             excl = lambda: self._index_excl_simple(index, selected_dict, prev_keys, original_data, data=data)
             self._build_dict(select_op, value, selected_dict, prev_keys, original_data, excl_func=excl)
@@ -408,8 +442,8 @@ class DictSearch:
         if len(data) == 0:
             return
         slice_str, select_op = list(select_op.items())[0]
-        values, empty = self.all_match_ops[self.op__slice].implementation(data, slice_str, None)
-        if empty == {}:
+        values = self.all_match_ops[self.op__slice].implementation(data, (slice_str, {}), prev_keys)[0]
+        if values == []:
             return
         if select_op in self.selection_operators:
             func = lambda dt: exec(f"del data[{slice_str}]", {"data": dt})

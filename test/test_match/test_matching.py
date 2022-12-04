@@ -2,7 +2,7 @@ from pprint import pprint
 
 from src.dict_search import DictSearch
 from src.dict_search import HighLevelOperator
-from src.dict_search import SearchOperator, Operator
+from src.dict_search import Operator
 from src.dict_search import exceptions
 from test.utils import TestCase
 from test.new_fixtures import CursedData
@@ -91,14 +91,14 @@ class TestMatching(TestCase):
         results = self.filter_results(search, data)
 
     def test_custom_operator(self):
-        class Demo1(SearchOperator):
+        class Demo1(Operator):
             name = "demo"
             initial_default_return = False
 
             def implementation(self, val, search_val):
                 return int(val / search_val) == 2
 
-        class Demo2(SearchOperator):
+        class Demo2(Operator):
             name = "demo2"
             initial_default_return = False
 

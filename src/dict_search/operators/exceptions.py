@@ -65,9 +65,7 @@ class HighLevelOperatorIteratorError(SyntaxError):
 
 class MatchOperatorError(SyntaxError):
     def __init__(self, op_name):
-        super().__init__(
-            f"Any match operator must be a dict like {{'{op_name}': count(int): search_val}}"
-        )
+        super().__init__(f"Any match operator must be a dict like {{'{op_name}': count(int): search_val}}")
 
 
 class MatchOperatorCountMismatch(SyntaxError):

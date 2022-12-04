@@ -1,7 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
-from collections.abc import Iterator
-from functools import partial, cache
+from functools import partial
 from pprint import pprint
 from types import FunctionType
 from typing import Any, Type, Union
@@ -23,13 +22,20 @@ class Operator(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def implementation(self, data, *args, **kwargs) -> Any:  # pragma: no cover
+    def implementation(self, data, *args) -> Any:  # pragma: no cover
         """Write your operator logic here."""
         raise NotImplementedError
 
     def log(self, result: Any) -> None:
         """Logs the result of your implementation function at info level, overwrite the method if needed."""
         logging.info(f"{result}")
+
+    def precondition(self, match_query: Any) -> None:
+        """Implement this method if you need to verify the user input for the operator.
+
+        This method will be executed by the search object before running the whole search.
+        You should raise an exception if any precondition fails.
+        """
 
     def __call__(self, data, *args, **kwargs) -> Any:
         # logging.debug(f"{self.name}")
@@ -45,7 +51,7 @@ class Operator(ABC):
             key for cl in base_classes for key in cl.__dict__.keys() if not any(key.startswith(s) for s in ["_", "__"])
         )
         class_attrs = {Operator.name.fget.__name__, Operator.initial_default_return.fget.__name__}
-        overridable_attrs = {Operator.implementation.__name__, Operator.log.__name__}
+        overridable_attrs = {Operator.implementation.__name__, Operator.log.__name__, Operator.precondition.__name__}
         implemented_attrs = implemented_attrs - overridable_attrs - class_attrs
 
         for attr in class_attrs:
@@ -164,62 +170,28 @@ class Operator(ABC):
             self.implementation = partial(func, self.implementation)
 
 
-class SearchOperator(Operator, ABC):
-    def __init__(self, search_instance, *args, **kwargs):
-        self.search_instance = search_instance
-        super().__init__(*args, **kwargs)
-
-    def precondition(self, match_query: Any) -> None:
-        """Implement this method if you need to verify the user input for the operator.
-
-        This method will be executed by the search object before running the whole search.
-        You should raise an exception if any precondition fails.
-        """
-
-
-class LowLevelOperator(SearchOperator, ABC):
+class LowLevelOperator(Operator, ABC):
     initial_default_return = False
 
 
-class HighLevelOperator(SearchOperator, ABC):
+class HighLevelOperator(Operator, ABC):
     initial_default_return = False
-
-    def implementation(self, data, match_query, prev_keys) -> Any:
-        return iter(
-            match
-            for search_dict in match_query
-            for match in self.search_instance._apply_match(data, search_dict, prev_keys)
-        )
 
     def precondition(self, search_container):
-        if not isinstance(search_container, self.search_instance.container_type) or not search_container:
-            raise exceptions.HighLevelOperatorIteratorError(self.search_instance.container_type, search_container)
+        if not isinstance(search_container, list) or not search_container:
+            raise exceptions.HighLevelOperatorIteratorError(list, list)
 
 
-class ArrayOperator(SearchOperator, ABC):
+class ArrayOperator(Operator, ABC):
     initial_default_return = False
 
-    def __call__(self, data: Any, arg: Any, prev_keys: list[str, ...]) -> bool:
-        data = self.search_instance._assign_consumed_iterator(data, prev_keys)
-        if isinstance(data, Iterator):
-            Warning(f"Operator {self.name} was called with")
-        return super().__call__(data, arg, prev_keys)
 
-
-class ArraySelector(SearchOperator, ABC):
-    initial_default_return = [], {}
-
-    def implementation(self, data, search_value, prev_keys) -> (Any, dict):
-        data = self.search_instance._assign_consumed_iterator(data, prev_keys)
-        return data, search_value[0], search_value[1]
-
-    def __call__(self, data, search_value, prev_keys) -> (Any, dict):
-        data = self.search_instance._assign_consumed_iterator(data, prev_keys)
-        return super().__call__(data, search_value[0], search_value[1])
+class ArraySelector(Operator, ABC):
+    initial_default_return = []
 
     def precondition(self, value):
-        if not isinstance(value, self.search_instance.container_type):
-            raise exceptions.ArraySelectorFormatException(f"{self.search_instance.ops_str}{self.name}")
+        if not isinstance(value, list):
+            raise exceptions.ArraySelectorFormatException(f"{self.name}")
 
 
 class ShortcircuitMixin(ABC):
@@ -249,11 +221,7 @@ class MatchOperator(HighLevelOperator, Operator, ShortcircuitMixin, ABC):
         if len(search_container) < thresh:
             raise exceptions.MatchOperatorCountMismatch(thresh, search_container)
 
-    def implementation(self, data, match_query, prev_keys) -> bool:
-        thresh, search_value = list(match_query.items())[0]
-        iterable = iter(
-            all(self.search_instance._apply_match(data, search_dict, prev_keys)) for search_dict in search_value
-        )
+    def implementation(self, iterable, thresh) -> bool:
         return self.shortcircuit_counter(thresh, iterable, *self.shortcircuit_args())
 
     @abstractmethod
@@ -262,12 +230,8 @@ class MatchOperator(HighLevelOperator, Operator, ShortcircuitMixin, ABC):
 
 
 class CountOperator(ArrayOperator, ShortcircuitMixin, ABC):
-    def implementation(self, data, match_query, prev_keys) -> Any:
-        thresh, search_value = list(match_query.items())[0]
-        iterable = iter(
-            all(self.search_instance._apply_match(data_point, search_value, prev_keys)) for data_point in data
-        )
-        return self.shortcircuit_counter(thresh, iterable, *self.shortcircuit_args())
+    def implementation(self, thresh, data) -> Any:
+        return self.shortcircuit_counter(thresh, data, *self.shortcircuit_args())
 
     @abstractmethod
     def shortcircuit_args(self):

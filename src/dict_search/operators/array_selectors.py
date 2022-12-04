@@ -2,35 +2,35 @@ from collections.abc import Iterator
 
 from . import exceptions
 from .bases import ArraySelector
-from .constants import SLICING_PATTERN
+from .constants import SLICING_PATTERN, CONTAINER_TYPE
 
 
 class Where(ArraySelector):
     name = "where"
 
-    def implementation(self, data, search_value, match_dict):
+    def implementation(self, data, search_value, search_instance):
         if isinstance(data, Iterator):
             raise exceptions.WhereIteratorException(self.name, data)
-        prev_match_query = self.search_instance.match_query
+        prev_match_query = search_instance.match_query
         try:
-            self.search_instance.match_query = search_value
-            matched_data = list(filter(lambda x: x is not None, map(lambda x: self.search_instance(x), data)))
+            search_instance.match_query = search_value
+            matched_data = list(filter(lambda x: x is not None, map(lambda x: search_instance(x), data)))
         finally:
-            self.search_instance.match_query = prev_match_query
-        return matched_data, match_dict
+            search_instance.match_query = prev_match_query
+        return matched_data
 
     def precondition(self, value):
-        if not isinstance(value, self.search_instance.container_type) or len(value) != 2:
+        if not isinstance(value, CONTAINER_TYPE) or len(value) != 2:
             raise exceptions.WhereOperatorError
 
 
 class Index(ArraySelector):
     name = "index"
 
-    def implementation(self, data, index, match_dict):
+    def implementation(self, data, index):
         if not isinstance(index, list):
             try:
-                return data[index], match_dict
+                return data[index]
             except IndexError:
                 return self.default_return
         values = []
@@ -41,14 +41,14 @@ class Index(ArraySelector):
                 continue
         if not values:
             return self.default_return
-        return values, match_dict
+        return values
 
 
 class Slice(ArraySelector):
     name = "slice"
 
-    def implementation(self, data, slice_str, match_dict):
-        return eval(f"data[{slice_str}]", {"data": data}), match_dict
+    def implementation(self, data, slice_str):
+        return eval(f"data[{slice_str}]", {"data": data})
 
     def precondition(self, value):
         super().precondition(value)

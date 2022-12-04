@@ -75,7 +75,7 @@ class OperatorWrapper(ABC):
             Operator.ignored_types.fget.__name__: None,
             Operator.allowed_types.fget.__name__: None,
         }
-        #self.__original_implementation = self.__class__.__call__
+        # self.__original_implementation = self.__class__.__call__
         self.__original_implementation = self.implementation
         self.default_return = default_return if default_return is not None else self.initial_default_return
         self.expected_exc = expected_exc
@@ -130,6 +130,7 @@ class OperatorWrapper(ABC):
                 if exc_type in self.expected_exc:
                     return self.expected_exc[exc_type]
                 return [v for k, v in self.expected_exc.items() if issubclass(exc_type, k)][0]
+
         return wrapper_exc
 
     @property
@@ -146,6 +147,7 @@ class OperatorWrapper(ABC):
                 logging.info(f"Type ignored: {type(data)}")
                 return self.default_return
             return func(data, *args)
+
         return wrapper_ignored
 
     @property
@@ -161,6 +163,7 @@ class OperatorWrapper(ABC):
             if not isinstance(data, self.allowed_types):
                 return self.default_return
             return func(data, *args)
+
         return wrapper_allowed
 
     def __set_type_checkers(self, value, func_name, func):
@@ -205,7 +208,7 @@ class OperatorIf(ABC):
         logging.info(f"{result}")
 
     def __call__(self, data, *args, **kwargs) -> Any:
-        #logging.debug(f"{self.name}")
+        # logging.debug(f"{self.name}")
         if self.allowed_types and not isinstance(data, self.allowed_types):
             return self.default_return
         if self.ignored_types and isinstance(data, self.ignored_types):
@@ -257,7 +260,6 @@ class OperatorIf(ABC):
         self.ignored_types = ignored_types
         self.allowed_types = allowed_types
 
-
     @property
     def default_return(self):
         return self._default_return
@@ -306,6 +308,7 @@ class OperatorIf(ABC):
                 if exc_type in self.expected_exc:
                     return self.expected_exc[exc_type]
                 return [v for k, v in self.expected_exc.items() if issubclass(exc_type, k)][0]
+
         return wrapper
 
     @property
@@ -322,6 +325,7 @@ class OperatorIf(ABC):
                 logging.info(f"Type ignored: {type(data)}")
                 return self.default_return
             return func(data, *args)
+
         return wrapper
 
     @property
@@ -337,6 +341,7 @@ class OperatorIf(ABC):
             if not isinstance(data, self.allowed_types):
                 return self.default_return
             return func(data, *args)
+
         return wrapper
 
     def __set_type_checkers(self, value, func_name, func):
@@ -352,7 +357,7 @@ class OperatorIf(ABC):
         pass
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import timeit
     from operator import eq as py_eq
 
@@ -388,13 +393,13 @@ if __name__ == '__main__':
     eqw.implementation([], 2)
     eqw([], 2)
     n = 900000
-    data = [2, '2', 2.2, 1, 2, 3, 1, 2, '2', []]
+    data = [2, "2", 2.2, 1, 2, 3, 1, 2, "2", []]
     q = 2
 
     print(f"py eq: {timeit.timeit(lambda: list(map(lambda x: py_eq(x, 2), data)), number=n)}")
-    #print(f"Eq: {timeit.timeit(lambda: list(map(lambda x: eq.implementation(x, 2), data)), number=n)}")
-    #print(f"Eqi: {timeit.timeit(lambda: list(map(lambda x: eqi(x, 2), data)), number=n)}")
-    #print(f"Eqw: {timeit.timeit(lambda: list(map(lambda x: eqw(x, 2), data)), number=n)}")
+    # print(f"Eq: {timeit.timeit(lambda: list(map(lambda x: eq.implementation(x, 2), data)), number=n)}")
+    # print(f"Eqi: {timeit.timeit(lambda: list(map(lambda x: eqi(x, 2), data)), number=n)}")
+    # print(f"Eqw: {timeit.timeit(lambda: list(map(lambda x: eqw(x, 2), data)), number=n)}")
     print(f"Eqw IMP: {timeit.timeit(lambda: list(map(lambda x: eqw.implementation(x, 2), data)), number=n)}")
     print(f"Eqw: {timeit.timeit(lambda: list(map(lambda x: eqw(x, 2), data)), number=n)}")
     print(f"==: {timeit.timeit(lambda: list(map(lambda x: x == 2, data)), number=n)}")
