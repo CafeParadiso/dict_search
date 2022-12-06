@@ -43,14 +43,6 @@ class OpsConfigNonExistingKey(Exception):
         )
 
 
-class OpsConfigKeyError(Exception):
-    def __init__(self):
-        super().__init__(
-            f"Use as config keys the name of existing operators or operator types in {ALL_OPERATOR_TYPES}:\n"
-            f"{{{Operator}: {{{LOP_CONF_EXC}: TypeError}}}}"
-        )
-
-
-class OpsConfigValueError(Exception):
-    def __init__(self):
-        super().__init__(f"Configure your operator with a dict containing any of these keys\n:{LOP_CONF_KEYS}")
+class OpsConfigKeyError(KeyError):
+    def __init__(self, k):
+        super().__init__(f"You provided an invalid configuration key, '{k}'.\n")

@@ -37,11 +37,16 @@ class Operator(ABC):
         You should raise an exception if any precondition fails.
         """
 
+    def __str__(self):
+        return (
+            f"{self.name}\n"
+            f"{Operator.default_return.fget.__name__}: {self.default_return}\n"
+            f"{Operator.allowed_types.fget.__name__}: {self.allowed_types}\n"
+            f"{Operator.ignored_types.fget.__name__}: {self.ignored_types}\n"
+            f"{Operator.expected_exc.fget.__name__}: {self.expected_exc}\n"
+        )
+
     def __call__(self, data, *args, **kwargs) -> Any:
-        # logging.debug(f"{self.name}")
-        # result = self.implementation(data, *args, **kwargs)
-        # self.log(result)
-        # return result
         return self.implementation(data, *args, **kwargs)
 
     def __new__(cls, *args, **kwargs):
@@ -165,6 +170,7 @@ class Operator(ABC):
         self.__wrap_implementation()
 
     def __wrap_implementation(self):
+        #self.implementation = partial(type(self).implementation, self)
         self.implementation = partial(type(self).implementation, self)
         for func in filter(lambda x: x is not None, self.__implementation_wrappers.values()):
             self.implementation = partial(func, self.implementation)
