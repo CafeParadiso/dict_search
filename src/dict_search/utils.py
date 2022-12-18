@@ -1,19 +1,4 @@
-from collections.abc import Mapping
-
-
-# def get_from_list(dikt, keys):
-#     if isinstance(keys[0], list) and len(keys[0]) == 1 and not isinstance(dikt, Mapping):
-#         try:
-#             dikt = dikt[keys[0][0]]
-#         except Exception:
-#             raise KeyError
-#     elif isinstance(dikt, Mapping) and dikt:
-#         dikt = dikt[keys[0]]
-#     else:
-#         raise KeyError
-#     if len(keys) == 1:
-#         return dikt
-#     return get_from_list(dikt, keys[1:])
+from typing import Iterable
 
 
 def get_from_list(dikt, keys):
@@ -54,46 +39,57 @@ def pop_from_list(dikt, keys):
     return set_from_list(dikt, keys[:-1], {k: v for k, v in prev_val.items() if k != keys[-1]})
 
 
-def greedy_search(dikt, keys, max_depth=10, candidate=0):
+def greedy_search(dikt, keys, max_depth=10, candidates=1, index=None, iterables=None):
+    if not keys:
+        raise Exception("argument keys cannot be empty")
     keys = [keys] if not isinstance(keys, list) else keys
-    for result in __recursive_greedy_serch(dikt, keys, max_depth):
-        yield result
-    # if candidate > 0:
-    #     results = []
-    #     if len(results) == candidate + 1:
-    #         return results[0]
-    # else:
-    #     return list(__recursive_greedy_serch(dikt, keys, max_depth))[candidate]
+    results = []
+    for result in __recursive_greedy_serch(dikt, keys, max_depth=max_depth, iterables=iterables):
+        results.append(result)
+        if len(results) == candidates:
+            return results if index is None else __try_index(results, index)
+    return results if index is None else __try_index(results, index)
 
 
 def __recursive_greedy_serch(
-    dikt: dict,
+    obj: dict,
     keys: list,
-    max_depth: int,
-    depth: int = 0,
     found_keys: list = None,
     initial_keys: list = None,
+    depth: int = 0,
+    max_depth: int = 10,
+    iterables: Iterable = None,
 ):
     found_keys = [] if not found_keys else found_keys
     initial_keys = keys if not initial_keys else initial_keys
     if found_keys == initial_keys:
-        yield dikt
-    if depth == max_depth:
-        yield
-    depth += 1
-    if keys[0] in dikt:
-        found_keys.append(keys[0])
-        yield from __recursive_greedy_serch(dikt[keys[0]], keys[1:], max_depth, depth, found_keys, initial_keys)
-    else:
-        for v in filter(lambda x: isinstance(x, dict), dikt.values()):
-            value = __recursive_greedy_serch(v, keys, max_depth, depth, found_keys, initial_keys)
-            if value:
-                yield value
+        yield obj
+    if isinstance(obj, dict) and keys and depth <= max_depth:
+        for key, value in obj.items():
+            if key == keys[0]:
+                found_keys.append(key)
+                depth += 1
+                yield from __recursive_greedy_serch(
+                    value, keys[1:], found_keys, initial_keys, depth, max_depth, iterables
+                )
+                found_keys.pop()
+                depth -= 1
+            else:
+                depth += 1
+                yield from __recursive_greedy_serch(value, keys, found_keys, initial_keys, depth, max_depth, iterables)
+                depth -= 1
+    elif iterables and isinstance(obj, iterables):
+        for sub_obj in obj:
+            depth += 1
+            yield from __recursive_greedy_serch(sub_obj, keys, found_keys, initial_keys, depth, max_depth, iterables)
+            depth -= 1
 
 
-if __name__ == "__main__":
-    a = {"a": {"b": 3}, "c": {"d": [0, 1, "miaw"]}, "d": {"b": 1}}
-    # a = {"a": {"b": 3}, "c": {"d": 2}}
-    ks = ["d", "b"]
-    vv = greedy_search(a, ks)
-    print(*vv)
+def __try_index(lst: list, index: int):
+    if len(lst) - 1 >= index:
+        return lst[index]
+    while index >= len(lst):
+        index = index - 1
+    if lst:
+        return lst[index]
+    return lst

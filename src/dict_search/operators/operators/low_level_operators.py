@@ -3,10 +3,10 @@ from collections.abc import Hashable
 from types import FunctionType
 from typing import Any
 
-from .. import utils
-from . import exceptions
-from .constants import CONTAINER_TYPE
-from .bases import LowLevelOperator
+from dict_search import utils
+from dict_search.operators import exceptions
+from dict_search.operators.constants import CONTAINER_TYPE
+from dict_search.operators.bases import LowLevelOperator
 
 
 class Equal(LowLevelOperator):
@@ -142,3 +142,10 @@ class Compare(LowLevelOperator):
         if not isinstance(result, bool):
             raise exceptions.CompOperatorReturnTypeError(self.name, type(result))
         return result
+
+
+class GreedySearch(LowLevelOperator):
+    name = "greedy"
+
+    def implementation(self, data, *args) -> Any:
+       pass
