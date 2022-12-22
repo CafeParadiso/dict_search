@@ -5,15 +5,10 @@ from typing import Type, Union
 from . import exceptions
 from . import utils
 from .operators import Operator
-from .operators import array_operators as aop
-from .operators import array_selectors as asop
-from .operators import count_operators as cop
 from .operators import exceptions as op_exceptions
 from .operators import get_operators
-from .operators import high_level_operators as hop
-from .operators import low_level_operators as lop
-from .operators import match_operators as mop
-from pprint import pprint
+from .operators.operators import low_level_operators as lop, high_level_operators as hop, array_operators as aop, \
+    array_selectors as asop, count_operators as cop, match_operators as mop
 
 
 def _copy_data(func):
@@ -35,8 +30,8 @@ class DictSearch:
         select_query: dict = None,
         ops_str: str = None,
         ops_global_exc: Union[Type[Exception], tuple[..., Type[Exception]]] = None,
-        ops_global_allowed_type: Union[Type[type], tuple[..., Type[type]]] = None,
-        ops_global_ignored_type: Union[Type[type], tuple[..., Type[type]]] = None,
+        ops_global_allowed_type: Union[Type, tuple[..., Type]] = None,
+        ops_global_ignored_type: Union[Type, tuple[..., Type]] = None,
         ops_custom: Union[Type[Operator], list[..., Type[Operator]]] = None,
         init_ops_config: dict = None,
         container_type=list,
@@ -61,12 +56,12 @@ class DictSearch:
 
         self.all_match_ops = {}
         self.__wrapped_ops = {}
-        self.low_level_operators = self.__get_ops_from_module(lop)
-        self.high_level_operators = self.__get_ops_from_module(hop, self.__wrap_high_level_op_impl)
-        self.array_operators = self.__get_ops_from_module(aop, self.__wrap_array_ops_impl)
-        self.array_selectors = self.__get_ops_from_module(asop, self.__wrap_array_selectors_impl)
-        self.count_operators = self.__get_ops_from_module(cop, self.__wrap_count_ops_impl)
-        self.match_operators = self.__get_ops_from_module(mop, self.__wrap_match_ops_impl)
+        self.low_level_operators = self.__load_ops_from_module(lop)
+        self.high_level_operators = self.__load_ops_from_module(hop, self.__wrap_high_level_op_impl)
+        self.array_operators = self.__load_ops_from_module(aop, self.__wrap_array_ops_impl)
+        self.array_selectors = self.__load_ops_from_module(asop, self.__wrap_array_selectors_impl)
+        self.count_operators = self.__load_ops_from_module(cop, self.__wrap_count_ops_impl)
+        self.match_operators = self.__load_ops_from_module(mop, self.__wrap_match_ops_impl)
 
         # select attributes
         self.sel_array = f"{self.ops_str}array"
@@ -82,13 +77,34 @@ class DictSearch:
         self.__init_operators()
         self.__set_ops_names_attrs()
 
-        self.__inner_call__ = None
-        self._call_layers = {
+        self.__inner_call__ = lambda x: x
+        self._call_layers: dict = {
             self.__wrap_select: None,
             self.__wrap_match: None,
         }
         self.select_query = select_query
         self.match_query = match_query
+
+    def __call__(self, data):
+        self._initial_data = data
+        if isinstance(data, dict):
+            return self.__inner_call__(data)
+
+    def __layer_funcs(self):
+        self.__inner_call__ = lambda x: x
+        for val in self._call_layers.values():
+            if val:
+                self.__inner_call__ = val(self.__inner_call__)
+
+    def __set_query_dict(self, value, func):
+        if value is None:
+            self._call_layers[func] = None
+        elif isinstance(value, dict):
+            self._call_layers[func] = func
+        else:
+            raise exceptions.PreconditionError
+        self.__layer_funcs()
+        return value
 
     def __assign_consumed_iterator(self, data, prev_keys):
         if not self.consumable_iterators or not isinstance(data, self.consumable_iterators):
@@ -99,7 +115,7 @@ class DictSearch:
         utils.set_from_list(self._initial_data, prev_keys, data)
         return data
 
-    def __get_ops_from_module(self, ops_module: ModuleType, wrapper=None):
+    def __load_ops_from_module(self, ops_module: ModuleType, wrapper=None):
         ops_names = []
         ops_classes = get_operators(ops_module)
         for op_class in ops_classes:
@@ -132,6 +148,8 @@ class DictSearch:
 
     def __wrap_array_ops_impl(self, func):
         def wrapper(data, value, prev_keys):
+            if not isinstance(data, abc.Iterable):
+                return False
             data = self.__assign_consumed_iterator(data, prev_keys)
             iterable = iter(match for d_point in data for match in self._apply_match(d_point, value, prev_keys))
             return func(iterable, value)
@@ -140,6 +158,8 @@ class DictSearch:
 
     def __wrap_count_ops_impl(self, func):
         def wrapper(data, value, prev_keys):
+            if not isinstance(data, abc.Iterable):
+                return False
             thresh, search_value = list(value.items())[0]
             iterable = iter(all(self._apply_match(data_point, search_value, prev_keys)) for data_point in data)
             return func(thresh, iterable)
@@ -175,14 +195,13 @@ class DictSearch:
 
     def __init_operators(self) -> None:
         for k, v in self.all_match_ops.items():
-            op_instance: Operator = v(self.ops_global_exc, self.ops_global_allowed_type, self.ops_global_ignored_type)
-            #op_instance: Operator = v()
+            op_instance: Operator = v()
             if k in self.__wrapped_ops:
                 op_instance.implementation = self.__wrapped_ops[k](op_instance.implementation)
-            #op_instance.wrappable_implementation = op_instance.implementation
-            # op_instance.expected_exc = self.ops_global_exc
-            # op_instance.allowed_types = self.ops_global_allowed_type
-            # op_instance.ignored_types = self.ops_global_ignored_type
+                op_instance.original_implementation = op_instance.implementation
+            op_instance.expected_exc = self.ops_global_exc
+            op_instance.allowed_types = self.ops_global_allowed_type
+            op_instance.ignored_types = self.ops_global_ignored_type
             self.__set_from_config(k, op_instance)
             self.all_match_ops[k] = op_instance
 
@@ -207,32 +226,21 @@ class DictSearch:
         for op_name, op_instance in self.all_match_ops.items():
             setattr(self, f"op__{op_instance.name}", op_name)
 
-    def __set_query_dict(self, value, func):
-        if value is None:
-            self._call_layers[func] = None
-        elif isinstance(value, dict):
-            self._call_layers[func] = func
-        else:
-            raise exceptions.PreconditionError
-        self.__layer_funcs()
-        return value
-
     @property
     def match_query(self):
         return self._match_query
-
-    def __wrap_match(self, func):
-        def wrapper(data):
-            if self._match(data, self.match_query):
-                return func(data)
-
-        return wrapper
 
     @match_query.setter
     def match_query(self, value):
         self._match_query = self.__set_query_dict(value, self.__wrap_match)
         if isinstance(value, dict):
             self.__parse_match_query(value)
+
+    def __wrap_match(self, func):
+        def wrapper(data):
+            if self._match(data, self.match_query):
+                return func(data)
+        return wrapper
 
     def __parse_match_query(self, match_dict):
         for k, v in match_dict.items():
@@ -242,17 +250,6 @@ class DictSearch:
                 self.__parse_match_query(v)
             elif isinstance(v, self.container_type):
                 [self.__parse_match_query(d) for d in v if isinstance(d, dict)]
-
-    def __layer_funcs(self):
-        self.__inner_call__ = lambda x: x
-        for val in self._call_layers.values():
-            if val:
-                self.__inner_call__ = val(self.__inner_call__)
-
-    def __call__(self, data):
-        self._initial_data = data
-        if isinstance(data, dict):
-            return self.__inner_call__(data)
 
     def _match(self, data, match_query):
         if all(self._apply_match(data, match_query)):
@@ -264,6 +261,10 @@ class DictSearch:
             for key, value in match_dict.items():
                 if key == self.op__comp:
                     yield self.all_match_ops[key].implementation(data, value, self._initial_data)
+                elif key == self.op__greedy:
+                    yield from self._apply_match(
+                        self.all_match_ops[key].implementation(data, value[0]), value[1], prev_keys
+                    )
                 elif key == self.op__where:
                     yield from self._apply_match(*self.all_match_ops[key].implementation(data, value, prev_keys, self))
                 elif key in self.low_level_operators:

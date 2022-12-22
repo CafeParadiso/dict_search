@@ -1,4 +1,4 @@
-from .bases import CountOperator
+from ..bases import CountOperator
 
 
 class Count(CountOperator):

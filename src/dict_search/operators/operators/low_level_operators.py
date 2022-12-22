@@ -3,10 +3,11 @@ from collections.abc import Hashable
 from types import FunctionType
 from typing import Any
 
-from dict_search import utils
-from dict_search.operators import exceptions
-from dict_search.operators.constants import CONTAINER_TYPE
-from dict_search.operators.bases import LowLevelOperator
+
+from ... import utils
+from .. import exceptions
+from ..constants import CONTAINER_TYPE
+from ..bases import LowLevelOperator
 
 
 class Equal(LowLevelOperator):
@@ -147,5 +148,28 @@ class Compare(LowLevelOperator):
 class GreedySearch(LowLevelOperator):
     name = "greedy"
 
-    def implementation(self, data, *args) -> Any:
-       pass
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.max_depth = 32
+        self.candidates = 1
+        self.index = 0
+        self.iterables = None
+
+    def precondition(self, match_query: Any) -> None:
+        if not isinstance(match_query, list) or len(match_query) != 2:
+            raise Exception
+        keys = match_query[0]
+        if not isinstance(keys, (Hashable, list)):
+            raise Exception
+        if isinstance(keys, list) and not all(isinstance(k, Hashable) for k in keys):
+            raise Exception
+
+    def implementation(self, data, keys) -> Any:
+        return utils.greedy_search(
+            data,
+            keys,
+            max_depth=self.max_depth,
+            candidates=self.candidates,
+            index=self.index,
+            iterables=self.iterables,
+        )

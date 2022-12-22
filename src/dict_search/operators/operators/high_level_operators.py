@@ -1,4 +1,4 @@
-from .bases import HighLevelOperator
+from ..bases import HighLevelOperator
 
 
 class And(HighLevelOperator):

@@ -1,6 +1,6 @@
 from typing import Any as TypeAny
 
-from .bases import ArrayOperator
+from ..bases import ArrayOperator
 
 
 class All(ArrayOperator):

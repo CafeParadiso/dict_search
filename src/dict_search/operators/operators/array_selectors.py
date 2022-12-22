@@ -1,8 +1,8 @@
 from collections.abc import Iterator
 
-from . import exceptions
-from .bases import ArraySelector
-from .constants import SLICING_PATTERN, CONTAINER_TYPE
+from .. import exceptions
+from ..bases import ArraySelector
+from ..constants import SLICING_PATTERN, CONTAINER_TYPE
 
 
 class Where(ArraySelector):

@@ -1,4 +1,4 @@
-from .bases import MatchOperator
+from ..bases import MatchOperator
 
 
 class Match(MatchOperator):

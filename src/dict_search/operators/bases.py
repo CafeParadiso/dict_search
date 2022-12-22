@@ -1,4 +1,3 @@
-import logging
 from abc import ABC, abstractmethod
 from functools import partial
 from pprint import pprint
@@ -11,24 +10,20 @@ from . import exceptions
 class Operator(ABC):
     @property
     @abstractmethod
-    def name(self) -> str:  # pragma: no cover
+    def name(self) -> str:
         """The name of our operator. Implement as class attribute"""
         raise NotImplementedError
 
     @property
     @abstractmethod
-    def initial_default_return(self) -> Any:  # pragma: no cover
+    def initial_default_return(self) -> Any:
         """Initial value for default return. Implement as class attribute"""
         raise NotImplementedError
 
     @abstractmethod
-    def implementation(self, data, *args) -> Any:  # pragma: no cover
+    def implementation(self, data, *args) -> Any:
         """Write your operator logic here."""
         raise NotImplementedError
-
-    def log(self, result: Any) -> None:
-        """Logs the result of your implementation function at info level, overwrite the method if needed."""
-        logging.info(f"{result}")
 
     def precondition(self, match_query: Any) -> None:
         """Implement this method if you need to verify the user input for the operator.
@@ -40,10 +35,10 @@ class Operator(ABC):
     def __str__(self):
         return (
             f"{self.name}\n"
-            f"{Operator.default_return.fget.__name__}: {self.default_return}\n"
-            f"{Operator.allowed_types.fget.__name__}: {self.allowed_types}\n"
-            f"{Operator.ignored_types.fget.__name__}: {self.ignored_types}\n"
-            f"{Operator.expected_exc.fget.__name__}: {self.expected_exc}\n"
+            f"{self.default_return.fget.__name__}: {self.default_return}\n"
+            f"{self.allowed_types.fget.__name__}: {self.allowed_types}\n"
+            f"{self.ignored_types.fget.__name__}: {self.ignored_types}\n"
+            f"{self.expected_exc.fget.__name__}: {self.expected_exc}\n"
         )
 
     def __call__(self, data, *args, **kwargs) -> Any:
@@ -56,7 +51,7 @@ class Operator(ABC):
             key for cl in base_classes for key in cl.__dict__.keys() if not any(key.startswith(s) for s in ["_", "__"])
         )
         class_attrs = {Operator.name.fget.__name__, Operator.initial_default_return.fget.__name__}
-        overridable_attrs = {Operator.implementation.__name__, Operator.log.__name__, Operator.precondition.__name__}
+        overridable_attrs = {Operator.implementation.__name__, Operator.precondition.__name__}
         implemented_attrs = implemented_attrs - overridable_attrs - class_attrs
 
         for attr in class_attrs:
@@ -76,6 +71,7 @@ class Operator(ABC):
         ignored_types: Union[Type, tuple[..., Type]] = None,
         default_return: Any = None,
     ):
+        self.original_implementation = self.implementation
         self.__implementation_wrappers = {
             Operator.expected_exc.fget.__name__: None,
             Operator.ignored_types.fget.__name__: None,
@@ -170,8 +166,7 @@ class Operator(ABC):
         self.__wrap_implementation()
 
     def __wrap_implementation(self):
-        #self.implementation = partial(type(self).implementation, self)
-        self.implementation = partial(type(self).implementation, self)
+        self.implementation = self.original_implementation
         for func in filter(lambda x: x is not None, self.__implementation_wrappers.values()):
             self.implementation = partial(func, self.implementation)
 

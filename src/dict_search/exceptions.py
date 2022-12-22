@@ -1,5 +1,4 @@
-from .constants import LOP_CONF_KEYS, LOP_CONF_EXC
-from .operators import ALL_OPERATOR_TYPES, Operator
+from .operators import Operator
 
 
 class PreconditionError(Exception):
@@ -38,8 +37,7 @@ class OpsConfigNonExistingKey(Exception):
     def __init__(self, op_name, ops_str):
         super().__init__(
             f"You provided the name for an operator that does not exist, '{op_name}'.\n"
-            f"Use the name of the operator withouth its operator string:\n"
-            f"{{'op': {{{LOP_CONF_EXC}: TypeError}}}} not {{'{ops_str}op': {{{LOP_CONF_EXC}: TypeError}}}}"
+            f"Remember to use the name of the operator withouth its operator string, 'op' not '{ops_str}op'\n"
         )
 
 

@@ -39,9 +39,7 @@ def pop_from_list(dikt, keys):
     return set_from_list(dikt, keys[:-1], {k: v for k, v in prev_val.items() if k != keys[-1]})
 
 
-def greedy_search(dikt, keys, max_depth=10, candidates=1, index=None, iterables=None):
-    if not keys:
-        raise Exception("argument keys cannot be empty")
+def greedy_search(dikt, keys, max_depth=32, candidates=1, index=None, iterables=None):
     keys = [keys] if not isinstance(keys, list) else keys
     results = []
     for result in __recursive_greedy_serch(dikt, keys, max_depth=max_depth, iterables=iterables):
@@ -57,7 +55,7 @@ def __recursive_greedy_serch(
     found_keys: list = None,
     initial_keys: list = None,
     depth: int = 0,
-    max_depth: int = 10,
+    max_depth: int = 32,
     iterables: Iterable = None,
 ):
     found_keys = [] if not found_keys else found_keys
@@ -81,12 +79,12 @@ def __recursive_greedy_serch(
     elif iterables and isinstance(obj, iterables):
         for sub_obj in obj:
             depth += 1
-            yield from __recursive_greedy_serch(sub_obj, keys, found_keys, initial_keys, depth, max_depth, iterables)
+            yield from __recursive_greedy_serch(sub_obj, initial_keys, [], initial_keys, depth, max_depth, iterables)
             depth -= 1
 
 
 def __try_index(lst: list, index: int):
-    if len(lst) - 1 >= index:
+    if lst and len(lst) - 1 >= index:
         return lst[index]
     while index >= len(lst):
         index = index - 1
