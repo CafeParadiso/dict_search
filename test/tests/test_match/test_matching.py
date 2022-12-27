@@ -63,21 +63,12 @@ class TestMatching(TestCase):
             list(filter(lambda x: x is not None, map(lambda x: search(x), data)))
 
     def test_ops_config(self):
-        import logging
-
         data = [{"a": 2}, {"a": CursedData()}]
-        logging.basicConfig(
-            level=logging.DEBUG,
-            format="%(asctime)s [%(levelname)8.8s] %(message)s",
-            handlers=[logging.StreamHandler()],
-        )
-        logging.info("fuck")
         ops_config = {
             "ne": {
                 "expected_exc": (Exception, BrokenPipeError),
                 "default_return": False,
                 "allowed_types": object,
-                "ignored_types": int,
             },
             HighLevelOperator: {
                 "expected_exc": {ValueError: False, IndexError: True, PermissionError: False},
@@ -87,7 +78,7 @@ class TestMatching(TestCase):
             },
             Operator: {"allowed_types": object},
         }
-        search = DictSearch({"a": {"$ne": 2}}, ops_config=ops_config)
+        search = DictSearch({"a": {"$ne": 2}}, init_ops_config=ops_config)
         results = self.filter_results(search, data)
 
     def test_custom_operator(self):
@@ -112,3 +103,25 @@ class TestMatching(TestCase):
         values, other_values = self.matching_test({"combustible_usage(L)": {"$demo": x}}, ops_custom=Demo1)
         assert all(int(v["combustible_usage(L)"] / x) == 2 for v in values)
         assert all(int(v["combustible_usage(L)"] / x) != 2 for v in other_values)
+
+    def test_shit(self):
+        search = DictSearch(
+            ops_global_exc=(EOFError, BrokenPipeError),
+            init_ops_config={"greedy": {"allowed_typess": dict}},
+            match_query={
+                "$greedy": ["b", 1]
+            },
+        )
+        search.all_match_ops[search.op__greedy].iterables = list
+        search.all_match_ops[search.op__greedy].index = -1
+        search.all_match_ops[search.op__greedy].candidates = -1
+        for d in [
+            [1, 2, 3, 4, 5],
+            {"a": [{"b": 1}, {"a": {"b": 2}}]},
+            {"a": [{"b": 1}]},
+            {"a": [{"a": {"b": 1}}]},
+            {"a": [{"x": 2}, {"a": {"b": 1}}]},
+            {"c": {"b": 1}},
+            {"a": ({"a": {"b": 1}}, "3", 23)},
+        ]:
+            print(search(d))

@@ -65,7 +65,6 @@ class TestOperatorImplementation(TestCase):
                 self.initial_def_key: True,
                 self.name_key: "test",
                 self.implementation_key: lambda: ...,
-                Operator.log.__name__: lambda: ...,
                 Operator.precondition.__name__: lambda: ...,
                 "extra": lambda: ...,
             },
@@ -176,22 +175,3 @@ class TestOperator(TestCase):
     def test_allowed_types_error(self):
         with self.assertRaises(exceptions.OperatoTypeCheckerError):
             TestOpModulo(allowed_types=[int, str])
-
-    # def test_benchmark(self):
-    #         import timeit
-    #         from src.dict_search.operators.bases import OperatorIf
-    #         from src.dict_search.operators.low_level_operators import Equal
-    #         from test.new_fixtures import CursedData
-    #
-    #         class Equal2(OperatorIf):
-    #             name = "eq"
-    #             initial_default_return = False
-    #
-    #             def implementation(self, val, search_val) -> bool:
-    #                 return val == search_val
-    #
-    #         eq = Equal(None)
-    #         eq2 = Equal2(None)
-    #         eq_time = timeit.timeit(lambda: [eq(x, 3) for x in range(10)], number=500000)
-    #         eq2_time = timeit.timeit(lambda: [eq2(x, 3) for x in range(10)], number=500000)
-    #         print(f"eq_time: {eq_time} eq2_time: {eq2_time}")

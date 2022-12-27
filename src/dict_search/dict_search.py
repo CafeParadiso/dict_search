@@ -28,7 +28,7 @@ class DictSearch:
         self,
         match_query: dict = None,
         select_query: dict = None,
-        ops_str: str = None,
+        ops_str: str = "$",
         ops_global_exc: Union[Type[Exception], tuple[..., Type[Exception]]] = None,
         ops_global_allowed_type: Union[Type, tuple[..., Type]] = None,
         ops_global_ignored_type: Union[Type, tuple[..., Type]] = None,
@@ -42,16 +42,16 @@ class DictSearch:
         sel_array_ignored_types=None,
     ):
         # TODO set accessibility
-        self.ops_str = ops_str if isinstance(ops_str, str) else "$"  # public - runtime setting -> recalculate
-        self.ops_global_exc = ops_global_exc  # public - runtime setting -> recalculate ?
-        self.ops_global_allowed_type = ops_global_allowed_type  # public - runtime setting -> recalculate ?
-        self.ops_global_ignored_type = ops_global_ignored_type  # public - runtime setting -> recalculate ?
+        self.ops_str = ops_str # runtime setting -> recalculate ?
+        self.ops_global_exc = ops_global_exc  # runtime setting -> recalculate ?
+        self.ops_global_allowed_type = ops_global_allowed_type  # runtime setting -> recalculate ?
+        self.ops_global_ignored_type = ops_global_ignored_type  # runtime setting -> recalculate ?
         self.container_type = container_type
         self.consumable_iterators = consumable_iterators
         self.non_consumable_iterators = non_consumable_iterators
-        self.cast_type_iterators = cast_type_iterators  # public ?
-        self._coerce_list = coerce_list  # public ?
-        self.sel_array_ignored_types = sel_array_ignored_types  # public ?
+        self.cast_type_iterators = cast_type_iterators
+        self.coerce_list = coerce_list
+        self.sel_array_ignored_types = sel_array_ignored_types
         self._initial_data = {}
 
         self.all_match_ops = {}
@@ -260,8 +260,8 @@ class DictSearch:
         if isinstance(match_dict, dict) and match_dict:
             for key, value in match_dict.items():
                 if key == self.op__comp:
-                    yield self.all_match_ops[key].implementation(data, value, self._initial_data)
-                elif key == self.op__greedy:
+                    yield self.all_match_ops[key].implementation(data, self._initial_data)
+                elif key == self.op__find:
                     yield from self._apply_match(
                         self.all_match_ops[key].implementation(data, value[0]), value[1], prev_keys
                     )
@@ -492,7 +492,7 @@ class DictSearch:
         self._exclude(selected_dict, prev_keys, original_data, data)
 
     def _try_coerce_list(self, data):
-        if self._coerce_list:
+        if self.coerce_list:
             try:
                 return list(data)
             except TypeError:

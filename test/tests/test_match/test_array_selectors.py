@@ -46,7 +46,7 @@ class TestArraySelectors(TestCase):
 
     def test_index_multiple_mixed_length_data(self):
         values, other_values = self.matching_test(
-            match_query={"taxes": {"$index": [[0, 3], {"$any": {"type": "Bribe"}, "$expr": lambda x: len(x) == 2}]}}
+            match_query={"taxes": {"$index": [[0, 3], {"$any": {"type": "Bribe"}, "$func": lambda x: len(x) == 2}]}}
         )
         k = "taxes"
         for v in other_values:

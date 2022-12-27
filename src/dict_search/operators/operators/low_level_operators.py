@@ -101,7 +101,7 @@ class Regex(LowLevelOperator):
 
 
 class Function(LowLevelOperator):
-    name = "expr"
+    name = "func"
 
     def implementation(self, val, func) -> bool:
         return func(val) if isinstance(func(val), bool) else False
@@ -134,7 +134,7 @@ class Compare(LowLevelOperator):
         if not isinstance(self.func, FunctionType):
             raise exceptions.CompOperatorSecondArgError(self.name)
 
-    def implementation(self, val, search_val, initial_data) -> bool:
+    def implementation(self, val, initial_data) -> bool:
         try:
             search_val = utils.get_from_list(initial_data, self.keys)
         except KeyError:
@@ -145,8 +145,8 @@ class Compare(LowLevelOperator):
         return result
 
 
-class GreedySearch(LowLevelOperator):
-    name = "greedy"
+class Find(LowLevelOperator):
+    name = "find"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -165,7 +165,7 @@ class GreedySearch(LowLevelOperator):
             raise Exception
 
     def implementation(self, data, keys) -> Any:
-        return utils.greedy_search(
+        return utils.find_value(
             data,
             keys,
             max_depth=self.max_depth,

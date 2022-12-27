@@ -39,17 +39,17 @@ def pop_from_list(dikt, keys):
     return set_from_list(dikt, keys[:-1], {k: v for k, v in prev_val.items() if k != keys[-1]})
 
 
-def greedy_search(dikt, keys, max_depth=32, candidates=1, index=None, iterables=None):
+def find_value(dikt, keys, max_depth=32, candidates=1, index=None, iterables=None):
     keys = [keys] if not isinstance(keys, list) else keys
     results = []
-    for result in __recursive_greedy_serch(dikt, keys, max_depth=max_depth, iterables=iterables):
+    for result in __recursive_find_value(dikt, keys, max_depth=max_depth, iterables=iterables):
         results.append(result)
         if len(results) == candidates:
             return results if index is None else __try_index(results, index)
     return results if index is None else __try_index(results, index)
 
 
-def __recursive_greedy_serch(
+def __recursive_find_value(
     obj: dict,
     keys: list,
     found_keys: list = None,
@@ -67,19 +67,19 @@ def __recursive_greedy_serch(
             if key == keys[0]:
                 found_keys.append(key)
                 depth += 1
-                yield from __recursive_greedy_serch(
+                yield from __recursive_find_value(
                     value, keys[1:], found_keys, initial_keys, depth, max_depth, iterables
                 )
                 found_keys.pop()
                 depth -= 1
             else:
                 depth += 1
-                yield from __recursive_greedy_serch(value, keys, found_keys, initial_keys, depth, max_depth, iterables)
+                yield from __recursive_find_value(value, keys, found_keys, initial_keys, depth, max_depth, iterables)
                 depth -= 1
     elif iterables and isinstance(obj, iterables):
         for sub_obj in obj:
             depth += 1
-            yield from __recursive_greedy_serch(sub_obj, initial_keys, [], initial_keys, depth, max_depth, iterables)
+            yield from __recursive_find_value(sub_obj, initial_keys, [], initial_keys, depth, max_depth, iterables)
             depth -= 1
 
 
@@ -91,3 +91,11 @@ def __try_index(lst: list, index: int):
     if lst:
         return lst[index]
     return lst
+
+
+def find_key():
+    pass
+
+
+def __recursive_find_key():
+    pass
