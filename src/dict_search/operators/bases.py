@@ -197,7 +197,7 @@ class ArraySelector(Operator, ABC):
 
 class ShortcircuitMixin(ABC):
     @staticmethod
-    def shortcircuit_counter(thresh, generator, check, eager_check, eager_value):
+    def shortcircuit_counter(generator, thresh, check, eager_check, eager_value):
         count = 0
         for match in generator:
             if match:
@@ -223,7 +223,7 @@ class MatchOperator(HighLevelOperator, Operator, ShortcircuitMixin, ABC):
             raise exceptions.MatchOperatorCountMismatch(thresh, search_container)
 
     def implementation(self, iterable, thresh) -> bool:
-        return self.shortcircuit_counter(thresh, iterable, *self.shortcircuit_args())
+        return self.shortcircuit_counter(iterable, thresh, *self.shortcircuit_args())
 
     @abstractmethod
     def shortcircuit_args(self):
@@ -231,8 +231,8 @@ class MatchOperator(HighLevelOperator, Operator, ShortcircuitMixin, ABC):
 
 
 class CountOperator(ArrayOperator, ShortcircuitMixin, ABC):
-    def implementation(self, thresh, data) -> Any:
-        return self.shortcircuit_counter(thresh, data, *self.shortcircuit_args())
+    def implementation(self, data, thresh) -> Any:
+        return self.shortcircuit_counter(data, thresh, *self.shortcircuit_args())
 
     @abstractmethod
     def shortcircuit_args(self):

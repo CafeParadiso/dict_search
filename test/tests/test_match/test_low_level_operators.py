@@ -13,7 +13,7 @@ from test.new_fixtures.data import COUNTRY_ARGENTINA, COUNTRY_SPAIN, TAX_B, COUN
 from pprint import pprint
 
 
-class TestEq(BaseTestLowLevelOperators.CaseLowLevelOperators):
+class TestEqual(BaseTestLowLevelOperators.CaseLowLevelOperators):
     op = lop.Equal()
     true_args = 1, 1
     false_args = 2, 1
@@ -21,7 +21,7 @@ class TestEq(BaseTestLowLevelOperators.CaseLowLevelOperators):
     func = lambda x: x["id"] == 1
 
 
-class TestNe(BaseTestLowLevelOperators.CaseLowLevelOperators):
+class TestNotEqual(BaseTestLowLevelOperators.CaseLowLevelOperators):
     op = lop.NotEqual()
     true_args = 1, 2
     false_args = 1, 1
@@ -29,40 +29,40 @@ class TestNe(BaseTestLowLevelOperators.CaseLowLevelOperators):
     func = lambda x: x["id"] != 1
 
 
-class TestGt(BaseTestLowLevelOperators.CaseLowLevelOperators):
+class TestGreater(BaseTestLowLevelOperators.CaseLowLevelOperators):
     value = datetime(2022, 6, 1)
     op = lop.Greater()
     true_args = 2, 1
     false_args = [(1, 1), (0, 1)]
     search = DictSearch(match_query={"info": {"arrival": {"$gt": value}}})
-    func = lambda x: x["info"]["arrival"] > TestGt.value
+    func = lambda x: x["info"]["arrival"] > TestGreater.value
 
 
-class TestGte(BaseTestLowLevelOperators.CaseLowLevelOperators):
+class TestGreaterEq(BaseTestLowLevelOperators.CaseLowLevelOperators):
     value = datetime(2022, 6, 1)
     op = lop.GreaterEq()
     true_args = [(2, 1), (1, 1)]
     false_args = 0, 1
     search = DictSearch(match_query={"info": {"arrival": {"$gte": value}}})
-    func = lambda x: x["info"]["arrival"] >= TestGte.value
+    func = lambda x: x["info"]["arrival"] >= TestGreaterEq.value
 
 
-class TestLt(BaseTestLowLevelOperators.CaseLowLevelOperators):
+class TestLessThen(BaseTestLowLevelOperators.CaseLowLevelOperators):
     value = datetime(2022, 6, 1)
     op = lop.LessThen()
     true_args = 0, 1
     false_args = [(1, 1), (2, 1)]
     search = DictSearch(match_query={"info": {"arrival": {"$lt": value}}})
-    func = lambda x: x["info"]["arrival"] < TestLt.value
+    func = lambda x: x["info"]["arrival"] < TestLessThen.value
 
 
-class TestLte(BaseTestLowLevelOperators.CaseLowLevelOperators):
+class TestLessThenEq(BaseTestLowLevelOperators.CaseLowLevelOperators):
     value = datetime(2022, 6, 1)
     op = lop.LessThenEq()
     true_args = [(0, 1), (1, 1)]
     false_args = 2, 1
     search = DictSearch(match_query={"info": {"arrival": {"$lte": value}}})
-    func = lambda x: x["info"]["arrival"] <= TestLte.value
+    func = lambda x: x["info"]["arrival"] <= TestLessThenEq.value
 
 
 class TestIs(BaseTestLowLevelOperators.CaseLowLevelOperators):
@@ -82,31 +82,31 @@ class TestIn(BaseTestLowLevelOperators.CaseLowLevelOperators):
     func = lambda x: x["info"]["origin"] in TestIn.values
 
 
-class TestNin(BaseTestLowLevelOperators.CaseLowLevelOperators):
+class TestNotIn(BaseTestLowLevelOperators.CaseLowLevelOperators):
     values = [COUNTRY_ARGENTINA, COUNTRY_SPAIN]
     op = lop.NotIn()
     true_args = 2, [1]
     false_args = 1, [1]
     search = DictSearch(match_query={"info": {"origin": {"$nin": values}}})
-    func = lambda x: x["info"]["origin"] not in TestNin.values
+    func = lambda x: x["info"]["origin"] not in TestNotIn.values
 
 
-class TestCont(BaseTestLowLevelOperators.CaseLowLevelOperators):
+class TestContains(BaseTestLowLevelOperators.CaseLowLevelOperators):
     value = TAX_B
     op = lop.Contains()
     true_args = [1], 1
     false_args = [2], 1
     search = DictSearch(match_query={"taxes": {"$cont": value}})
-    func = lambda x: TestCont.value in x["taxes"]
+    func = lambda x: TestContains.value in x["taxes"]
 
 
-class TestNotCont(BaseTestLowLevelOperators.CaseLowLevelOperators):
+class TestNotContains(BaseTestLowLevelOperators.CaseLowLevelOperators):
     value = TAX_B
     op = lop.NotContains()
     true_args = [2], 1
     false_args = [1], 1
     search = DictSearch(match_query={"taxes": {"$ncont": value}})
-    func = lambda x: TestNotCont.value not in x["taxes"]
+    func = lambda x: TestNotContains.value not in x["taxes"]
 
 
 class TestRegex(BaseTestLowLevelOperators.CaseLowLevelOperators, BaseTestPrecondition.CaseTestPrecondition):

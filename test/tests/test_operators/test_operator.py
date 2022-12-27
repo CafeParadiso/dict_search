@@ -1,5 +1,5 @@
 from src.dict_search import Operator
-from test.utils import TestCase, TestOpModulo
+from test.utils import TestCase, DemoOpModulo
 from test.new_fixtures import CursedData
 from src.dict_search.operators import exceptions
 
@@ -12,7 +12,7 @@ class TestOperatorImplementation(TestCase):
         self.name_key = Operator.name.fget.__name__
 
     def test_correct_instantiation(self):
-        assert TestOpModulo()
+        assert DemoOpModulo()
 
     def test_abstract_class_error(self):
         op = type(f"TestOp", (Operator, *Operator.__bases__), {})
@@ -75,31 +75,31 @@ class TestOperatorImplementation(TestCase):
 class TestOperator(TestCase):
     def test_expected_exc_single(self):
         exc = ValueError
-        op = TestOpModulo(expected_exc=exc)
+        op = DemoOpModulo(expected_exc=exc)
         assert op.expected_exc == {exc: op.default_return}
 
     def test_expected_exc_tuple(self):
         exc = ValueError, TypeError
-        op = TestOpModulo(expected_exc=exc)
+        op = DemoOpModulo(expected_exc=exc)
         assert op.expected_exc == {ex: op.default_return for ex in exc}
 
     def test_expected_exc_dict(self):
         exc = {ValueError: True, TypeError: False}
-        op = TestOpModulo(expected_exc=exc)
+        op = DemoOpModulo(expected_exc=exc)
         assert op.expected_exc == exc
 
     def test_expectec_exc_arg_error(self):
         exc = {ValueError: 23, TypeError: False}
         with self.assertRaises(exceptions.OperatorExpectedExcArgError):
-            TestOpModulo(expected_exc=exc)
+            DemoOpModulo(expected_exc=exc)
         with self.assertRaises(exceptions.OperatorExpectedExcArgError):
-            TestOpModulo(expected_exc=[TypeError, EOFError])
+            DemoOpModulo(expected_exc=[TypeError, EOFError])
 
     def test_expected_exc(self):
         data = [10, "1", 10.1, [], CursedData(PermissionError)]
         results = [True, TypeError, False, TypeError, False]
         q = (4, 2)
-        op = TestOpModulo(expected_exc=PermissionError)
+        op = DemoOpModulo(expected_exc=PermissionError)
         for d_p, res in zip(data, results):
             if isinstance(d_p, (list, str)):
                 with self.assertRaises(res):
@@ -111,7 +111,7 @@ class TestOperator(TestCase):
         data = [10, "1", 10.1, [], CursedData(PermissionError)]
         results = [True, False, False, False, False]
         q = (4, 2)
-        op = TestOpModulo(expected_exc=Exception)
+        op = DemoOpModulo(expected_exc=Exception)
         for d_p, res in zip(data, results):
             assert op(d_p, *q) == res
 
@@ -122,22 +122,22 @@ class TestOperator(TestCase):
         data = [10, "1", CursedData(DemoExc)]
         results = [True, True, False]
         q = (4, 2)
-        op = TestOpModulo(expected_exc={Exception: False, TypeError: True})
+        op = DemoOpModulo(expected_exc={Exception: False, TypeError: True})
         for d_p, res in zip(data, results):
             assert op(d_p, *q) == res
         results = [True, True, True]
-        op = TestOpModulo(expected_exc={TypeError: True, Exception: False})
+        op = DemoOpModulo(expected_exc={TypeError: True, Exception: False})
         for d_p, res in zip(data, results):
             assert op(d_p, *q) == res
 
     def test_default_return_type_error(self):
         with self.assertRaises(exceptions.OperatorDefaultReturnError):
-            TestOpModulo(default_return={})
+            DemoOpModulo(default_return={})
 
     def test_ignored_types(self):
         data = [10, "1", 10.0]
         q = 4, 2
-        op = TestOpModulo(ignored_types=int)
+        op = DemoOpModulo(ignored_types=int)
         for d_p, v in zip(data, [False, False, True]):
             if isinstance(d_p, str):
                 continue
@@ -155,12 +155,12 @@ class TestOperator(TestCase):
 
     def test_ignored_types_error(self):
         with self.assertRaises(exceptions.OperatoTypeCheckerError):
-            TestOpModulo(ignored_types=[int, str])
+            DemoOpModulo(ignored_types=[int, str])
 
     def test_allowed_types(self):
         data = [10, "1", 10.0]
         q = 4, 2
-        op = TestOpModulo(allowed_types=int)
+        op = DemoOpModulo(allowed_types=int)
         for d_p, v in zip(data, [True, False, False]):
             assert op(d_p, *q) == v
         op.allowed_types = None
@@ -174,4 +174,4 @@ class TestOperator(TestCase):
 
     def test_allowed_types_error(self):
         with self.assertRaises(exceptions.OperatoTypeCheckerError):
-            TestOpModulo(allowed_types=[int, str])
+            DemoOpModulo(allowed_types=[int, str])

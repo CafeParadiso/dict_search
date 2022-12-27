@@ -148,21 +148,22 @@ class DictSearch:
 
     def __wrap_array_ops_impl(self, func):
         def wrapper(data, value, prev_keys):
-            if not isinstance(data, abc.Iterable):
+            if not isinstance(data, abc.Iterable) or not data:
                 return False
             data = self.__assign_consumed_iterator(data, prev_keys)
             iterable = iter(match for d_point in data for match in self._apply_match(d_point, value, prev_keys))
-            return func(iterable, value)
+            return func(iterable, True)
 
         return wrapper
 
     def __wrap_count_ops_impl(self, func):
         def wrapper(data, value, prev_keys):
-            if not isinstance(data, abc.Iterable):
+            if not isinstance(data, abc.Iterable) or not data:
                 return False
+            data = self.__assign_consumed_iterator(data, prev_keys)
             thresh, search_value = list(value.items())[0]
             iterable = iter(all(self._apply_match(data_point, search_value, prev_keys)) for data_point in data)
-            return func(thresh, iterable)
+            return func(iterable, thresh)
 
         return wrapper
 

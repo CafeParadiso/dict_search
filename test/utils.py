@@ -1,6 +1,4 @@
-import abc
 import unittest
-from unittest.mock import Mock
 from .new_fixtures import read_fixtures
 from src.dict_search import DictSearch, Operator
 from test.new_fixtures.data import data
@@ -49,6 +47,7 @@ class TestCase(unittest.TestCase):
 
 
 class BaseTestLowLevelOperators:
+    """The outer class serves as a patch to avoid test discovery of the base class since it would fail"""
     class CaseLowLevelOperators(unittest.TestCase):
         op = None
         data = data
@@ -88,10 +87,15 @@ class BaseTestPrecondition:
                     self.op.precondition(query)
 
 
-class TestOpModulo(Operator):
+class DemoOpModulo(Operator):
     name = "modulo"
     initial_default_return = False
 
     def implementation(self, data, denominator, reminder):
         return data % denominator == reminder
 
+
+if __name__ == '__main__':
+    op = DemoOpModulo()
+    op(1, 2, 1)
+    
