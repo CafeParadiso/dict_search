@@ -219,7 +219,7 @@ class TestArraySelectors(TestCase):
 
 class TestExceptions(TestCase):
     def test_where_precondition(self):
-        with self.assertRaises(exceptions.WhereOperatorError):
+        with self.assertRaises(exceptions.ArraySelectorFormatException):
             DictSearch({"ports": {"$where": {1, 2}}})
 
     def test_where_generator_error(self):
@@ -234,7 +234,7 @@ class TestExceptions(TestCase):
             DictSearch({"$slice": {1, 2}})
 
     def test_slice_len_precondition(self):
-        with self.assertRaises(exceptions.SliceSelectionOperatorError):
+        with self.assertRaises(exceptions.ArraySelectorFormatException):
             DictSearch({"$slice": [1]})
 
     def test_slice_pattern_precondition(self):

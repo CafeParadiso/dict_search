@@ -1,6 +1,16 @@
 from .operators import Operator
 
 
+class LoadOpsError(Exception):
+    def __init__(self, existing_op: type, op_name, repeated_op: type, op_module):
+        super().__init__(
+            f"\nAn operator named '{op_name}' already exists.\n"
+            f"Existing operator: {existing_op.__name__}\n"
+            f"Repeated operator: {repeated_op.__name__}\n"
+            f"Repeated operator found in '{op_module.__name__}'"
+        )
+
+
 class PreconditionError(Exception):
     def __init__(self):
         super().__init__("Provide a dict to perform the matching or select")

@@ -176,7 +176,3 @@ class TestFind(BaseTestLowLevelOperators.CaseLowLevelOperators):
             attr = [attr] if not isinstance(attr, list) else attr
             for args in attr:
                 self.assertTrue(args[1](op(args[0])), f"{op.keys}")
-
-
-if __name__ == '__main__':
-    pass

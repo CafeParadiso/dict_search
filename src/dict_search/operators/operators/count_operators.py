@@ -34,9 +34,3 @@ class Countlte(CountOperator):
 
     def shortcircuit_args(self):
         return lambda c, t: True if c <= t else False, lambda c, t: True if c > t else False, False
-
-
-if __name__ == "__main__":
-    d = [1, 2, 3, 4]
-    c = Countlte()
-    c(d, 1)

@@ -1,13 +1,23 @@
+import typing
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from functools import partial
 from pprint import pprint
-from types import FunctionType
+from types import FunctionType, MethodType
 from typing import Any, Type, Union
 
 from . import exceptions
 
 
+@dataclass
+class MatchNode:
+    operator: "Operator"
+    query: dict = None
+
+
 class Operator(ABC):
+    _match_node = MatchNode
+
     @property
     @abstractmethod
     def name(self) -> str:
@@ -25,20 +35,30 @@ class Operator(ABC):
         """Write your operator logic here."""
         raise NotImplementedError
 
-    def precondition(self, match_query: Any) -> None:
-        """Implement this method if you need to verify the user input for the operator.
+    @classmethod
+    def init_match_node(cls, match_query: Any, parse_func: typing.Callable) -> MatchNode:
+        """Implement this method if your op will be used as a match operator
 
-        This method will be executed by the search object before running the whole search.
-        You should raise an exception if any precondition fails.
+        Return a MatchNode object"""
+        raise NotImplementedError
+
+    def precondition(self, args: Any) -> Any:
+        """Implement this method if you want to verify the initialization arguments
+
+        This method will be executed on __init__ and should return values for the __init__ attributes, e.g.:
+
+        def __init__(attr1, attr2):
+            self.attr1, self.attr2 = self.precondition(attr1, attr2)
         """
+        raise NotImplementedError
 
     def __str__(self):
         return (
             f"{self.name}\n"
-            f"{self.default_return.fget.__name__}: {self.default_return}\n"
-            f"{self.allowed_types.fget.__name__}: {self.allowed_types}\n"
-            f"{self.ignored_types.fget.__name__}: {self.ignored_types}\n"
-            f"{self.expected_exc.fget.__name__}: {self.expected_exc}\n"
+            f"{self.__class__.default_return.fget.__name__}: {self.default_return}\n"
+            f"{self.__class__.allowed_types.fget.__name__}: {self.allowed_types}\n"
+            f"{self.__class__.ignored_types.fget.__name__}: {self.ignored_types}\n"
+            f"{self.__class__.expected_exc.fget.__name__}: {self.expected_exc}\n"
         )
 
     def __call__(self, data, *args, **kwargs) -> Any:
@@ -46,22 +66,22 @@ class Operator(ABC):
 
     def __new__(cls, *args, **kwargs):
         instance = super().__new__(cls)
-        base_classes = {cl for cl in cls.__mro__ if cl not in [Operator, ABC, object]}
-        implemented_attrs = set(
-            key for cl in base_classes for key in cl.__dict__.keys() if not any(key.startswith(s) for s in ["_", "__"])
-        )
-        class_attrs = {Operator.name.fget.__name__, Operator.initial_default_return.fget.__name__}
-        overridable_attrs = {Operator.implementation.__name__, Operator.precondition.__name__}
-        implemented_attrs = implemented_attrs - overridable_attrs - class_attrs
-
-        for attr in class_attrs:
-            if isinstance(getattr(cls, attr), (property, FunctionType)):
-                raise exceptions.OperatorImplementationAttrTypeError(cls, attr)
-        for attr in implemented_attrs:
-            if attr in Operator.__dict__:
-                raise exceptions.OperatorImplementationOverrideError(attr)
-        if not isinstance(cls.name, str):
-            raise exceptions.OperatorImplementationNameError(cls, Operator.name.fget.__name__)
+        # base_classes = {cl for cl in cls.__mro__ if cl not in [Operator, ABC, object]}
+        # implemented_attrs = set(
+        #     key for cl in base_classes for key in cl.__dict__.keys() if not any(key.startswith(s) for s in ["_", "__"])
+        # )
+        # class_attrs = {Operator.name.fget.__name__, Operator.initial_default_return.fget.__name__}
+        # overridable_attrs = {Operator.implementation.__name__, Operator.precondition.__name__}
+        # implemented_attrs = implemented_attrs - overridable_attrs - class_attrs
+        #
+        # for attr in class_attrs:
+        #     if isinstance(getattr(cls, attr), (property, FunctionType)):
+        #         raise exceptions.OperatorImplementationAttrTypeError(cls, attr)
+        # for attr in implemented_attrs:
+        #     if attr in Operator.__dict__:
+        #         raise exceptions.OperatorImplementationOverrideError(attr)
+        # if not isinstance(cls.name, str):
+        #     raise exceptions.OperatorImplementationNameError(cls, Operator.name.fget.__name__)
         return instance
 
     def __init__(
@@ -174,25 +194,40 @@ class Operator(ABC):
 class LowLevelOperator(Operator, ABC):
     initial_default_return = False
 
+    @classmethod
+    def init_match_node(cls, match_query, *args) -> MatchNode:
+        return cls._match_node(cls(match_query))
+
 
 class HighLevelOperator(Operator, ABC):
     initial_default_return = False
 
-    def precondition(self, search_container):
-        if not isinstance(search_container, list) or not search_container:
+    @classmethod
+    def init_match_node(cls, match_query, parse_func) -> MatchNode:
+        if not isinstance(match_query, list) or not match_query:
             raise exceptions.HighLevelOperatorIteratorError(list, list)
+        return cls._match_node(cls(), [parse_func(v) for v in match_query])
 
 
 class ArrayOperator(Operator, ABC):
     initial_default_return = False
 
+    @classmethod
+    def init_match_node(cls, match_query, parse_func) -> MatchNode:
+        match_query = parse_func(match_query) if isinstance(match_query, dict) else match_query
+        return cls._match_node(cls(True), match_query)
+
 
 class ArraySelector(Operator, ABC):
     initial_default_return = []
 
-    def precondition(self, value):
-        if not isinstance(value, list):
-            raise exceptions.ArraySelectorFormatException(f"{self.name}")
+    @classmethod
+    def init_match_node(cls, match_query, parse_func) -> MatchNode:
+        if not isinstance(match_query, list) or len(match_query) != 2:
+            raise exceptions.ArraySelectorFormatException(f"{cls.name}")
+        init_arg, match_query = match_query
+        match_query = parse_func(match_query) if isinstance(match_query, dict) else match_query
+        return cls._match_node(cls(init_arg), match_query)
 
 
 class ShortcircuitMixin(ABC):
@@ -206,38 +241,55 @@ class ShortcircuitMixin(ABC):
                     return eager_value
         return check(count, thresh)
 
-    def precondition(self, value: Any):
-        if not isinstance(value, dict) or not value:
-            raise exceptions.MatchOperatorError(self.name)
-        thresh, search_container = list(value.items())[0]
-        if not isinstance(thresh, int):
-            raise exceptions.MatchOperatorError(self.name)
-        return thresh, search_container
-
 
 class MatchOperator(HighLevelOperator, Operator, ShortcircuitMixin, ABC):
-    def precondition(self, value):
-        thresh, search_container = ShortcircuitMixin.precondition(self, value)
-        super().precondition(search_container)
-        if len(search_container) < thresh:
-            raise exceptions.MatchOperatorCountMismatch(thresh, search_container)
+    def __init__(self, thresh, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.thresh = self.precondition(thresh)
 
-    def implementation(self, iterable, thresh) -> bool:
-        return self.shortcircuit_counter(iterable, thresh, *self.shortcircuit_args())
+    def precondition(self, thresh: Any):
+        if not isinstance(thresh, int):
+            raise exceptions.MatchOperatorError(self.name)
+        return thresh
+
+    def implementation(self, iterable) -> bool:
+        return self.shortcircuit_counter(iterable, self.thresh, *self.shortcircuit_args())
 
     @abstractmethod
     def shortcircuit_args(self):
         f"""Arguments needed by '{self.shortcircuit_counter.__name__}' determined by the operator"""
+
+    @classmethod
+    def init_match_node(cls, match_query, parse_func) -> MatchNode:
+        if not isinstance(match_query, dict) or not match_query:
+            raise exceptions.MatchOperatorError(cls.name)
+        thresh, sub_query = list(match_query.items())[0]
+        if not isinstance(sub_query, list):
+            raise exceptions.HighLevelOperatorIteratorError(list, sub_query)
+        return cls._match_node(cls(thresh), [parse_func(v) for v in sub_query])
 
 
 class CountOperator(ArrayOperator, ShortcircuitMixin, ABC):
-    def implementation(self, data, thresh) -> Any:
-        return self.shortcircuit_counter(data, thresh, *self.shortcircuit_args())
+    def __init__(self, thresh, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.thresh = self.precondition(thresh)
+
+    def precondition(self, thresh: Any):
+        if not isinstance(thresh, int):
+            raise exceptions.MatchOperatorError(self.name)
+        return thresh
+
+    def implementation(self, data) -> Any:
+        return self.shortcircuit_counter(data, self.thresh, *self.shortcircuit_args())
 
     @abstractmethod
     def shortcircuit_args(self):
         f"""Arguments needed by '{self.shortcircuit_counter.__name__}' determined by the operator"""
 
-    def precondition(self, value: Any):
-        super().precondition(value)
-        ShortcircuitMixin.precondition(self, value)
+    @classmethod
+    def init_match_node(cls, match_query, parse_func) -> MatchNode:
+        if not isinstance(match_query, dict):
+            raise Exception
+        thresh, match_query = list(match_query.items())[0]
+        match_query = parse_func(match_query) if isinstance(match_query, dict) else match_query
+        return cls._match_node(cls(thresh), match_query)

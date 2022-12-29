@@ -1,7 +1,7 @@
 from pprint import pprint
 
 from src.dict_search import DictSearch
-from src.dict_search import HighLevelOperator
+from src.dict_search import HighLevelOperator, MatchOperator
 from src.dict_search import Operator
 from src.dict_search import exceptions
 from test.utils import TestCase
@@ -68,58 +68,21 @@ class TestMatching(TestCase):
             "ne": {
                 "expected_exc": (Exception, BrokenPipeError),
                 "default_return": False,
-                "allowed_types": object,
+            },
+            Operator: {"allowed_types": object},
+            MatchOperator: {
+                "ignored_types": list
             },
             HighLevelOperator: {
                 "expected_exc": {ValueError: False, IndexError: True, PermissionError: False},
                 "default_return": True,
-                "allowed_types": object,
+                "allowed_types": int,
                 "ignored_types": (int, str),
             },
-            Operator: {"allowed_types": object},
+            "match": {
+                "expected_exc": ReferenceError,
+                "default_return": False,
+            },
         }
-        search = DictSearch({"a": {"$ne": 2}}, init_ops_config=ops_config)
+        search = DictSearch({"$match": {1: [{"a": 1}]}}, ops_init_config=ops_config)
         results = self.filter_results(search, data)
-
-    def test_custom_operator(self):
-        class Demo1(Operator):
-            name = "demo"
-            initial_default_return = False
-
-            def implementation(self, val, search_val):
-                return int(val / search_val) == 2
-
-        class Demo2(Operator):
-            name = "demo2"
-            initial_default_return = False
-
-            def implementation(self, val, search_val):
-                return isinstance(search_val, type(val))
-
-        x = 6000
-        values, other_values = self.matching_test({"combustible_usage(L)": {"$demo": x}}, ops_custom=[Demo1, Demo2])
-        assert all(int(v["combustible_usage(L)"] / x) == 2 for v in values)
-        assert all(int(v["combustible_usage(L)"] / x) != 2 for v in other_values)
-        values, other_values = self.matching_test({"combustible_usage(L)": {"$demo": x}}, ops_custom=Demo1)
-        assert all(int(v["combustible_usage(L)"] / x) == 2 for v in values)
-        assert all(int(v["combustible_usage(L)"] / x) != 2 for v in other_values)
-
-    def test_shit(self):
-        search = DictSearch(
-            ops_global_exc=(EOFError, BrokenPipeError),
-            init_ops_config={"greedy": {"allowed_typess": dict}},
-            match_query={"$greedy": ["b", 1]},
-        )
-        search.all_match_ops[search.op__find].iterables = list
-        search.all_match_ops[search.op__find].index = -1
-        search.all_match_ops[search.op__find].candidates = -1
-        for d in [
-            [1, 2, 3, 4, 5],
-            {"a": [{"b": 1}, {"a": {"b": 2}}]},
-            {"a": [{"b": 1}]},
-            {"a": [{"a": {"b": 1}}]},
-            {"a": [{"x": 2}, {"a": {"b": 1}}]},
-            {"c": {"b": 1}},
-            {"a": ({"a": {"b": 1}}, "3", 23)},
-        ]:
-            print(search(d))

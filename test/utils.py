@@ -25,7 +25,7 @@ class TestCase(unittest.TestCase):
             count = 0
             for query in list(match_query[list(match_query.keys())[0]].values())[0]:
                 search.match_query = query
-                count = count + 1 if all(search._apply_match(d_point, search.match_query)) else count
+                count = count + 1 if search(d_point) else count
             if func(count):
                 assertion_values.append(d_point)
         assert values == assertion_values

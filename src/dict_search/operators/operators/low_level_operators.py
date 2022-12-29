@@ -136,16 +136,15 @@ class Regex(LowLevelOperator):
 
     def __init__(self, pattern, **kwargs):
         super().__init__(**kwargs)
+        self.pattern = self.precondition(pattern)
+
+    def precondition(self, pattern: Any) -> re.Pattern:
         if isinstance(pattern, str):
-            self.pattern = re.compile(pattern)
+            return re.compile(pattern)
         elif isinstance(pattern, re.Pattern):
-            self.pattern = pattern
+            return pattern
         else:
             raise exceptions.RegexOperatorException(self.name, pattern)
-
-    def precondition(self, match_query: Any) -> None:
-        if not isinstance(match_query, (re.Pattern, str)):
-            raise exceptions.RegexOperatorException(self.name, match_query)
 
     def implementation(self, data) -> bool:
         return True if self.pattern.search(data) else False
@@ -179,26 +178,24 @@ class Compare(LowLevelOperator):
 
     def __init__(self, keys, func, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if not (
-            isinstance(keys, Hashable) or (isinstance(keys, list) and all(map(lambda x: isinstance(x, Hashable), keys)))
-        ):
+        self.keys, self.func = self.precondition(keys, func)
+
+    def precondition(self, keys, func) -> tuple:
+        if not (isinstance(keys, Hashable) or isinstance(keys, list)):
             raise exceptions.CompOperatorFirstArgError(self.name)
-        self.keys = keys if isinstance(keys, list) else [keys]
+        keys = keys if isinstance(keys, list) else [keys]
+        if not all(isinstance(k, Hashable) for k in keys):
+            raise exceptions.CompOperatorFirstArgError(self.name)
         if not isinstance(func, FunctionType):
             raise exceptions.CompOperatorSecondArgError(self.name)
-        self.func = func
+        return keys, func
 
-    def precondition(self, match_query: Any) -> None:
+    @classmethod
+    def init_match_node(cls, match_query, *args):
         if not isinstance(match_query, CONTAINER_TYPE) or len(match_query) != 2:
-            raise exceptions.CompOperatorTypeError(self.name, CONTAINER_TYPE)
-        self.keys, self.func = match_query[0], match_query[1]
-        if not (isinstance(self.keys, Hashable) or isinstance(self.keys, list)):
-            raise exceptions.CompOperatorFirstArgError(self.name)
-        self.keys = self.keys if isinstance(self.keys, list) else [self.keys]
-        if not all(isinstance(k, Hashable) for k in self.keys):
-            raise exceptions.CompOperatorFirstArgError(self.name)
-        if not isinstance(self.func, FunctionType):
-            raise exceptions.CompOperatorSecondArgError(self.name)
+            raise exceptions.CompOperatorTypeError(cls.name, CONTAINER_TYPE)
+        keys, func = match_query[0], match_query[1]
+        return cls._match_node(cls(keys, func))
 
     def implementation(self, val, initial_data) -> bool:
         try:
@@ -216,20 +213,25 @@ class Find(LowLevelOperator):
 
     def __init__(self, keys, *args, max_depth: int = 32, candidates: int = 1, index: int = 1, iterables=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.keys = keys
+        self.keys = self.precondition(keys)
         self.max_depth = max_depth
         self.candidates = candidates
         self.index = index
         self.iterables = iterables
 
-    def precondition(self, match_query: Any) -> None:
-        if not isinstance(match_query, list) or len(match_query) != 2:
-            raise Exception
-        keys = match_query[0]
+    def precondition(self, keys: Any) -> Any:
         if not isinstance(keys, (Hashable, list)):
             raise Exception
         if isinstance(keys, list) and not all(isinstance(k, Hashable) for k in keys):
             raise Exception
+        return keys
+
+    @classmethod
+    def init_match_node(cls, match_query, *args):
+        if not isinstance(match_query, list) or len(match_query) != 2:
+            raise Exception
+        keys, query = match_query[0], match_query[1]
+        return cls._match_node(cls(keys), query)
 
     def implementation(self, data) -> Any:
         return utils.find_value(
