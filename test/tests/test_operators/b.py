@@ -284,6 +284,7 @@ class OperatorWrap(ABC):
                 if exc_type in self.expected_exc:
                     return self.expected_exc[exc_type]
                 return [v for k, v in self.expected_exc.items() if issubclass(exc_type, k)][0]
+
         return wrapper
 
     @property
@@ -299,6 +300,7 @@ class OperatorWrap(ABC):
             if isinstance(data, self.ignored_types):
                 return self.default_return
             return func(data, *args)
+
         return wrapper
 
     @property
@@ -314,6 +316,7 @@ class OperatorWrap(ABC):
             if not isinstance(data, self.allowed_types):
                 return self.default_return
             return func(data, *args)
+
         return wrapper
 
     def __set_type_checkers(self, value, func_name, func):
@@ -331,7 +334,7 @@ class OperatorWrap(ABC):
             self.implementation = func(self.implementation)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import timeit
 
     class EqWrap(OperatorWrap):
@@ -353,8 +356,9 @@ if __name__ == '__main__':
     n = 900000
     data = [2, "2", 2.2, 1, 2, 3, 1, 2, "2", [], "tt", 3, 6]
 
-    #print(f"WC: {timeit.timeit(lambda: list(map(lambda x: eq_wrap(x, 2), data)), number=n)}")
+    # print(f"WC: {timeit.timeit(lambda: list(map(lambda x: eq_wrap(x, 2), data)), number=n)}")
     import statistics
+
     wi = []
     pi = []
     for _ in range(120):

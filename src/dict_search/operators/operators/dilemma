@@ -1,0 +1,19 @@
+Two alternatives for usage:
+-init with comparison , call with data
+-init empty, call with data and comparison
+
+1:
+-Refactor init in all ops
+-Parse match query
+-One instance for each element in match query
+-Acces operator instance through parsed match query dict
+
+2:
+-single instance for all operators
+-access operator from search obj directly
+
+-------------
+Array Op
+{"$all": {"a": 1}}
+{"$all": 1}
+{"$all": {"a": {"$gt": 2}}}

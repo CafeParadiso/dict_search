@@ -48,6 +48,7 @@ class TestCase(unittest.TestCase):
 
 class BaseTestLowLevelOperators:
     """The outer class serves as a patch to avoid test discovery of the base class since it would fail"""
+
     class CaseLowLevelOperators(unittest.TestCase):
         op = None
         data = data
@@ -71,8 +72,9 @@ class BaseTestLowLevelOperators:
         def test_implementation(self):
             for attr, assertion in [(self.true_args, self.assertTrue), (self.false_args, self.assertFalse)]:
                 attr = [attr] if not isinstance(attr, list) else attr
-                for args in attr:
-                    assertion(self.op.implementation(*args))
+                for arguments in attr:
+                    arguments = (arguments,) if not isinstance(arguments, tuple) else arguments
+                    assertion(self.op.implementation(*arguments))
 
 
 class BaseTestPrecondition:
@@ -82,9 +84,10 @@ class BaseTestPrecondition:
 
         def test_precondition(self):
             self.precondition = [self.precondition] if not isinstance(self.precondition, list) else self.precondition
-            for query, exc in self.precondition:
+            for args, exc in self.precondition:
+                args = (args,) if not isinstance(args, tuple) else args
                 with self.assertRaises(exc):
-                    self.op.precondition(query)
+                    self.op.__class__(*args)
 
 
 class DemoOpModulo(Operator):
@@ -93,9 +96,3 @@ class DemoOpModulo(Operator):
 
     def implementation(self, data, denominator, reminder):
         return data % denominator == reminder
-
-
-if __name__ == '__main__':
-    op = DemoOpModulo()
-    op(1, 2, 1)
-    

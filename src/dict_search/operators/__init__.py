@@ -11,6 +11,6 @@ def get_operators(module: _ModuleType) -> list[..., type]:
     return list(
         map(
             lambda x: x[1],
-            filter(lambda x: isinstance(x[1], type) and issubclass(x[1], Operator) and not isabstract(x[1]), classes)
+            filter(lambda x: isinstance(x[1], type) and issubclass(x[1], Operator) and not isabstract(x[1]), classes),
         )
     )

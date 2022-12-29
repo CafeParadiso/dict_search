@@ -108,13 +108,11 @@ class TestMatching(TestCase):
         search = DictSearch(
             ops_global_exc=(EOFError, BrokenPipeError),
             init_ops_config={"greedy": {"allowed_typess": dict}},
-            match_query={
-                "$greedy": ["b", 1]
-            },
+            match_query={"$greedy": ["b", 1]},
         )
-        search.all_match_ops[search.op__greedy].iterables = list
-        search.all_match_ops[search.op__greedy].index = -1
-        search.all_match_ops[search.op__greedy].candidates = -1
+        search.all_match_ops[search.op__find].iterables = list
+        search.all_match_ops[search.op__find].index = -1
+        search.all_match_ops[search.op__find].candidates = -1
         for d in [
             [1, 2, 3, 4, 5],
             {"a": [{"b": 1}, {"a": {"b": 2}}]},

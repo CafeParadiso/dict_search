@@ -142,6 +142,7 @@ class CursedData:
     def __instancecheck__(self, instance):
         raise self._exc
 
+
 def random_date():
     return datetime.datetime(2022, random.randint(6, 11), random.randint(1, 30))
 

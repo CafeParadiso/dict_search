@@ -13,114 +13,180 @@ from ..bases import LowLevelOperator
 class Equal(LowLevelOperator):
     name = "eq"
 
-    def implementation(self, val, search_val) -> bool:
-        return val == search_val
+    def __init__(self, search_val, **kwargs):
+        super().__init__(**kwargs)
+        self.comp = search_val
+
+    def implementation(self, data) -> bool:
+        return self.comp == data
 
 
 class NotEqual(LowLevelOperator):
     name = "ne"
 
-    def implementation(self, val, search_val) -> bool:
-        return val != search_val
+    def __init__(self, search_val, **kwargs):
+        super().__init__(**kwargs)
+        self.comp = search_val
+
+    def implementation(self, data) -> bool:
+        return self.comp != data
 
 
 class Greater(LowLevelOperator):
     name = "gt"
 
-    def implementation(self, val, search_val) -> bool:
-        return val > search_val
+    def __init__(self, search_val, **kwargs):
+        super().__init__(**kwargs)
+        self.comp = search_val
+
+    def implementation(self, data) -> bool:
+        return data > self.comp
 
 
 class GreaterEq(LowLevelOperator):
     name = "gte"
 
-    def implementation(self, val, search_val) -> bool:
-        return val >= search_val
+    def __init__(self, search_val, **kwargs):
+        super().__init__(**kwargs)
+        self.comp = search_val
+
+    def implementation(self, data) -> bool:
+        return data >= self.comp
 
 
 class LessThen(LowLevelOperator):
     name = "lt"
 
-    def implementation(self, val, search_val) -> bool:
-        return val < search_val
+    def __init__(self, search_val, **kwargs):
+        super().__init__(**kwargs)
+        self.comp = search_val
+
+    def implementation(self, data) -> bool:
+        return data < self.comp
 
 
 class LessThenEq(LowLevelOperator):
     name = "lte"
 
-    def implementation(self, val, search_val) -> bool:
-        return val <= search_val
+    def __init__(self, search_val, **kwargs):
+        super().__init__(**kwargs)
+        self.comp = search_val
+
+    def implementation(self, data) -> bool:
+        return data <= self.comp
 
 
 class Is(LowLevelOperator):
     name = "is"
 
-    def implementation(self, val, search_val) -> bool:
-        return val is search_val
+    def __init__(self, search_val, **kwargs):
+        super().__init__(**kwargs)
+        self.comp = search_val
+
+    def implementation(self, data) -> bool:
+        return data is self.comp
 
 
 class In(LowLevelOperator):
     name = "in"
 
-    def implementation(self, val, search_val) -> bool:
-        return val in search_val
+    def __init__(self, search_val, **kwargs):
+        super().__init__(**kwargs)
+        self.comp = search_val
+
+    def implementation(self, data) -> bool:
+        return data in self.comp
 
 
 class NotIn(LowLevelOperator):
     name = "nin"
 
-    def implementation(self, val, search_val) -> bool:
-        return val not in search_val
+    def __init__(self, search_val, **kwargs):
+        super().__init__(**kwargs)
+        self.comp = search_val
+
+    def implementation(self, data) -> bool:
+        return data not in self.comp
 
 
 class Contains(LowLevelOperator):
     name = "cont"
 
-    def implementation(self, val, search_val) -> bool:
-        return search_val in val
+    def __init__(self, search_val, **kwargs):
+        super().__init__(**kwargs)
+        self.comp = search_val
+
+    def implementation(self, data) -> bool:
+        return self.comp in data
 
 
 class NotContains(LowLevelOperator):
     name = "ncont"
 
-    def implementation(self, val, search_val) -> bool:
-        return search_val not in val
+    def __init__(self, search_val, **kwargs):
+        super().__init__(**kwargs)
+        self.comp = search_val
+
+    def implementation(self, data) -> bool:
+        return self.comp not in data
 
 
 class Regex(LowLevelOperator):
     name = "regex"
 
+    def __init__(self, pattern, **kwargs):
+        super().__init__(**kwargs)
+        if isinstance(pattern, str):
+            self.pattern = re.compile(pattern)
+        elif isinstance(pattern, re.Pattern):
+            self.pattern = pattern
+        else:
+            raise exceptions.RegexOperatorException(self.name, pattern)
+
     def precondition(self, match_query: Any) -> None:
         if not isinstance(match_query, (re.Pattern, str)):
             raise exceptions.RegexOperatorException(self.name, match_query)
 
-    def implementation(self, val, search_pattern) -> bool:
-        if isinstance(search_pattern, re.Pattern):
-            return True if search_pattern.search(val) else False
-        return True if re.compile(search_pattern).search(val) else False
+    def implementation(self, data) -> bool:
+        return True if self.pattern.search(data) else False
 
 
 class Function(LowLevelOperator):
     name = "func"
 
-    def implementation(self, val, func) -> bool:
-        return func(val) if isinstance(func(val), bool) else False
+    def __init__(self, function, **kwargs):
+        super().__init__(**kwargs)
+        self.function = function
+
+    def implementation(self, data) -> bool:
+        value = self.function(data)
+        return value if isinstance(value, bool) else False
 
 
 class IsInstance(LowLevelOperator):
     name = "inst"
 
-    def implementation(self, val, search_type) -> bool:
-        return isinstance(val, search_type)
+    def __init__(self, data_type, **kwargs):
+        super().__init__(**kwargs)
+        self.data_type = data_type
+
+    def implementation(self, data) -> bool:
+        return isinstance(data, self.data_type)
 
 
 class Compare(LowLevelOperator):
     name = "comp"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, keys, func, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.keys = None
-        self.func = None
+        if not (
+            isinstance(keys, Hashable) or (isinstance(keys, list) and all(map(lambda x: isinstance(x, Hashable), keys)))
+        ):
+            raise exceptions.CompOperatorFirstArgError(self.name)
+        self.keys = keys if isinstance(keys, list) else [keys]
+        if not isinstance(func, FunctionType):
+            raise exceptions.CompOperatorSecondArgError(self.name)
+        self.func = func
 
     def precondition(self, match_query: Any) -> None:
         if not isinstance(match_query, CONTAINER_TYPE) or len(match_query) != 2:
@@ -148,12 +214,13 @@ class Compare(LowLevelOperator):
 class Find(LowLevelOperator):
     name = "find"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, keys, *args, max_depth: int = 32, candidates: int = 1, index: int = 1, iterables=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.max_depth = 32
-        self.candidates = 1
-        self.index = 0
-        self.iterables = None
+        self.keys = keys
+        self.max_depth = max_depth
+        self.candidates = candidates
+        self.index = index
+        self.iterables = iterables
 
     def precondition(self, match_query: Any) -> None:
         if not isinstance(match_query, list) or len(match_query) != 2:
@@ -164,10 +231,10 @@ class Find(LowLevelOperator):
         if isinstance(keys, list) and not all(isinstance(k, Hashable) for k in keys):
             raise Exception
 
-    def implementation(self, data, keys) -> Any:
+    def implementation(self, data) -> Any:
         return utils.find_value(
             data,
-            keys,
+            self.keys,
             max_depth=self.max_depth,
             candidates=self.candidates,
             index=self.index,
