@@ -2,7 +2,7 @@ from pprint import pprint
 from copy import deepcopy
 from collections import abc
 from types import ModuleType
-from typing import Type, Union
+from typing import Type, Union, Callable
 
 from . import exceptions
 from . import utils
@@ -46,9 +46,6 @@ class DictSearch:
         match_query: dict = None,
         select_query: dict = None,
         ops_str: str = "$",
-        ops_global_exc: Union[Type[Exception], tuple[..., Type[Exception]]] = None,
-        ops_global_allowed_type: Union[Type, tuple[..., Type]] = None,
-        ops_global_ignored_type: Union[Type, tuple[..., Type]] = None,
         ops_custom: Union[Type[Operator], list[..., Type[Operator]]] = None,
         ops_init_config: dict = None,
         container_type=list,
@@ -59,9 +56,6 @@ class DictSearch:
         sel_array_ignored_types=None,
     ):
         self.ops_str = ops_str
-        self.ops_global_exc = ops_global_exc
-        self.ops_global_allowed_type = ops_global_allowed_type
-        self.ops_global_ignored_type = ops_global_ignored_type
         self.container_type = container_type
         self.consumable_iterators = consumable_iterators
         self.non_consumable_iterators = non_consumable_iterators
@@ -71,7 +65,7 @@ class DictSearch:
         self._initial_data = {}
 
         self.all_match_ops: dict[str, Type[Operator]] = {}
-        self.__wrapped_ops = {}
+        self.__wrapped_ops: dict[str, Callable] = {}
         self.low_level_operators = self.__load_ops_from_module(lop)
         self.high_level_operators = self.__load_ops_from_module(hop, self.__wrap_high_level_op_impl)
         self.array_operators = self.__load_ops_from_module(aop, self.__wrap_array_ops_impl)
@@ -90,17 +84,17 @@ class DictSearch:
         self._used = None
         self.selection_operators = [self.sel_include, self.sel_exclude]
 
-        self.ops_init_config = self.__parse_ops_config(ops_init_config or {})
+        self.ops_init_config = self.__parse_ops_init_config(ops_init_config or {})
         self.__inner_call__ = lambda x: x
         self._call_layers: dict = {
             self.__wrap_select: None,
             self.__wrap_match: None,
         }
-        self.parsed_match_query: dict = {}
+        self.match_query_parsed: dict = {}
         self.match_query: dict = match_query
         self.select_query: dict = select_query
 
-    def __load_ops_from_module(self, ops_module: ModuleType, wrapper=None):
+    def __load_ops_from_module(self, ops_module: ModuleType, wrapper: Callable = None) -> list[str]:
         op_names = []
         for op_class in get_operators(ops_module):
             op_name = self.__build_op_name(op_class.name)
@@ -127,10 +121,10 @@ class DictSearch:
             self.low_level_operators.append(op_name)
 
     def __set_ops_names_attrs(self):
-        for op_name, op_instance in self.all_match_ops.items():
-            setattr(self, f"op__{op_instance.name}", op_name)
+        for op_name, op_class in self.all_match_ops.items():
+            setattr(self, f"op__{op_class.name}", op_name)
 
-    def __parse_ops_config(self, config):
+    def __parse_ops_init_config(self, config: dict):
         return {self.__build_op_name(k) if isinstance(k, str) else k: v for k, v in config.items()}
 
     def __call__(self, data) -> Union[dict, None]:
@@ -162,11 +156,11 @@ class DictSearch:
     def match_query(self, value):
         self._match_query = self.__set_call_layer(value, self.__wrap_match)
         if value:
-            self.parsed_match_query = self._parse_match_query(deepcopy(value))
+            self.match_query_parsed = self._parse_match_query(deepcopy(value))
 
     def __wrap_match(self, func):
         def wrapper(data):
-            if self._match(data, self.parsed_match_query):
+            if self._match(data, self.match_query_parsed):
                 return func(data)
 
         return wrapper
@@ -191,25 +185,22 @@ class DictSearch:
         if op_name in self.__wrapped_ops:
             op_instance.implementation = self.__wrapped_ops[op_name](op_instance.implementation)
             op_instance.original_implementation = op_instance.implementation
-        op_instance.expected_exc = self.ops_global_exc
-        op_instance.allowed_types = self.ops_global_allowed_type
-        op_instance.ignored_types = self.ops_global_ignored_type
         self.__set_from_config(op_name, op_instance)
         return op_instance
 
     def __set_from_config(self, op_name: dict, op_instance: Operator):
         for cls in reversed(list(filter(lambda x: x in self.ops_init_config, op_instance.__class__.mro()))):
-            self.__set_config_attr(op_instance, self.ops_init_config[cls])
+            self.__set_config_attr(op_instance, self.ops_init_config[cls], cls)
         if op_name in self.ops_init_config:
-            self.__set_config_attr(op_instance, self.ops_init_config[op_name])
+            self.__set_config_attr(op_instance, self.ops_init_config[op_name], op_name)
 
     @staticmethod
-    def __set_config_attr(op_instance: Operator, config_value: dict):
+    def __set_config_attr(op_instance: Operator, config_value: dict, config_key):
         for k, v in config_value.items():
             if hasattr(op_instance, k):
                 setattr(op_instance, k, v)
             else:
-                raise exceptions.OpsConfigKeyError(k)
+                raise exceptions.OpsConfigKeyError(k, op_instance.name, config_key)
 
     def _match(self, data, match_query):
         if all(self._apply_match(data, match_query)):
@@ -408,7 +399,7 @@ class DictSearch:
         if len(data) == 0:
             return
         if select_op in self.selection_operators:
-            value = None
+            value = None9
             if select_op == self.sel_include:
                 value = self.all_match_ops[self.op__index].implementation(data, (index, {}), prev_keys)[0]
                 if value == []:  # TODO think how to signal empty value empty

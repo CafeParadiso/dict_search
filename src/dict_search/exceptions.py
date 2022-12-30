@@ -52,5 +52,7 @@ class OpsConfigNonExistingKey(Exception):
 
 
 class OpsConfigKeyError(KeyError):
-    def __init__(self, k):
-        super().__init__(f"You provided an invalid configuration key, '{k}'.\n")
+    def __init__(self, k, op_name, conf_key):
+        super().__init__(
+            f"\nYou provided an invalid configuration key, '{k}' for the operator '{op_name}' via '{conf_key}'.\n"
+        )
