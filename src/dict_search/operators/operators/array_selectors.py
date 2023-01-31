@@ -1,5 +1,3 @@
-from collections.abc import Iterator
-
 from .. import exceptions
 from ..bases import ArraySelector
 from ..constants import SLICING_PATTERN
@@ -13,12 +11,10 @@ class Where(ArraySelector):
         self.search_val = search_val
 
     def implementation(self, data, search_instance):
-        if isinstance(data, Iterator):
-            raise exceptions.WhereIteratorException(self.name, data)
         prev_match_query = search_instance.match_query
         try:
             search_instance.match_query = self.search_val
-            matched_data = list(filter(lambda x: x is not None, map(lambda x: search_instance(x), data)))
+            matched_data = list(search_instance.filter(data))
         finally:
             search_instance.match_query = prev_match_query
         return matched_data
@@ -49,9 +45,9 @@ class Index(ArraySelector):
 
     def precondition(self, index):
         if not isinstance(index, (int, list)):
-            raise Exception
+            raise exceptions.IndexTypeError
         if isinstance(index, list) and not all(isinstance(x, int) for x in index):
-            raise Exception
+            raise exceptions.IndexListError
         return index
 
 

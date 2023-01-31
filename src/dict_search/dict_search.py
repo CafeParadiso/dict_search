@@ -132,6 +132,10 @@ class DictSearch:
         if isinstance(data, dict):
             return self.__inner_call__(data)
 
+    def filter(self, data: abc.Collection):
+        """Return a filter object with only the valid members of the passed Collection"""
+        return filter(lambda x: x is not None, map(self, data))
+
     def __set_call_layer(self, value, func):
         if value is None:
             self._call_layers[func] = None
@@ -209,39 +213,39 @@ class DictSearch:
     def _apply_match(self, data, match_dict, prev_keys=None):
         prev_keys = prev_keys if prev_keys else []
         if isinstance(match_dict, dict) and match_dict:
-            for key, value in match_dict.items():
+            for key, node in match_dict.items():
                 if key == self.op__comp:
-                    yield value.operator.implementation(data, self._initial_data)
+                    yield node.operator.implementation(data, self._initial_data)
                 elif key == self.op__find:
-                    yield from self._apply_match(value.operator(data), value.query, prev_keys)
+                    yield from self._apply_match(node.operator(data), node.query, prev_keys)
                 elif key == self.op__where:
-                    yield from self._apply_match(value.operator.implementation(data, prev_keys, self), value.query)
+                    yield from self._apply_match(node.operator.implementation(data, prev_keys, self), node.query)
                 elif key in self.low_level_operators:
-                    yield value.operator.implementation(data)
+                    yield node.operator.implementation(data)
                 elif (
                     key
                     in self.high_level_operators + self.match_operators + self.array_operators + self.count_operators
                 ):
-                    yield value.operator.implementation(data, value.query, prev_keys)
+                    yield node.operator.implementation(data, node.query, prev_keys)
                 elif key in self.array_selectors:
-                    yield from self._apply_match(value.operator.implementation(data, prev_keys), value.query)
+                    yield from self._apply_match(node.operator.implementation(data, prev_keys), node.query)
                 elif not isinstance(data, dict) or isinstance(data, dict) and key not in data.keys():
                     yield False
-                elif isinstance(value, dict):
+                elif isinstance(node, dict):
                     prev_keys.append(key)
-                    yield from self._apply_match(data[key], value, prev_keys)
+                    yield from self._apply_match(data[key], node, prev_keys)
                     prev_keys.pop(-1)
                 else:
-                    yield value.operator.implementation(data[key])
+                    yield node.operator.implementation(data[key])
         else:
             self.default_eq_op.comp = match_dict
             yield self.default_eq_op.implementation(data)
 
     def __wrap_high_level_op_impl(self, func):
         def wrapper(data, value, prev_keys):
-            assert list(all(self._apply_match(data, search_dict, prev_keys)) for search_dict in value) == list(
-                match for search_dict in value for match in self._apply_match(data, search_dict, prev_keys)
-            )
+            # assert list(all(self._apply_match(data, search_dict, prev_keys)) for search_dict in value) == list(
+            #     match for node in value for match in self._apply_match(data, node, prev_keys)
+            # )
             iterable = iter(all(self._apply_match(data, search_dict, prev_keys)) for search_dict in value)
             return func(iterable)
 

@@ -1,134 +1,118 @@
 from collections import abc
+from datetime import datetime
 from pprint import pprint
 
 from src.dict_search.dict_search import DictSearch
 from src.dict_search.operators import exceptions
+from src.dict_search.operators.operators import array_selectors as aop
 from src.dict_search import exceptions as search_exceptions
 
 from test.new_fixtures import read_fixtures
-from test.utils import TestCase
+from test.new_fixtures import data
+from test.utils import BaseTestOperators, TestCase
 
 
-class TestArraySelectors(TestCase):
-    def test_index(self):
-        q = "Porsche"
-        values, other_values = self.matching_test(match_query={"cargo": {"products": {"$index": [0, {"product": q}]}}})
-        assert values
-        for v in values:
-            assert v["cargo"]["products"][0]["product"] == q
-        for v in other_values:
-            assert v["cargo"]["products"][0]["product"] != q
+class TestIndex(BaseTestOperators.TestOperatorMultipleSearch, BaseTestOperators.ExceptionsMixin):
+    exceptions = [
+        (lambda: aop.Index("1"), exceptions.IndexTypeError),
+        (lambda: aop.Index([1, "1"]), exceptions.IndexListError),
+    ]
 
-    def test_index_eq(self):
-        q = 2.2
-        values, other_values = self.matching_test(match_query={"checksum": {"$index": [0, q]}})
-        assert values
-        for v in values:
-            assert v["checksum"][0] == q
-        for v in other_values:
-            assert v["checksum"][0] != q
+    def setUp(self) -> None:
+        super(TestIndex, self).setUp()
+        self.search = [
+            (  # test index equal
+                DictSearch({"containers": {"$index": [0, data.COMPANY_COSCO]}}),
+                lambda x: x["containers"][0] == data.COMPANY_COSCO if x["containers"] else False
+            ),
+            (  # test index sub key
+                DictSearch({"products": {"$index": [0, {"product": data.PROD_CAR}]}}),
+                lambda x: x["products"][0]["product"] == data.PROD_CAR if x["products"] else False
+            ),
+            (  # test index single key as list
+                DictSearch({"containers": {"$index": [[0], [data.COMPANY_COSCO]]}}),
+                lambda x: x["containers"][0] == data.COMPANY_COSCO if x["containers"] else False
+            ),
+            (  # test index multiple
+                DictSearch({"containers": {"$index": [[0, 1], [data.COMPANY_COSCO, data.COMPANY_HL]]}}),
+                lambda x: x["containers"][0] == data.COMPANY_COSCO and x["containers"][1] == data.COMPANY_HL if len(x["containers"]) >= 2 else False
+            ),
+            (  # test index mixed length
+                DictSearch({"containers": {"$index": [2, data.COMPANY_MSK]}}),
+                lambda x: x["containers"][2] == data.COMPANY_MSK if len(x["containers"]) > 2 else False
+            ),
+            (  # test index multiple mixed length
+                DictSearch(
+                    {"products": {"$index": [[0, 2], {"$all": {"$or": [{"product": data.PROD_CAR}, {"cost": 500000}]}}]}}
+                ),
+                lambda x: x["products"][0]["product"] == data.PROD_CAR or x["products"][2]["cost"] == 500000 if len(x["products"]) > 2 else False
+            ),
+            (  # test empty
+                DictSearch({"taxes": {"$index": [0, data.TAX_B]}}),
+                lambda x: x["taxes"][0] == data.TAX_B if x["taxes"] and isinstance(x["taxes"], list) else False,
 
-    def test_index_multiple(self):
-        q = [2.2, 2.2]
-        values, other_values = self.matching_test(match_query={"checksum": {"$index": [[0, -1], q]}})
-        for v in values:
-            assert [v["checksum"][0], v["checksum"][-1]] == q
-        for v in other_values:
-            assert not ([v["checksum"][0], v["checksum"][-1]] == q)
+            ),
+        ]
 
-    def test_index_multiple_length_one(self):
-        q = [2.2]
-        values, other_values = self.matching_test(match_query={"checksum": {"$index": [[0], q]}})
-        for v in values:
-            assert [v["checksum"][0]] == q
-        for v in other_values:
-            assert [v["checksum"][0]] != q
+    def test_implementation(self):
+        data = [0, 1, 2, 3]
+        # single index
+        op = aop.Index(1)
+        self.assertEqual(1, op(data))
+        # multiple index
+        op = aop.Index([0, -1])
+        self.assertEqual([0, 3], op(data))
+        # single index as list
+        op = aop.Index([1])
+        self.assertEqual([1], op(data))
 
-    def test_index_multiple_mixed_length_data(self):
-        values, other_values = self.matching_test(
-            match_query={"taxes": {"$index": [[0, 3], {"$any": {"type": "Bribe"}, "$func": lambda x: len(x) == 2}]}}
-        )
-        k = "taxes"
-        for v in other_values:
-            if k in v and v[k][0]["type"] == "Bribe":
-                assert len(v[k]) < 4
-        for val in values:
-            assert len(val[k]) >= 4
-            assert any(v["type"] == "Bribe" for v in val[k])
+    def test_generator(self):
+        generator_match_count = 0
+        results, other_results = [], []
+        search = DictSearch(match_query={"port_route": {"$index": [0, data.PORT_TANG]}})
+        for i, d_point in enumerate(data.get_data()):
+            if isinstance(d_point["port_route"], abc.Iterator):
+                with self.assertRaises(TypeError):
+                    search(d_point)
+                search.consumable_iterators = abc.Iterator
+                if search(d_point):
+                    generator_match_count += 1
+                    self.assertIsInstance(d_point["port_route"], list)
+                    self.assertIn(data.PORT_TANG, list(d_point["port_route"]))
+                    self.assertEqual(list(data.get_data()[i]["port_route"])[0], data.PORT_TANG)
+                    results.append(d_point)
+                search.consumable_iterators = None
+            elif search(d_point):
+                results.append(d_point)
+        assert results
+        assert generator_match_count
 
-    def test_index_multiple_empty(self):
-        assert not self.filter_results(DictSearch({"checksum": {"$index": [[8, 10], [2.2, 2.2]]}}), self.data)
 
-    def test_index_error(self):
-        q = 2.2
-        s = self.get_search(match_query={"checksum": {"$index": [12, {"$all": q}]}})
-        values = self.filter_results(s, self.data)
-        assert isinstance(values, list) and not values
+class TestSlice(BaseTestOperators.TestOperatorMultipleSearch, BaseTestOperators.ExceptionsMixin):
+    exceptions = [
+        (lambda: DictSearch({"$slice": {1, 2}}), exceptions.ArraySelectorFormatException),
+        (lambda: DictSearch({"$slice": [1]}), exceptions.ArraySelectorFormatException),
+        (lambda: DictSearch({"$slice": ["::", [2]]}), exceptions.SliceSelectionOperatorError),
+    ]
 
-    def test_index_generator(self):
-        q = "Shangai"
-        search = DictSearch(match_query={"ports": {"$index": [0, {"port": q}]}})
-        with self.assertRaises(TypeError):
-            assert isinstance(self.data[0]["ports"], abc.Iterator)
-            search(self.data[0])
-        assert isinstance(self.data[0]["ports"], abc.Iterator)
-        search.consumable_iterators = abc.Iterator
-        same_data = read_fixtures()
-        count = 0
-        for d_p in same_data:
-            assert isinstance(d_p["ports"], abc.Iterator)
-            val = search(d_p)
-            assert isinstance(d_p["ports"], search.cast_type_iterators)
-            if val is not None:
-                count += 1
-                assert val["ports"][0]["port"] == q
-        assert count > 0
+    def setUp(self) -> None:
+        super(TestSlice, self).setUp()
+        self.search = [
+            (  # slice equal
+                DictSearch(match_query={"containers": {"$slice": [":2", [data.COMPANY_COSCO, data.COMPANY_HL]]}}),
+                lambda x: x["containers"][:2] == [data.COMPANY_COSCO, data.COMPANY_HL] if len(x["containers"]) >= 2 else False
+            ),
+            (  # slice
+                DictSearch(match_query={"containers": {"$slice": [":2", [data.COMPANY_COSCO, data.COMPANY_HL]]}}),
+                lambda x: x["containers"][:2] == [data.COMPANY_COSCO, data.COMPANY_HL] if len(
+                    x["containers"]) >= 2 else False
+            ),
+        ]
 
-    def test_slice(self):
-        q = "Mustang"
-        values, other_values = self.matching_test(
-            match_query={"cargo": {"products": {"$slice": [":2", {"$all": {"product": q}}]}}}
-        )
-        assert values
-        for val in values:
-            assert all([v["product"] == q for v in val["cargo"]["products"][:2]])
-        for val in other_values:
-            assert not all([v["product"] == q for v in val["cargo"]["products"][:2]])
-
-    def test_slice_eq(self):
-        q = [2.2]
-        values, other_values = self.matching_test(match_query={"checksum": {"$slice": [":1", q]}})
-        assert values
-        for v in values:
-            assert v["checksum"][:1] == q
-        for v in other_values:
-            assert v["checksum"][:1] != q
-
-    def test_slice_empty(self):
-        q = [1]
-        data = [{"a": []}, {"a": [1, 2, 3]}, {"a": []}]
-        search = DictSearch({"a": {"$slice": [":1", q]}})
-        values = list(filter(lambda x: x is not None, map(lambda x: search(x), data)))
-        assert len(values) == 1 and data[1]["a"][:1] == q
-
-    def test_slice_generator(self):
-        q = [{"port": "Rotterdam", "days": 35}, "Busan"]
-        search = DictSearch(match_query={"ports": {"$slice": [":2", q]}})
-        with self.assertRaises(TypeError):
-            assert isinstance(self.data[0]["ports"], abc.Iterator)
-            search(self.data[0])
-        assert isinstance(self.data[0]["ports"], abc.Iterator)
-        search.consumable_iterators = abc.Iterator
-        same_data = read_fixtures()
-        count = 0
-        for d_p in same_data:
-            assert isinstance(d_p["ports"], abc.Iterator)
-            val = search(d_p)
-            assert isinstance(d_p["ports"], search.cast_type_iterators)
-            if val is not None:
-                count += 1
-                assert val["ports"][:2] == q
-        assert count > 0
+    def test_implementation(self):
+        data = [0, 1, 2, 3]
+        op = aop.Slice(":2")
+        self.assertEqual(op(data), data[:2])
 
     def test_slice_all_patterns(self):
         search = DictSearch()
@@ -149,94 +133,74 @@ class TestArraySelectors(TestCase):
             result = search(data)
             assert result and eval(f"result['a'][{slice_str}]", {"result": result}) == assert_result
 
-    def test_where(self):
-        q = [{"product": "Kawasaki"}, {"$any": {"status": "Finished"}}]
-        values, other_values = self.matching_test(match_query={"cargo": {"products": {"$where": q}}})
-        for v in values:
-            products = v["cargo"]["products"]
-            assert any(p["status"] == "Finished" and p["product"] == "Kawasaki" for p in products if "status" in p)
-        for v in other_values:
-            products = v["cargo"]["products"]
-            assert not any(p["status"] == "Finished" and p["product"] == "Kawasaki" for p in products if "status" in p)
+    def test_generator(self):
+        generator_match_count = 0
+        results, other_results = [], []
+        search = DictSearch(match_query={"port_route": {"$slice": [":1", [data.PORT_TANG]]}})
+        for i, d_point in enumerate(data.get_data()):
+            if isinstance(d_point["port_route"], abc.Iterator):
+                with self.assertRaises(TypeError):
+                    search(d_point)
+                search.consumable_iterators = abc.Iterator
+                if search(d_point):
+                    generator_match_count += 1
+                    self.assertIsInstance(d_point["port_route"], list)
+                    self.assertIn(data.PORT_TANG, list(d_point["port_route"]))
+                    self.assertEqual(list(data.get_data()[i]["port_route"])[:1], [data.PORT_TANG])
+                    results.append(d_point)
+                search.consumable_iterators = None
+            elif search(d_point):
+                results.append(d_point)
+        assert results
+        assert generator_match_count
 
-    def test_where_eq(self):
-        from datetime import datetime
 
-        a = [
-            {
-                "due_delivery": datetime(2022, 11, 27, 0, 0),
-                "origin": "Zimbawe",
-                "product": "Kawasaki",
-                "status": "Finished",
-                "suspicious": "no",
-                "uuid": "81719c70-abbb-489b-9590-6fc8618a9ede",
-                "variations": [{"type": "B", "units": 100}, {"type": "D", "units": 63}],
-                "weight": 1282,
-            }
+class TestWhere(BaseTestOperators.TestOperatorMultipleSearch, BaseTestOperators.ExceptionsMixin):
+    exceptions = [
+        (lambda: DictSearch({"port_route": {"$where": {1, 2}}}), exceptions.ArraySelectorFormatException),
+    ]
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.search = [
+            (  # where eq
+                DictSearch(
+                    match_query={
+                        "products": {"$where": [
+                            {"product": data.PROD_GR},
+                            [{"product": data.PROD_GR, "due_date": datetime(2022, 7, 1), "cost": 10**6}],
+                        ]},
+                    }
+                ),
+                lambda x: self.check_func_eq(x),
+            ),
+            (
+                DictSearch(match_query={"products": {"$where": [
+                    {"product": data.PROD_PC}, {"$all": {"cost": {"$lt": 50000}}}
+                ]}}),
+                lambda x: self.check_func(x),
+            )
         ]
-        q = [{"product": "Kawasaki"}, a]
-        values, other_values = self.matching_test(match_query={"cargo": {"products": {"$where": q}}})
-        for v in values:
-            products = v["cargo"]["products"]
-            assert products == a
-        for v in other_values:
-            products = v["cargo"]["products"]
-            assert products != a
 
-    def test_where_generator(self):
-        q = [{"port": "Shenzen"}, {"$any": {"days": 20}}]
-        search = DictSearch(match_query={"ports": {"$where": q}}, consumable_iterators=abc.Iterator)
-        same_data = read_fixtures()
-        count = 0
-        for d_p in same_data:
-            assert isinstance(d_p["ports"], abc.Iterator)
-            val = search(d_p)
-            assert isinstance(d_p["ports"], search.cast_type_iterators)
-            if val is not None:
-                count += 1
-                assert {"port": "Shenzen", "days": 20}
-        assert count > 0
+    @staticmethod
+    def check_func_eq(x):
+        found = list(filter(lambda y: y["product"] == data.PROD_GR,  x["products"]))
+        if found:
+            return all(r == {"product": data.PROD_GR, "due_date": datetime(2022, 7, 1), "cost": 10**6} for r in found)
+        else:
+            return False
 
-    def test_where_no_match(self):
-        data = [
-            {"a": [{"b": 1, "c": False}, {"b": 0, "c": False}, {"b": 1, "c": True}]},
-            {"a": [{"b": 1, "c": True}, {"b": 0, "c": False}, {"b": 1, "c": True}]},
-        ]
-        search = DictSearch({"a": {"$where": [{"x": 1}, {"c": True}]}})
-        values = list(filter(lambda x: x is not None, map(lambda x: search(x), data)))
-        assert not values
+    @staticmethod
+    def check_func(x):
+        found = list(filter(lambda y: y["product"] == data.PROD_PC,  x["products"]))
+        if found:
+            return all(r.get("cost", 51000) < 50000 for r in found)
+        else:
+            return False
 
-    def test_where_empty(self):
-        data = [
-            {"a": [{"b": 1, "c": False}, {"b": 0, "c": False}, {"b": 1, "c": 12}]},
-            {"a": [{"b": 1, "c": True}, {"b": 0, "c": False}, {"b": 1, "c": True}]},
-            {"a": []},
-        ]
-        search = DictSearch({"a": {"$where": [{"b": 1}, {"$any": {"c": True}}]}})
-        values = list(filter(lambda x: x is not None, map(lambda x: search(x), data)))
-        assert values[0] == data[1]
-
-
-class TestExceptions(TestCase):
-    def test_where_precondition(self):
-        with self.assertRaises(exceptions.ArraySelectorFormatException):
-            DictSearch({"ports": {"$where": {1, 2}}})
-
-    def test_where_generator_error(self):
-        q = [{"port": "Shenzen"}, {"$any": {"days": 20}}]
-        search = DictSearch(match_query={"ports": {"$where": q}})
-        with self.assertRaises(exceptions.WhereIteratorException):
-            assert isinstance(self.data[0]["ports"], abc.Iterator)
-            search(self.data[0])
-
-    def test_slice_type_precondition(self):
-        with self.assertRaises(exceptions.ArraySelectorFormatException):
-            DictSearch({"$slice": {1, 2}})
-
-    def test_slice_len_precondition(self):
-        with self.assertRaises(exceptions.ArraySelectorFormatException):
-            DictSearch({"$slice": [1]})
-
-    def test_slice_pattern_precondition(self):
-        with self.assertRaises(exceptions.SliceSelectionOperatorError):
-            DictSearch({"$slice": ["::", [2]]})
+    def test_implementation(self):
+        search = DictSearch()
+        data = [{"d": 1}, {"d": 0}, {"a": 1}, {"a": 1, "d": 0}]
+        op = aop.Where({"d": 0})
+        result = op(data, search)
+        self.assertEqual(result, [data[1], data[3]])

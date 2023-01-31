@@ -4,84 +4,83 @@ from dataclasses import dataclass
 from functools import partial
 from pprint import pprint
 from types import FunctionType, MethodType
-from typing import Any, Type, Union
+from typing import Any, Type, Union, get_type_hints, final
 
 from . import exceptions
 
 
 @dataclass
 class MatchNode:
+    """Interface object to expose and Operator instance to DictSearch match method
+
+    operator: Operator instance
+    query: Set if your operator should be used alongside a subquery in DictSearch.
+    """
     operator: "Operator"
     query: dict = None
 
 
 class Operator(ABC):
     _match_node = MatchNode
-
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        """The name of our operator. Implement as class attribute"""
-        raise NotImplementedError
-
-    @property
-    @abstractmethod
-    def initial_default_return(self) -> Any:
-        """Initial value for default return. Implement as class attribute"""
-        raise NotImplementedError
+    name: str = None
+    default_return: Any = None
 
     @abstractmethod
-    def implementation(self, data, *args) -> Any:
-        """Write your operator logic here."""
+    def implementation(self, *args) -> Any:
+        """Write your operator logic here"""
         raise NotImplementedError
 
     @classmethod
     def init_match_node(cls, match_query: Any, parse_func: typing.Callable) -> MatchNode:
         """Implement this method if your op will be used as a match operator
 
-        Return a MatchNode object"""
-        raise NotImplementedError
+        Example:
+            arg_1, arg_2 = match_query[0], match_query[0] + 2
+            return cls._match_node(cls(arg_1, arg_2))
+        """
 
     def precondition(self, args: Any) -> Any:
-        """Implement this method if you want to verify the initialization arguments
+        """Implement this method if you want to error check any initialization arguments
 
-        This method will be executed on __init__ and should return values for the __init__ attributes, e.g.:
+        This method should be executed on __init__ and should return values for the __init__ attributes, e.g.:
 
         def __init__(attr1, attr2):
             self.attr1, self.attr2 = self.precondition(attr1, attr2)
         """
-        raise NotImplementedError
 
     def __str__(self):
         return (
-            f"{self.name}\n"
+            f"{self.__class__} {self.name}\n"
             f"{self.__class__.default_return.fget.__name__}: {self.default_return}\n"
             f"{self.__class__.allowed_types.fget.__name__}: {self.allowed_types}\n"
             f"{self.__class__.ignored_types.fget.__name__}: {self.ignored_types}\n"
             f"{self.__class__.expected_exc.fget.__name__}: {self.expected_exc}\n"
         )
 
-    def __call__(self, data, *args, **kwargs) -> Any:
-        return self.implementation(data, *args, **kwargs)
+    def __call__(self, *args, **kwargs) -> Any:
+        return self.implementation(*args, **kwargs)
 
     def __new__(cls, *args, **kwargs):
         instance = super().__new__(cls)
-        # base_classes = {cl for cl in cls.__mro__ if cl not in [Operator, ABC, object]}
-        # implemented_attrs = set(
-        #     key for cl in base_classes for key in cl.__dict__.keys() if not any(key.startswith(s) for s in ["_", "__"])
-        # )
-        # class_attrs = {Operator.name.fget.__name__, Operator.initial_default_return.fget.__name__}
-        # overridable_attrs = {Operator.implementation.__name__, Operator.precondition.__name__}
-        # implemented_attrs = implemented_attrs - overridable_attrs - class_attrs
-        #
-        # for attr in class_attrs:
-        #     if isinstance(getattr(cls, attr), (property, FunctionType)):
-        #         raise exceptions.OperatorImplementationAttrTypeError(cls, attr)
-        # for attr in implemented_attrs:
-        #     if attr in Operator.__dict__:
-        #         raise exceptions.OperatorImplementationOverrideError(attr)
-        # if not isinstance(cls.name, str):
-        #     raise exceptions.OperatorImplementationNameError(cls, Operator.name.fget.__name__)
+        for attr in ["name", "default_return"]:
+            if getattr(instance, attr) is None:
+                raise exceptions.OperatorImplementationMissingAttr(cls, attr)
+        if not isinstance(cls.name, str):
+            raise exceptions.OperatorImplementationNameError(cls, "name")
+        non_overidable = [
+            Operator.expected_exc.fget.__name__,
+            Operator.allowed_types.fget.__name__,
+            Operator.ignored_types.fget.__name__,
+            Operator.__call__.__name__,
+            Operator.__wrap_implementation.__name__,
+        ]
+        for attr_name in non_overidable:
+            if attr_name in cls.__dict__:
+                raise exceptions.OperatorImplementationOverrideError(attr_name)
+        if not isinstance(cls.init_match_node, MethodType):
+            raise exceptions.OperatorImplementationInitMatchNodeError(
+                cls.__name__, Operator.init_match_node.__name__,
+            )
         return instance
 
     def __init__(
@@ -89,7 +88,6 @@ class Operator(ABC):
         expected_exc: Union[Type[Exception], tuple[..., Type[Exception]], dict] = None,
         allowed_types: Union[Type, tuple[..., Type]] = None,
         ignored_types: Union[Type, tuple[..., Type]] = None,
-        default_return: Any = None,
     ):
         self.original_implementation = self.implementation
         self.__implementation_wrappers = {
@@ -97,24 +95,9 @@ class Operator(ABC):
             Operator.ignored_types.fget.__name__: None,
             Operator.allowed_types.fget.__name__: None,
         }
-        self.default_return = default_return if default_return is not None else self.initial_default_return
         self.expected_exc = expected_exc
         self.ignored_types = ignored_types
         self.allowed_types = allowed_types
-
-    @property
-    def default_return(self):
-        return self._default_return
-
-    @default_return.setter
-    def default_return(self, value):
-        if not isinstance(value, type(self.initial_default_return)):
-            raise exceptions.OperatorDefaultReturnError(
-                Operator.default_return.fget.__name__,
-                Operator.initial_default_return.fget.__name__,
-                self.initial_default_return,
-            )
-        self._default_return = value
 
     @property
     def expected_exc(self):
@@ -124,20 +107,17 @@ class Operator(ABC):
     def expected_exc(self, expected_exc: Union[Type[Exception], tuple[..., Type[Exception]]]):
         func_name = Operator.expected_exc.fget.__name__
         is_exc = lambda x: isinstance(x, type) and issubclass(x, Exception)
+        is_type_ok = lambda x: all(isinstance(v, type(self.default_return)) for v in x)
         if expected_exc is None:
             self._expected_exc = None
         elif is_exc(expected_exc):
-            self._expected_exc = {expected_exc: self.initial_default_return}
+            self._expected_exc = {expected_exc: self.default_return}
         elif isinstance(expected_exc, tuple) and all(map(is_exc, expected_exc)):
-            self._expected_exc = {exc: self.initial_default_return for exc in expected_exc}
-        elif (
-            isinstance(expected_exc, dict)
-            and all(map(is_exc, expected_exc))
-            and all(isinstance(v, type(self.initial_default_return)) for v in expected_exc.values())
-        ):
+            self._expected_exc = {exc: self.default_return for exc in expected_exc}
+        elif isinstance(expected_exc, dict) and all(map(is_exc, expected_exc)) and is_type_ok(expected_exc.values()):
             self._expected_exc = expected_exc
         else:
-            raise exceptions.OperatorExpectedExcArgError(func_name, type(self.initial_default_return))
+            raise exceptions.OperatorExpectedExcArgError(func_name, type(self.default_return))
         self.__implementation_wrappers[func_name] = None if not expected_exc else self.__expected_exc
         self.__wrap_implementation()
 
@@ -148,7 +128,15 @@ class Operator(ABC):
             exc_type = type(e)
             if exc_type in self.expected_exc:
                 return self.expected_exc[exc_type]
-            return [v for k, v in self.expected_exc.items() if issubclass(exc_type, k)][0]
+            parent_exc_type = list(filter(lambda x: x in self.expected_exc, e.__class__.mro()))[0]  # first in mro order
+            return self.expected_exc[parent_exc_type]
+
+    def __set_type_checkers(self, val, func_name, func):
+        if val and not(isinstance(val, type) or (isinstance(val, tuple) and all(isinstance(v, type) for v in val))):
+            raise exceptions.OperatorTypeCheckerError(func_name)
+        setattr(self, f"_{func_name}", val)
+        self.__implementation_wrappers[func_name] = func if val else None
+        self.__wrap_implementation()
 
     @property
     def ignored_types(self):
@@ -176,15 +164,6 @@ class Operator(ABC):
             return self.default_return
         return func(data, *args)
 
-    def __set_type_checkers(self, value, func_name, func):
-        if value and not (
-            isinstance(value, type) or isinstance(value, tuple) and all(isinstance(v, type) for v in value)
-        ):
-            raise exceptions.OperatoTypeCheckerError(func_name)
-        setattr(self, f"_{func_name}", value)
-        self.__implementation_wrappers[func_name] = func if value else None
-        self.__wrap_implementation()
-
     def __wrap_implementation(self):
         self.implementation = self.original_implementation
         for func in filter(lambda x: x is not None, self.__implementation_wrappers.values()):
@@ -192,7 +171,7 @@ class Operator(ABC):
 
 
 class LowLevelOperator(Operator, ABC):
-    initial_default_return = False
+    default_return = False
 
     @classmethod
     def init_match_node(cls, match_query, *args) -> MatchNode:
@@ -200,7 +179,7 @@ class LowLevelOperator(Operator, ABC):
 
 
 class HighLevelOperator(Operator, ABC):
-    initial_default_return = False
+    default_return = False
 
     @classmethod
     def init_match_node(cls, match_query, parse_func) -> MatchNode:
@@ -210,7 +189,7 @@ class HighLevelOperator(Operator, ABC):
 
 
 class ArrayOperator(Operator, ABC):
-    initial_default_return = False
+    default_return = False
 
     @classmethod
     def init_match_node(cls, match_query, parse_func) -> MatchNode:
@@ -219,7 +198,7 @@ class ArrayOperator(Operator, ABC):
 
 
 class ArraySelector(Operator, ABC):
-    initial_default_return = []
+    default_return = []
 
     @classmethod
     def init_match_node(cls, match_query, parse_func) -> MatchNode:

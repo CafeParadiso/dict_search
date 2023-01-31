@@ -353,7 +353,8 @@ if __name__ == "__main__":
 
     eq_wrap = EqWrap()
     eq_partial = EqPartial()
-    n = 900000
+    eq_wrap(1, 1)
+    n = 500000
     data = [2, "2", 2.2, 1, 2, 3, 1, 2, "2", [], "tt", 3, 6]
 
     # print(f"WC: {timeit.timeit(lambda: list(map(lambda x: eq_wrap(x, 2), data)), number=n)}")

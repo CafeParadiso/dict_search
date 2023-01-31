@@ -8,12 +8,13 @@ from src.dict_search.operators import exceptions
 from src.dict_search import constants
 from src.dict_search.operators.operators import low_level_operators as lop
 
-from test.utils import BaseTestLowLevelOperators, BaseTestPrecondition, TestCase
+from test.utils import BaseTestOperators, TestCase
+from test.new_fixtures import CursedData
 from test.new_fixtures.data import COUNTRY_ARGENTINA, COUNTRY_SPAIN, TAX_B, COUNTRY_MORROCCO
 from pprint import pprint
 
 
-class TestEqual(BaseTestLowLevelOperators.CaseLowLevelOperators):
+class TestEqual(BaseTestOperators.TestOperator):
     op = lop.Equal(1)
     true_args = [1, 1]
     false_args = [2, 3]
@@ -21,7 +22,7 @@ class TestEqual(BaseTestLowLevelOperators.CaseLowLevelOperators):
     func = lambda x: x["id"] == 1
 
 
-class TestNotEqual(BaseTestLowLevelOperators.CaseLowLevelOperators):
+class TestNotEqual(BaseTestOperators.TestOperator):
     op = lop.NotEqual(1)
     true_args = 2
     false_args = 1
@@ -29,43 +30,43 @@ class TestNotEqual(BaseTestLowLevelOperators.CaseLowLevelOperators):
     func = lambda x: x["id"] != 1
 
 
-class TestGreater(BaseTestLowLevelOperators.CaseLowLevelOperators):
-    value = datetime(2022, 6, 1)
+class TestGreater(BaseTestOperators.TestOperator):
+    value = datetime(2022, 5, 1)
     op = lop.Greater(1)
     true_args = 2
     false_args = [1, 0]
-    search = DictSearch(match_query={"info": {"arrival": {"$gt": value}}})
-    func = lambda x: x["info"]["arrival"] > TestGreater.value
+    search = DictSearch(match_query={"info": {"departure": {"$gt": value}}})
+    func = lambda x: x["info"]["departure"] > TestGreater.value
 
 
-class TestGreaterEq(BaseTestLowLevelOperators.CaseLowLevelOperators):
+class TestGreaterEq(BaseTestOperators.TestOperator):
     value = datetime(2022, 6, 1)
     op = lop.GreaterEq(1)
     true_args = [2, 1]
     false_args = 0
-    search = DictSearch(match_query={"info": {"arrival": {"$gte": value}}})
-    func = lambda x: x["info"]["arrival"] >= TestGreaterEq.value
+    search = DictSearch(match_query={"info": {"departure": {"$gte": value}}})
+    func = lambda x: x["info"]["departure"] >= TestGreaterEq.value
 
 
-class TestLessThen(BaseTestLowLevelOperators.CaseLowLevelOperators):
+class TestLessThen(BaseTestOperators.TestOperator):
     value = datetime(2022, 6, 1)
     op = lop.LessThen(1)
     true_args = 0
     false_args = [1, 2]
-    search = DictSearch(match_query={"info": {"arrival": {"$lt": value}}})
-    func = lambda x: x["info"]["arrival"] < TestLessThen.value
+    search = DictSearch(match_query={"info": {"departure": {"$lt": value}}})
+    func = lambda x: x["info"]["departure"] < TestLessThen.value
 
 
-class TestLessThenEq(BaseTestLowLevelOperators.CaseLowLevelOperators):
+class TestLessThenEq(BaseTestOperators.TestOperator):
     value = datetime(2022, 6, 1)
     op = lop.LessThenEq(1)
     true_args = [0, 1]
     false_args = 2
-    search = DictSearch(match_query={"info": {"arrival": {"$lte": value}}})
-    func = lambda x: x["info"]["arrival"] <= TestLessThenEq.value
+    search = DictSearch(match_query={"info": {"departure": {"$lte": value}}})
+    func = lambda x: x["info"]["departure"] <= TestLessThenEq.value
 
 
-class TestIs(BaseTestLowLevelOperators.CaseLowLevelOperators):
+class TestIs(BaseTestOperators.TestOperator):
     op = lop.Is(True)
     true_args = True
     false_args = False
@@ -73,7 +74,7 @@ class TestIs(BaseTestLowLevelOperators.CaseLowLevelOperators):
     func = lambda x: x["in_route"] is True
 
 
-class TestIn(BaseTestLowLevelOperators.CaseLowLevelOperators):
+class TestIn(BaseTestOperators.TestOperator):
     values = [COUNTRY_ARGENTINA, COUNTRY_SPAIN]
     op = lop.In([1])
     true_args = 1
@@ -82,7 +83,7 @@ class TestIn(BaseTestLowLevelOperators.CaseLowLevelOperators):
     func = lambda x: x["info"]["origin"] in TestIn.values
 
 
-class TestNotIn(BaseTestLowLevelOperators.CaseLowLevelOperators):
+class TestNotIn(BaseTestOperators.TestOperator):
     values = [COUNTRY_ARGENTINA, COUNTRY_SPAIN]
     op = lop.NotIn([1])
     true_args = 2
@@ -91,7 +92,7 @@ class TestNotIn(BaseTestLowLevelOperators.CaseLowLevelOperators):
     func = lambda x: x["info"]["origin"] not in TestNotIn.values
 
 
-class TestContains(BaseTestLowLevelOperators.CaseLowLevelOperators):
+class TestContains(BaseTestOperators.TestOperator):
     value = TAX_B
     op = lop.Contains(1)
     true_args = {1}
@@ -100,7 +101,7 @@ class TestContains(BaseTestLowLevelOperators.CaseLowLevelOperators):
     func = lambda x: TestContains.value in x["taxes"]
 
 
-class TestNotContains(BaseTestLowLevelOperators.CaseLowLevelOperators):
+class TestNotContains(BaseTestOperators.TestOperator):
     value = TAX_B
     op = lop.NotContains(1)
     true_args = {2}
@@ -109,63 +110,70 @@ class TestNotContains(BaseTestLowLevelOperators.CaseLowLevelOperators):
     func = lambda x: TestNotContains.value not in x["taxes"]
 
 
-class TestRegex(BaseTestLowLevelOperators.CaseLowLevelOperators, BaseTestPrecondition.CaseTestPrecondition):
+class TestRegex(BaseTestOperators.TestOperator, BaseTestOperators.ExceptionsMixin):
     pattern_str = "^m[ie]+aw"
-    value = re.compile("ye*s?", re.IGNORECASE)
+    value = re.compile(".*01.*", re.IGNORECASE)
     op = lop.Regex(pattern_str)
     true_args = ["miaw", "mieaw", "mieeeaw", "mieeeaw"]
     false_args = ["miw", "mmieaw", "maw"]
-    search = DictSearch(match_query={"info": {"paid": {"$regex": value}}})
-    func = lambda x: TestRegex.value.search(x["info"]["paid"])
-    precondition = 12, exceptions.RegexOperatorException
+    search = DictSearch(match_query={"info": {"port_code": {"$regex": value}}})
+    func = lambda x: TestRegex.value.search(x["info"]["port_code"])
+    exceptions = lambda: lop.Regex(12), exceptions.RegexOperatorException
 
     def test_regex_pattern(self):
         self.op = lop.Regex(re.compile("^m[ie]+aw"))
         super(TestRegex, self).test_implementation()
 
 
-class TestFunction(BaseTestLowLevelOperators.CaseLowLevelOperators):
-    value = lambda x: sum(x) == 0.5 if isinstance(x, list) else False
+class TestFunction(BaseTestOperators.TestOperator):
+    value = lambda x: sum(x) >= 0.5
     op = lop.Function(value)
     true_args = [[0.1, 0.2, 0.2], [0.3, 0.2]]
-    false_args = [[0.2, 0.2], [0.3, 0.3]]
+    false_args = [[0.2, 0.2]]
     search = DictSearch(match_query={"taxes": {"$func": value}})
-    func = lambda x: TestFunction.value(x["taxes"]) if "taxes" in x and isinstance(x["taxes"], list) else False
+    func = lambda x: TestFunction.value(x["taxes"])
 
 
-class TestIsInstance(BaseTestLowLevelOperators.CaseLowLevelOperators):
+class TestIsInstance(BaseTestOperators.TestOperator):
     value = list
     op = lop.IsInstance(value)
     true_args = [[]]
     false_args = [{}, 123, "abc", value]
-    search = DictSearch(match_query={"ports": {"$inst": value}})
-    func = lambda x: isinstance(x["ports"], TestIsInstance.value)
+    search = DictSearch(match_query={"port_route": {"$inst": value}})
+    func = lambda x: isinstance(x["port_route"], TestIsInstance.value)
 
 
-class TestCompare(BaseTestLowLevelOperators.CaseLowLevelOperators, BaseTestPrecondition.CaseTestPrecondition):
+class TestCompare(BaseTestOperators.TestOperator, BaseTestOperators.ExceptionsMixin):
     value = 2
-    t_keys = ["info", "origin"]
+    t_keys = ["info", "ship_country"]
     t_func = lambda x, y: y == x
-    fixture = {"info": {"origin": 2}}
-    op = lop.Compare(t_keys, t_func)
+    fixture = {"info": {"ship_country": 2}}
+    op = lop.Compare(t_keys, func=t_func)
     op.keys = t_keys
     op.func = t_func
     true_args = value, fixture
     false_args = 3, fixture
-    search = DictSearch(match_query={"info": {"ship_country": {"$comp": [t_keys, t_func]}}})
-    func = lambda x: x["info"]["origin"] == x["info"]["ship_country"]
-    precondition = [
-        (({}, 2), exceptions.CompOperatorFirstArgError),
-        (([1, {}], 2), exceptions.CompOperatorFirstArgError),
-        ((1, 2), exceptions.CompOperatorSecondArgError),
+    search = DictSearch(match_query={"info": {"origin": {"$comp": [t_keys, t_func]}}})
+    func = lambda x: x["info"].get("ship_country") == x["info"]["origin"]
+    exceptions = [
+        (lambda: lop.Compare({}), exceptions.CompOperatorFirstArgError),
+        (lambda: lop.Compare([1, {}]), exceptions.CompOperatorFirstArgError),
+        (lambda: lop.Compare(1, func=2), exceptions.CompOperatorSecondArgError),
+        (lambda: DictSearch(match_query={"$comp": 2}), exceptions.CompOperatorTypeError),
     ]
 
 
-class TestFind(BaseTestLowLevelOperators.CaseLowLevelOperators):
+class TestFind(BaseTestOperators.TestOperator, BaseTestOperators.ExceptionsMixin):
     value = COUNTRY_MORROCCO
     fixture_data = {"a": {"b": {"c": 12}}, "d": {"e": 34}}
     search = DictSearch(match_query={"$find": ["ship_country", value]})
     func = lambda x: [TestFind.value] == find_value(x, "ship_country")
+    exceptions = [
+        (lambda: lop.Find({1: 2}), Exception),
+        (lambda: lop.Find([CursedData()]), Exception),
+        (lambda: DictSearch(match_query={"$find": 2}), Exception),
+        (lambda: DictSearch(match_query={"$find": [2]}), Exception),
+    ]
 
     def test_implementation(self):
         for attr, op in [

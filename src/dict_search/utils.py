@@ -1,4 +1,8 @@
-from typing import Iterable
+from collections import namedtuple
+
+from typing import Iterable, Type
+
+Result = namedtuple("Result", "empty result", defaults=(True, None))
 
 
 def get_from_list(dikt, keys):
@@ -54,12 +58,14 @@ def __recursive_find_value(
     keys: list,
     found_keys: list = None,
     initial_keys: list = None,
+    prev_keys: list = None,
     depth: int = 0,
     max_depth: int = 32,
-    iterables: Iterable = None,
+    iterables: Type[Iterable] = None,
 ):
     found_keys = [] if not found_keys else found_keys
     initial_keys = keys if not initial_keys else initial_keys
+    prev_keys = keys if not prev_keys else prev_keys
     if found_keys == initial_keys:
         yield obj
     if isinstance(obj, dict) and keys and depth <= max_depth:
@@ -68,18 +74,18 @@ def __recursive_find_value(
                 found_keys.append(key)
                 depth += 1
                 yield from __recursive_find_value(
-                    value, keys[1:], found_keys, initial_keys, depth, max_depth, iterables
+                    value, keys[1:], found_keys, initial_keys, prev_keys, depth, max_depth, iterables
                 )
                 found_keys.pop()
                 depth -= 1
             else:
                 depth += 1
-                yield from __recursive_find_value(value, keys, found_keys, initial_keys, depth, max_depth, iterables)
+                yield from __recursive_find_value(value, keys, found_keys, initial_keys, prev_keys, depth, max_depth, iterables)
                 depth -= 1
     elif iterables and isinstance(obj, iterables):
         for sub_obj in obj:
             depth += 1
-            yield from __recursive_find_value(sub_obj, initial_keys, [], initial_keys, depth, max_depth, iterables)
+            yield from __recursive_find_value(sub_obj, initial_keys, [], initial_keys, prev_keys, depth, max_depth, iterables)
             depth -= 1
 
 
@@ -91,11 +97,3 @@ def __try_index(lst: list, index: int):
     if lst:
         return lst[index]
     return lst
-
-
-def find_key():
-    pass
-
-
-def __recursive_find_key():
-    pass

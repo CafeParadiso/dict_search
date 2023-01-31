@@ -1,7 +1,6 @@
 import re
-from collections.abc import Hashable
 from types import FunctionType
-from typing import Any
+from typing import Any, Hashable
 
 
 from ... import utils
@@ -176,7 +175,7 @@ class IsInstance(LowLevelOperator):
 class Compare(LowLevelOperator):
     name = "comp"
 
-    def __init__(self, keys, func, *args, **kwargs):
+    def __init__(self, keys, *args, func=lambda x, y: y == x, **kwargs):
         super().__init__(*args, **kwargs)
         self.keys, self.func = self.precondition(keys, func)
 
@@ -195,17 +194,14 @@ class Compare(LowLevelOperator):
         if not isinstance(match_query, CONTAINER_TYPE) or len(match_query) != 2:
             raise exceptions.CompOperatorTypeError(cls.name, CONTAINER_TYPE)
         keys, func = match_query[0], match_query[1]
-        return cls._match_node(cls(keys, func))
+        return cls._match_node(cls(keys, func=func))
 
     def implementation(self, val, initial_data) -> bool:
         try:
             search_val = utils.get_from_list(initial_data, self.keys)
         except KeyError:
             return False
-        result = self.func(val, search_val)
-        if not isinstance(result, bool):
-            raise exceptions.CompOperatorReturnTypeError(self.name, type(result))
-        return result
+        return self.func(val, search_val)
 
 
 class Find(LowLevelOperator):

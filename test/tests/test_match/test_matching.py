@@ -70,9 +70,7 @@ class TestMatching(TestCase):
                 "default_return": False,
             },
             Operator: {"allowed_types": object},
-            MatchOperator: {
-                "ignored_types": list
-            },
+            MatchOperator: {"ignored_types": list},
             HighLevelOperator: {
                 "expected_exc": {ValueError: False, IndexError: True, PermissionError: False},
                 "default_return": True,

@@ -3,17 +3,9 @@ from re import Pattern
 from . import constants
 
 
-class OperatorImplementationAttrTypeError(TypeError):
+class OperatorImplementationMissingAttr(TypeError):
     def __init__(self, cls, attr):
-        super().__init__(
-            f"\n\nImplement '{attr}' as a class variable not as {type(getattr(cls, attr))}, e.g:\n"
-            f"class {cls.__name__}(Operator):\n    {attr} = ..."
-        )
-
-
-class OperatorImplementationOverrideError(TypeError):
-    def __init__(self, attr):
-        super().__init__(f"\n\n You cannot override the attribute '{attr}'")
+        super().__init__(f"\nClass attribute '{attr}' can't be empty, check implementation for '{cls.__name__}'")
 
 
 class OperatorImplementationNameError(TypeError):
@@ -22,6 +14,22 @@ class OperatorImplementationNameError(TypeError):
             f"\n\nClass attribute '{attr}' should be {str}, e.g:\n"
             f"class {cls.__name__}(Operator):\n    {attr} = '{cls.__name__.lower()}'"
         )
+
+
+class OperatorImplementationOverrideError(TypeError):
+    def __init__(self, attr):
+        super().__init__(f"\n\n You cannot override the attribute '{attr}'")
+
+
+class OperatorImplementationInitMatchNodeError(TypeError):
+    def __init__(self, cls_name, attr_name):
+        super().__init__(
+            f"\nClass '{cls_name}' should implement '{attr_name}' as a class method:\n"
+            f"\n"
+            f"@classmethod\n"
+            f"def {attr_name}(cls, match_query: Any, parse_func: typing.Callable) -> MatchNode:"
+        )
+
 
 
 class OperatorExpectedExcArgError(TypeError):
@@ -34,7 +42,7 @@ class OperatorExpectedExcArgError(TypeError):
         )
 
 
-class OperatoTypeCheckerError(TypeError):
+class OperatorTypeCheckerError(TypeError):
     def __init__(self, func_name):
         super().__init__(f"'{func_name}' should be type or tuple[..., type]")
 
@@ -79,17 +87,6 @@ class MatchOperatorCountMismatch(SyntaxError):
 class ArraySelectorFormatException(SyntaxError):
     def __init__(self, operator):
         super().__init__(f"Use a list as '{operator}' operator:\n[':2', {{'k': 'v'}}]")
-
-
-class WhereIteratorException(TypeError):
-    def __init__(self, operator, data):
-        super().__init__(
-            f"\nBy default '{operator}' does not support Iterators, '{type(data)}' was found.\n"
-            f"Set a type for the attribute 'consumable_iterators' to consume the iterator and apply the operator, ie:\n"
-            f"DictSearch(consumable_iterators=Iterator)"
-            f"\nOr set an expected exception for the operator to avoid iterator consumption and the exception:\n"
-            f"DictSearch(ops_config={{'expected_exc': '{self.__class__.__name__}'}})"
-        )
 
 
 class CompOperatorTypeError(TypeError):
@@ -142,3 +139,13 @@ class IndexOperatorError(SyntaxError):
             "or a list:\n"
             "- [[index(int)], val(any or dict)]"
         )
+
+
+class IndexTypeError(TypeError):
+    def __init__(self):
+        super().__init__("Initialise the index object with an object of type 'list' or 'int'")
+
+
+class IndexListError(TypeError):
+    def __init__(self):
+        super().__init__("All objects in the list should be of type 'int'")
