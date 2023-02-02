@@ -167,7 +167,6 @@ class TestFind(BaseTestOperators.TestOperator, BaseTestOperators.ExceptionsMixin
     value = COUNTRY_MORROCCO
     fixture_data = {"a": {"b": {"c": 12}}, "d": {"e": 34}}
     search = DictSearch(match_query={"$find": ["ship_country", value]})
-    func = lambda x: [TestFind.value] == find_value(x, "ship_country")
     exceptions = [
         (lambda: lop.Find({1: 2}), Exception),
         (lambda: lop.Find([CursedData()]), Exception),
@@ -175,11 +174,23 @@ class TestFind(BaseTestOperators.TestOperator, BaseTestOperators.ExceptionsMixin
         (lambda: DictSearch(match_query={"$find": [2]}), Exception),
     ]
 
+    def setUp(self) -> None:
+        self.func = self.check
+        super(TestFind, self).setUp()
+
+    def check(self, x):
+        result = find_value(x, "ship_country")
+        if isinstance(result, list):
+            result = [r.result for r in result]
+        else:
+            result = result.result
+        return self.value == result
+
     def test_implementation(self):
         for attr, op in [
             [(self.fixture_data, lambda x: x == 34), lop.Find("e")],
             [(self.fixture_data, lambda x: x == 12), lop.Find("c")],
-            [(self.fixture_data, lambda x: not x), lop.Find("z")],
+            [(self.fixture_data, lambda x: not x.found), lop.Find("z")],
         ]:
             attr = [attr] if not isinstance(attr, list) else attr
             for args in attr:

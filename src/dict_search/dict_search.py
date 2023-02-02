@@ -403,7 +403,7 @@ class DictSearch:
         if len(data) == 0:
             return
         if select_op in self.selection_operators:
-            value = None9
+            value = None
             if select_op == self.sel_include:
                 value = self.all_match_ops[self.op__index].implementation(data, (index, {}), prev_keys)[0]
                 if value == []:  # TODO think how to signal empty value empty

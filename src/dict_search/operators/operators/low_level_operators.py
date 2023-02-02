@@ -230,7 +230,7 @@ class Find(LowLevelOperator):
         return cls._match_node(cls(keys), query)
 
     def implementation(self, data) -> Any:
-        return utils.find_value(
+        result = utils.find_value(
             data,
             self.keys,
             max_depth=self.max_depth,
@@ -238,3 +238,8 @@ class Find(LowLevelOperator):
             index=self.index,
             iterables=self.iterables,
         )
+        if isinstance(result, list):
+            return [r.result for r in result]
+        elif result.found:
+            return result.result
+        return result

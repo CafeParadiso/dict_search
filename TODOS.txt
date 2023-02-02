@@ -1,26 +1,62 @@
 TODOS
-- finish tests
-    -Test $match as array operator in detail
-    -Test $where with nested generator to consume
-    -self._empty nested!!
-    -test with cursed_data in as many places as possible
-- improve exception messages. Provide examples
-- recursive data shallow copy in select()!!! try to do with static dict (self._initial_data)
 - uninstall all dependencies
 - isort && black -l 120
 - fill setup.py in detail (libraries for project vs libraries for module)
 - check license
 - document properly in README (ipython cells?, jupyter notebook?, dockerfile docs?)
-- document in module or object docstring
+- document in module or object docstring + Sphinx
 UPCOMING FEATURES
-- skip_iterator arg
-- completenes_check arg to return only documents over which select_dict was fully applied
-- $anykey $rekey (regex key)
+- validation pipeline
+- transform pipeline
 - $anyval?
-- greedy search ($greedy)
 - flatten (default 0: return all, 1: return lowest k: v possible, 2: return array of values)
 - coerce_list turn into -> coerce : - arg1 type: type to try the conversion (.__call__())?
+                                    or
                                     - arg2 dict: converion map  {type: type to convert} pd: from typing import Any
 - coerce only after type error?
-- add transform pipeline
-- initialization args through .env file or only env variables
+- rethink select - select precondition?
+- return only documents that throw exceptions
+- custom cache func for implementation
+    if not hasattr("", obj):
+        return func(obj)
+    cache(obj, func)
+
+COMMIT
+- recursive data shallow copy in select()!!! try to do with static dict (self._initial_data)
+- match and select standalone and public. match(data) select(data) Raise exception if not provided
+- refactor select
+- maybe dict search could be composed of several classes
+- ref: select index, slice, where signal empty
+- select query precondition
+
+COMMIT
+- development dependencies are needed
+- $anykey $rekey (regex key)
+
+
+
+COMMIT
+- ref: exception class parents
+- ref: rethink usage of custom operator:
+       - MatchNode should expose arguments with which to call an operator
+       - specific 'elif' in '_apply_match'
+       - specific name list
+- ref: self.ops_str = ops_str  # runtime setting -> recalculate ?
+- doc: type hints finishing
+
+COMMIT
+- tests: finish tests
+    -Test $where with nested generator to consume
+    -self._empty nested!!
+    -test utils
+- tests: coverage
+
+- spike: compare speed current approach vs wrapper
+- doc: improve exception messages. Provide more examples
+- ref: use tuple instead of list wherever is possible
+
+- ref: rethink match operators access from search
+- doc: implement doc strings to return example usage .e.g: help(Operator) -> "{'$gt': '1'}"
+- feat: find should return tuple (empty: bool, result: any, keys: lst)
+    index -> [...] or None
+    else -> [value] or None
