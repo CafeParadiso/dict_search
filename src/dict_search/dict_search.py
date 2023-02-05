@@ -74,7 +74,7 @@ class DictSearch:
         self.match_operators = self.__load_ops_from_module(mop, self.__wrap_match_ops_impl)
         self.__set_ops_custom(ops_custom or [])
         self.__set_ops_names_attrs()
-        self.default_eq_op = lop.Equal(None)
+        self.used_operators = []
 
         # select attributes
         self.sel_array = f"{self.ops_str}array"
@@ -90,6 +90,7 @@ class DictSearch:
             self.__wrap_select: None,
             self.__wrap_match: None,
         }
+        self.inner_eq_op = self.__configure_operator(self.op__eq, lop.Equal(None))
         self.match_query_parsed: dict = {}
         self.match_query: dict = match_query
         self.select_query: dict = select_query
@@ -152,6 +153,13 @@ class DictSearch:
             if val:
                 self.__inner_call__ = val(self.__inner_call__)
 
+    def get_operator(self, name: str, filter_dict: dict = None, first=True):
+        operators = [op for op in self.used_operators if op.name == name]
+        if filter_dict:
+            operators = [op for op in operators if all(getattr(op, k) == v for k, v in filter_dict.items())]
+        if operators:
+            return operators[0] if first else operators
+
     @property
     def match_query(self):
         return self._match_query
@@ -176,6 +184,7 @@ class DictSearch:
                 node = self.all_match_ops[k].init_match_node(v, self._parse_match_query)
                 node.operator = self.__configure_operator(k, node.operator)
                 parsed_match_query[k] = node
+                self.used_operators.append(node.operator)
             elif isinstance(v, dict):
                 parsed_match_query[k] = v
                 self._parse_match_query(v, parsed_match_query[k])
@@ -183,6 +192,7 @@ class DictSearch:
                 node = self.all_match_ops[self.op__eq].init_match_node(v)
                 self.__configure_operator(k, node.operator)
                 parsed_match_query[k] = node
+                self.used_operators.append(node.operator)
         return parsed_match_query
 
     def __configure_operator(self, op_name, op_instance: Operator) -> Operator:
@@ -238,14 +248,11 @@ class DictSearch:
                 else:
                     yield node.operator.implementation(data[key])
         else:
-            self.default_eq_op.comp = match_dict
-            yield self.default_eq_op.implementation(data)
+            self.inner_eq_op.comp = match_dict
+            yield self.inner_eq_op.implementation(data)
 
     def __wrap_high_level_op_impl(self, func):
         def wrapper(data, value, prev_keys):
-            # assert list(all(self._apply_match(data, search_dict, prev_keys)) for search_dict in value) == list(
-            #     match for node in value for match in self._apply_match(data, node, prev_keys)
-            # )
             iterable = iter(all(self._apply_match(data, search_dict, prev_keys)) for search_dict in value)
             return func(iterable)
 
