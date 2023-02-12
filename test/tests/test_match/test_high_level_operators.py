@@ -6,7 +6,7 @@ from src.dict_search.operators.operators import high_level_operators as hop
 from src.dict_search.operators import get_operators
 from src.dict_search.operators import exceptions
 
-from test.utils import TestCase, BaseTestOperators
+from test.utils import BaseTestOperators
 from test.new_fixtures.data import COUNTRY_USA, COUNTRY_SPAIN
 
 

@@ -37,21 +37,22 @@ class DictSearch:
             return data
         if self.non_consumable_iterators and isinstance(data, self.non_consumable_iterators):
             return data
-        data = self.cast_type_iterators.__call__(data)
+        data = self.consumable_cast_type.__call__(data)
         utils.set_from_list(self._initial_data, prev_keys, data)
         return data
 
     def __init__(
         self,
+        # *,
         match_query: dict = None,
         select_query: dict = None,
         ops_str: str = "$",
         ops_custom: Union[Type[Operator], list[..., Type[Operator]]] = None,
         ops_init_config: dict = None,
-        container_type=list,
+        container_type: Type = list,
         consumable_iterators=None,
         non_consumable_iterators=None,
-        cast_type_iterators=list,
+        consumable_cast_type=list,
         coerce_list=False,
         sel_array_ignored_types=None,
     ):
@@ -59,19 +60,19 @@ class DictSearch:
         self.container_type = container_type
         self.consumable_iterators = consumable_iterators
         self.non_consumable_iterators = non_consumable_iterators
-        self.cast_type_iterators = cast_type_iterators
+        self.consumable_cast_type = consumable_cast_type
         self.coerce_list = coerce_list
         self.sel_array_ignored_types = sel_array_ignored_types
         self._initial_data = {}
 
         self.all_match_ops: dict[str, Type[Operator]] = {}
         self.__wrapped_ops: dict[str, Callable] = {}
-        self.low_level_operators = self.__load_ops_from_module(lop)
-        self.high_level_operators = self.__load_ops_from_module(hop, self.__wrap_high_level_op_impl)
-        self.array_operators = self.__load_ops_from_module(aop, self.__wrap_array_ops_impl)
-        self.array_selectors = self.__load_ops_from_module(asop, self.__wrap_array_selectors_impl)
-        self.count_operators = self.__load_ops_from_module(cop, self.__wrap_count_ops_impl)
-        self.match_operators = self.__load_ops_from_module(mop, self.__wrap_match_ops_impl)
+        self.low_level_operators = self._load_ops_from_module(lop)
+        self.high_level_operators = self._load_ops_from_module(hop, self.__wrap_high_level_op_impl)
+        self.array_operators = self._load_ops_from_module(aop, self.__wrap_array_ops_impl)
+        self.array_selectors = self._load_ops_from_module(asop, self.__wrap_array_selectors_impl)
+        self.count_operators = self._load_ops_from_module(cop, self.__wrap_count_ops_impl)
+        self.match_operators = self._load_ops_from_module(mop, self.__wrap_match_ops_impl)
         self.__set_ops_custom(ops_custom or [])
         self.__set_ops_names_attrs()
         self.used_operators = []
@@ -95,7 +96,7 @@ class DictSearch:
         self.match_query: dict = match_query
         self.select_query: dict = select_query
 
-    def __load_ops_from_module(self, ops_module: ModuleType, wrapper: Callable = None) -> list[str]:
+    def _load_ops_from_module(self, ops_module: ModuleType, wrapper: Callable = None) -> list[str]:
         op_names = []
         for op_class in get_operators(ops_module):
             op_name = self.__build_op_name(op_class.name)
@@ -153,7 +154,7 @@ class DictSearch:
             if val:
                 self.__inner_call__ = val(self.__inner_call__)
 
-    def get_operator(self, name: str, filter_dict: dict = None, first=True):
+    def get_operator(self, name: str, filter_dict: dict = None, first=True) -> Union[Operator, list]:
         operators = [op for op in self.used_operators if op.name == name]
         if filter_dict:
             operators = [op for op in operators if all(getattr(op, k) == v for k, v in filter_dict.items())]

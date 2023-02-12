@@ -1,5 +1,8 @@
+from unittest import TestCase
+
 from src.dict_search.dict_search import DictSearch
 from src.dict_search.operators.operators import count_operators as cop
+from src.dict_search.operators import exceptions as exc
 
 from test.utils import BaseTestOperators
 from test.new_fixtures.data import PROD_GR
@@ -52,3 +55,13 @@ class TestCountLte(BaseTestOperators.TestOperator):
     false_args = [[False, True, True], [1, 1, 0]]
     search = DictSearch({"products": {"$countlte": {thresh: {"product": PROD_GR}}}})
     func = lambda x: [y["product"] == PROD_GR for y in x["products"]].count(True) <= TestCountLte.thresh if x["products"] else False
+
+
+class TestExceptions(TestCase):
+    def test_count_type_error(self):
+        with self.assertRaises(exc.CountOperatorError):
+            DictSearch({"$count": [1]})
+
+    def test_count_tresh_error(self):
+        with self.assertRaises(exc.ThreshTypeError):
+            DictSearch({"$count": {"1": [2]}})

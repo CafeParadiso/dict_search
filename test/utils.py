@@ -2,7 +2,6 @@ import unittest
 from .new_fixtures import read_fixtures
 from src.dict_search import DictSearch, Operator
 from test.new_fixtures.data import get_data
-from pprint import pprint
 
 
 class TestCase(unittest.TestCase):
@@ -62,13 +61,22 @@ class BaseTestOperators:
         def setUp(self) -> None:
             self.data = get_data()
 
-        def test_search(self):
+        def split_result(self):
             results, other_results = [], []
             for d_point in self.data:
                 if self.search(d_point):
                     results.append(d_point)
                 else:
                     other_results.append(d_point)
+            return results, other_results
+
+        def test_search(self):
+            results, other_results = self.split_result()
+            # for d_point in self.data:
+            #     if self.search(d_point):
+            #         results.append(d_point)
+            #     else:
+            #         other_results.append(d_point)
             func = self.__class__.func or self.func
             self.assertTrue(results, msg=f"No results were found for query:\n{self.search.match_query}")
             self.assertTrue(
@@ -109,6 +117,14 @@ class BaseTestOperators:
                 with self.assertRaises(exc):
                     func()
 
+    class SelectionTest(unittest.TestCase):
+        def selection_test(self, select_query, **kwargs):
+            search = DictSearch(select_query=select_query, **kwargs)
+            for index, dp in enumerate(self.data):
+                sel = search(dp)
+                assert dp.keys() == list(read_fixtures())[index].keys()
+                yield sel, dp
+
 
 class DemoOpModulo(Operator):
     name = "modulo"
@@ -124,4 +140,4 @@ class DemoOpModulo(Operator):
 
     @classmethod
     def init_match_node(cls, match_query, parse_func):
-        pass
+        return cls._match_node(cls(match_query[0], match_query[1]))

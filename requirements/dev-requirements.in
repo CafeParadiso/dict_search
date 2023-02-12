@@ -1,0 +1,6 @@
+black==22.12.0
+coverage==7.0.2
+isort==5.12.0
+pip-tools==6.12.2
+pytest==7.2.0
+Sphinx==6.1.3

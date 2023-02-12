@@ -191,10 +191,11 @@ class Compare(LowLevelOperator):
 
     @classmethod
     def init_match_node(cls, match_query, *args):
-        if not isinstance(match_query, CONTAINER_TYPE) or len(match_query) != 2:
+        if not isinstance(match_query, CONTAINER_TYPE) and match_query:
             raise exceptions.CompOperatorTypeError(cls.name, CONTAINER_TYPE)
-        keys, func = match_query[0], match_query[1]
-        return cls._match_node(cls(keys, func=func))
+        if len(match_query) == 1:
+            return cls._match_node(cls(match_query[0]))
+        return cls._match_node(cls(match_query[0], func=match_query[1]))
 
     def implementation(self, val, initial_data) -> bool:
         try:

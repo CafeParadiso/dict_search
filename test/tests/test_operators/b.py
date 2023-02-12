@@ -354,7 +354,7 @@ if __name__ == "__main__":
     eq_wrap = EqWrap()
     eq_partial = EqPartial()
     eq_wrap(1, 1)
-    n = 500000
+    n = 50000
     data = [2, "2", 2.2, 1, 2, 3, 1, 2, "2", [], "tt", 3, 6]
 
     # print(f"WC: {timeit.timeit(lambda: list(map(lambda x: eq_wrap(x, 2), data)), number=n)}")
@@ -362,7 +362,7 @@ if __name__ == "__main__":
 
     wi = []
     pi = []
-    for _ in range(120):
+    for _ in range(100):
         wi.append(timeit.timeit(lambda: list(map(lambda x: eq_wrap.implementation(x, 2), data)), number=n))
         pi.append(timeit.timeit(lambda: list(map(lambda x: eq_partial.implementation(x, 2), data)), number=n))
         pi.append(timeit.timeit(lambda: list(map(lambda x: eq_partial.implementation(x, 2), data)), number=n))

@@ -1,7 +1,9 @@
+from unittest import TestCase
+
 from src.dict_search import Operator
-from test.utils import TestCase, DemoOpModulo
-from test.new_fixtures import CursedData
 from src.dict_search.operators import exceptions
+from test.utils import DemoOpModulo
+from test.new_fixtures import CursedData
 
 
 class TestOperatorImplementation(TestCase):

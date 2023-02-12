@@ -28,7 +28,7 @@ class Operator(ABC):
     @abstractmethod
     def implementation(self, *args) -> Any:
         """Write your operator logic here"""
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     @classmethod
     def init_match_node(cls, match_query: Any, parse_func: typing.Callable) -> MatchNode:
@@ -51,7 +51,7 @@ class Operator(ABC):
     def __str__(self):
         return (
             f"{self.__class__} {self.name}\n"
-            f"{self.__class__.default_return.fget.__name__}: {self.default_return}\n"
+            f"default_return: {self.default_return}\n"
             f"{self.__class__.allowed_types.fget.__name__}: {self.allowed_types}\n"
             f"{self.__class__.ignored_types.fget.__name__}: {self.ignored_types}\n"
             f"{self.__class__.expected_exc.fget.__name__}: {self.expected_exc}\n"
@@ -183,7 +183,7 @@ class HighLevelOperator(Operator, ABC):
 
     @classmethod
     def init_match_node(cls, match_query, parse_func) -> MatchNode:
-        if not isinstance(match_query, list) or not match_query:
+        if not isinstance(match_query, list) or not match_query or not all(isinstance(x, dict) for x in match_query):
             raise exceptions.HighLevelOperatorIteratorError(list, list)
         return cls._match_node(cls(), [parse_func(v) for v in match_query])
 
@@ -228,7 +228,7 @@ class MatchOperator(HighLevelOperator, Operator, ShortcircuitMixin, ABC):
 
     def precondition(self, thresh: Any):
         if not isinstance(thresh, int):
-            raise exceptions.MatchOperatorError(self.name)
+            raise exceptions.ThreshTypeError
         return thresh
 
     def implementation(self, iterable) -> bool:
@@ -243,7 +243,7 @@ class MatchOperator(HighLevelOperator, Operator, ShortcircuitMixin, ABC):
         if not isinstance(match_query, dict) or not match_query:
             raise exceptions.MatchOperatorError(cls.name)
         thresh, sub_query = list(match_query.items())[0]
-        if not isinstance(sub_query, list):
+        if not isinstance(sub_query, list) or not sub_query:
             raise exceptions.HighLevelOperatorIteratorError(list, sub_query)
         return cls._match_node(cls(thresh), [parse_func(v) for v in sub_query])
 
@@ -255,7 +255,7 @@ class CountOperator(ArrayOperator, ShortcircuitMixin, ABC):
 
     def precondition(self, thresh: Any):
         if not isinstance(thresh, int):
-            raise exceptions.MatchOperatorError(self.name)
+            raise exceptions.ThreshTypeError
         return thresh
 
     def implementation(self, data) -> Any:
@@ -268,7 +268,7 @@ class CountOperator(ArrayOperator, ShortcircuitMixin, ABC):
     @classmethod
     def init_match_node(cls, match_query, parse_func) -> MatchNode:
         if not isinstance(match_query, dict):
-            raise Exception
+            raise exceptions.CountOperatorError(cls.name)
         thresh, match_query = list(match_query.items())[0]
         match_query = parse_func(match_query) if isinstance(match_query, dict) else match_query
         return cls._match_node(cls(thresh), match_query)

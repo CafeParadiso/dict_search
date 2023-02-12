@@ -3,7 +3,7 @@ from re import Pattern
 from . import constants
 
 
-class OperatorImplementationMissingAttr(TypeError):
+class  OperatorImplementationMissingAttr(TypeError):
     def __init__(self, cls, attr):
         super().__init__(f"\nClass attribute '{attr}' can't be empty, check implementation for '{cls.__name__}'")
 
@@ -29,7 +29,6 @@ class OperatorImplementationInitMatchNodeError(TypeError):
             f"@classmethod\n"
             f"def {attr_name}(cls, match_query: Any, parse_func: typing.Callable) -> MatchNode:"
         )
-
 
 
 class OperatorExpectedExcArgError(TypeError):
@@ -82,6 +81,16 @@ class MatchOperatorCountMismatch(SyntaxError):
             f"The threshold value for a match operator should be less or equal then the number of queries"
             f"thresh: {thresh} > nº of search operators: {len(search_operator)}"
         )
+
+
+class CountOperatorError(SyntaxError):
+    def __init__(self, op_name):
+        super().__init__(f"Any count operator must be a dict like {{'{op_name}': count(int): search_val}}")
+
+
+class ThreshTypeError(TypeError):
+    def __init__(self):
+        super().__init__(f"Treshold should always be of type int")
 
 
 class ArraySelectorFormatException(SyntaxError):
