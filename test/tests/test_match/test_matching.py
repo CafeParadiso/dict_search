@@ -86,11 +86,6 @@ class TestMatching(TestCase):
         {"a": 1},
     ]
 
-    def test_str_name(self):
-        comp = "<class 'test.utils.DemoOpModulo'> modulo\ndefault_return: False\nallowed_types: None\nignored_types: " \
-               "None\nexpected_exc: None\n"
-        self.assertEqual(str(DemoOpModulo(1, 1)), comp)
-
     def test_ops_config(self):
         ops_config = {
             "ne": {
@@ -160,3 +155,4 @@ class TestMatching(TestCase):
         )
         self.assertTrue(search.get_operator("or"))
         self.assertNotEqual(search.get_operator("comp", {"func": func}), search.get_operator("comp"))
+        self.assertEqual(len(search.get_operator("comp", first=False)), 2)

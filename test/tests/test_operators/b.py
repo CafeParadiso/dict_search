@@ -367,5 +367,5 @@ if __name__ == "__main__":
         pi.append(timeit.timeit(lambda: list(map(lambda x: eq_partial.implementation(x, 2), data)), number=n))
         pi.append(timeit.timeit(lambda: list(map(lambda x: eq_partial.implementation(x, 2), data)), number=n))
         wi.append(timeit.timeit(lambda: list(map(lambda x: eq_wrap.implementation(x, 2), data)), number=n))
-    print(f"PI: {statistics.mean(pi)}")
     print(f"WI: {statistics.mean(wi)}")
+    print(f"PI: {statistics.mean(pi)}")

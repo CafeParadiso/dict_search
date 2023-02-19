@@ -4,7 +4,7 @@ from src.dict_search import DictSearch, Operator
 from test.new_fixtures.data import get_data
 
 
-class TestCase(unittest.TestCase):
+class TestCase(unittest.TestCase):  #Todo DELETE
     def setUp(self) -> None:
         self.data = list(read_fixtures())
 
@@ -49,64 +49,48 @@ class TestCase(unittest.TestCase):
 class BaseTestOperators:
     """The outer class serves as a patch to avoid test discovery of the base class since it would fail"""
 
-    class TestOperator(unittest.TestCase):
-        op = None
-        data = None
-        search = None
-        func = None
-        precondition = None
-        true_args = None
-        false_args = None
+    class SearchMixin(unittest.TestCase):
+        search_checks = None
 
-        def setUp(self) -> None:
-            self.data = get_data()
+        @property
+        def data(self) -> list:
+            return list(get_data())
 
-        def split_result(self):
+        def split_result(self, search):
             results, other_results = [], []
             for d_point in self.data:
-                if self.search(d_point):
+                if search(d_point):
                     results.append(d_point)
                 else:
                     other_results.append(d_point)
             return results, other_results
 
         def test_search(self):
-            results, other_results = self.split_result()
-            # for d_point in self.data:
-            #     if self.search(d_point):
-            #         results.append(d_point)
-            #     else:
-            #         other_results.append(d_point)
-            func = self.__class__.func or self.func
-            self.assertTrue(results, msg=f"No results were found for query:\n{self.search.match_query}")
-            self.assertTrue(
-                all(func(v) for v in results),
-                msg=f"All found values do not match the assertion function, check the query:\n{self.search.match_query}"
-            )
-            self.assertFalse(
-                any(func(v) for v in other_results),
-                msg=f"Some discarded results match the assertion function, check the query:\n{self.search.match_query}"
-            )
+            self.search_checks = self.search_checks if isinstance(self.search_checks, list) else [self.search_checks]
+            for s in self.search_checks:
+                search, func = s[0], s[1]
+                results, other_results = self.split_result(search)
+                self.assertTrue(results, msg=f"No results were found for query:\n{search.match_query}")
+                self.assertTrue(
+                    all(func(v) for v in results),
+                    msg=f"All found values do not match the assertion function, check the query:\n{search.match_query}"
+                )
+                self.assertFalse(
+                    any(func(v) for v in other_results),
+                    msg=f"Some discarded results match the assertion function, check the query:\n{search.match_query}"
+                )
+
+    class OperatorMixin(unittest.TestCase):
+        operator_checks = None
 
         def test_implementation(self):
-            assert all(x is not None for x in [self.true_args, self.false_args])
-            for attr, assertion in [(self.true_args, self.assertTrue), (self.false_args, self.assertFalse)]:
-                attr = [attr] if not isinstance(attr, list) else attr
-                for arguments in attr:
-                    arguments = (arguments,) if not isinstance(arguments, tuple) else arguments
-                    assertion(self.op.implementation(*arguments))
-
-        def filter_results(self, search=None):
-            search = self.search if not search else search
-            return list(filter(lambda x: x is not None, map(lambda x: search(x), self.data)))
-
-    class TestOperatorMultipleSearch(TestOperator):
-        def test_search(self):
-            search_list = self.search
-            for search_inst, func in search_list:
-                self.__class__.func = func
-                self.search = search_inst
-                super().test_search()
+            self.operator_checks = self.operator_checks if isinstance(self.operator_checks, list) else [self.operator_checks]
+            for op, true_args, false_args in self.operator_checks:
+                for attr, assertion in [(true_args, self.assertTrue), (false_args, self.assertFalse)]:
+                    attr = [attr] if not isinstance(attr, list) else attr
+                    for arguments in attr:
+                        arguments = (arguments,) if not isinstance(arguments, tuple) else arguments
+                        assertion(op.implementation(*arguments))
 
     class ExceptionsMixin(unittest.TestCase):
         exceptions = None
@@ -118,6 +102,10 @@ class BaseTestOperators:
                     func()
 
     class SelectionTest(unittest.TestCase):
+        @property
+        def data(self) -> list:
+            return list(get_data())
+
         def selection_test(self, select_query, **kwargs):
             search = DictSearch(select_query=select_query, **kwargs)
             for index, dp in enumerate(self.data):

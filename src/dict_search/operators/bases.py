@@ -3,8 +3,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import partial
 from pprint import pprint
-from types import FunctionType, MethodType
-from typing import Any, Type, Union, get_type_hints, final
+from types import MethodType
+from typing import Any, Type, Union
 
 from . import exceptions
 

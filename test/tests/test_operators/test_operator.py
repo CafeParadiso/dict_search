@@ -86,6 +86,11 @@ class TestOperator(TestCase):
             else:
                 assert op(d_p) == res
 
+    def test_str_name(self):
+        comp = "<class 'test.utils.DemoOpModulo'> modulo\ndefault_return: False\nallowed_types: None\nignored_types: " \
+               "None\nexpected_exc: None\n"
+        self.assertEqual(str(DemoOpModulo(1, 1)), comp)
+
     def test_expected_exc_single(self):
         exc = ValueError
         op = DemoOpModulo(*self.dummy_args, expected_exc=exc)

@@ -271,7 +271,7 @@ class DictSearch:
             if not isinstance(data, abc.Iterable) or not data:
                 return False
             data = self.__assign_consumed_iterator(data, prev_keys)
-            iterable = iter(match for d_point in data for match in self._apply_match(d_point, value, prev_keys))
+            iterable = iter(all(self._apply_match(d_point, value, prev_keys)) for d_point in data)
             return func(iterable)
 
         return wrapper

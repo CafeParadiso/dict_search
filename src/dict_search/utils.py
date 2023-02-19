@@ -62,6 +62,18 @@ class FindResult:
             result_str = "..."
         return f"Found: {self.found} | Result: {result_str} | PrevKeys: {self.prev_keys}"
 
+    def __bool__(self):
+        return self.found
+
+    def __contains__(self, item):
+        return item in self.result
+
+    def __eq__(self, other):
+        return self.result == other
+
+    def __instancecheck__(self, instance):
+        return self.result.__class__.__instancecheck__(instance)
+
 
 def find_value(dikt, keys, max_depth=32, candidates=1, index=0, iterables=None):
     keys = [keys] if not isinstance(keys, list) else keys
@@ -132,9 +144,9 @@ if __name__ == '__main__':
     data = {
         "dough": {"salt": 2, "milk": {"fat": 25, "water": 60}},
         "ham": {"fat": 34, "protein": 20},
-        "chesse": [
+        "chesse": (
             {"name": "emmental", "facts": {"fat": 45, "protein": 34}},
             {"nam": "cammembert", "facts": {"fat": 55, "protein": 64}}
-        ]
+        )
     }
-    pprint(find_value(data, "fat", candidates=-1, iterables=list, index=-1))
+    pprint(find_value(data, "fat", candidates=-1, iterables=tuple, index=-1))

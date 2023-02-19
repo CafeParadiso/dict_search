@@ -149,7 +149,7 @@ def get_data():
                 "departure": datetime(2022, 6, 1),
             },
             "products": [],
-            "port_route": (p for p in [PORT_VAL, PORT_ROTT, PORT_TANG]),
+            "port_route": (p for p in [PORT_VAL]),
             "in_route": False,
             "taxes": [TAX_B, TAX_C],
             "containers": [],

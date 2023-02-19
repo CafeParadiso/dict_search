@@ -1,58 +1,28 @@
 from collections import abc
 from datetime import datetime
-from pprint import pprint
 
 from src.dict_search.dict_search import DictSearch
 from src.dict_search.operators import exceptions
 from src.dict_search.operators.operators import array_selectors as aop
-from src.dict_search import exceptions as search_exceptions
 
-from test.new_fixtures import read_fixtures
 from test.new_fixtures import data
-from test.utils import BaseTestOperators, TestCase
+from test.utils import BaseTestOperators as Base
 
 
-class TestIndex(BaseTestOperators.TestOperatorMultipleSearch, BaseTestOperators.ExceptionsMixin):
+class TestIndex(Base.SearchMixin, Base.ExceptionsMixin):
     exceptions = [
         (lambda: aop.Index("1"), exceptions.IndexTypeError),
         (lambda: aop.Index([1, "1"]), exceptions.IndexListError),
     ]
-
-    def setUp(self) -> None:
-        super(TestIndex, self).setUp()
-        self.search = [
-            (  # test index equal
-                DictSearch({"containers": {"$index": [0, data.COMPANY_COSCO]}}),
-                lambda x: x["containers"][0] == data.COMPANY_COSCO if x["containers"] else False
-            ),
-            (  # test index sub key
-                DictSearch({"products": {"$index": [0, {"product": data.PROD_CAR}]}}),
-                lambda x: x["products"][0]["product"] == data.PROD_CAR if x["products"] else False
-            ),
-            (  # test index single key as list
-                DictSearch({"containers": {"$index": [[0], [data.COMPANY_COSCO]]}}),
-                lambda x: x["containers"][0] == data.COMPANY_COSCO if x["containers"] else False
-            ),
-            (  # test index multiple
-                DictSearch({"containers": {"$index": [[0, 1], [data.COMPANY_COSCO, data.COMPANY_HL]]}}),
-                lambda x: x["containers"][0] == data.COMPANY_COSCO and x["containers"][1] == data.COMPANY_HL if len(x["containers"]) >= 2 else False
-            ),
-            (  # test index mixed length
-                DictSearch({"containers": {"$index": [2, data.COMPANY_MSK]}}),
-                lambda x: x["containers"][2] == data.COMPANY_MSK if len(x["containers"]) > 2 else False
-            ),
-            (  # test index multiple mixed length
-                DictSearch(
-                    {"products": {"$index": [[0, 2], {"$all": {"$or": [{"product": data.PROD_CAR}, {"cost": 500000}]}}]}}
-                ),
-                lambda x: x["products"][0]["product"] == data.PROD_CAR or x["products"][2]["cost"] == 500000 if len(x["products"]) > 2 else False
-            ),
-            (  # test empty
-                DictSearch({"taxes": {"$index": [0, data.TAX_B]}}),
-                lambda x: x["taxes"][0] == data.TAX_B if x["taxes"] and isinstance(x["taxes"], list) else False,
-
-            ),
-        ]
+    search_checks = [
+        (DictSearch({"containers": {"$index": [0, data.COMPANY_COSCO]}}), lambda x: x["containers"][0] == data.COMPANY_COSCO if x["containers"] else False), # test index equal
+        (DictSearch({"products": {"$index": [0, {"product": data.PROD_CAR}]}}), lambda x: x["products"][0]["product"] == data.PROD_CAR if x["products"] else False), # test index sub key
+        (DictSearch({"containers": {"$index": [[0], [data.COMPANY_COSCO]]}}), lambda x: x["containers"][0] == data.COMPANY_COSCO if x["containers"] else False), # test index single key as list
+        (DictSearch({"containers": {"$index": [[0, 1], [data.COMPANY_COSCO, data.COMPANY_HL]]}}), lambda x: x["containers"][0] == data.COMPANY_COSCO and x["containers"][1] == data.COMPANY_HL if len(x["containers"]) >= 2 else False), # test index multiple
+        (DictSearch({"containers": {"$index": [2, data.COMPANY_MSK]}}), lambda x: x["containers"][2] == data.COMPANY_MSK if len(x["containers"]) > 2 else False), # test index mixed length
+        (DictSearch({"products": {"$index": [[0, 2], {"$all": {"$or": [{"product": data.PROD_CAR}, {"cost": 500000}]}}]}}), lambda x: x["products"][0]["product"] == data.PROD_CAR or x["products"][2]["cost"] == 500000 if len(x["products"]) > 2 else False), # test index multiple mixed length
+        (DictSearch({"taxes": {"$index": [0, data.TAX_B]}}), lambda x: x["taxes"][0] == data.TAX_B if x["taxes"] and isinstance(x["taxes"], list) else False), # test empty
+    ]
 
     def test_implementation(self):
         data = [0, 1, 2, 3]
@@ -88,26 +58,16 @@ class TestIndex(BaseTestOperators.TestOperatorMultipleSearch, BaseTestOperators.
         assert generator_match_count
 
 
-class TestSlice(BaseTestOperators.TestOperatorMultipleSearch, BaseTestOperators.ExceptionsMixin):
+class TestSlice(Base.SearchMixin, Base.ExceptionsMixin):
     exceptions = [
         (lambda: DictSearch({"$slice": {1, 2}}), exceptions.ArraySelectorFormatException),
         (lambda: DictSearch({"$slice": [1]}), exceptions.ArraySelectorFormatException),
         (lambda: DictSearch({"$slice": ["::", [2]]}), exceptions.SliceSelectionOperatorError),
     ]
-
-    def setUp(self) -> None:
-        super(TestSlice, self).setUp()
-        self.search = [
-            (  # slice equal
-                DictSearch(match_query={"containers": {"$slice": [":2", [data.COMPANY_COSCO, data.COMPANY_HL]]}}),
-                lambda x: x["containers"][:2] == [data.COMPANY_COSCO, data.COMPANY_HL] if len(x["containers"]) >= 2 else False
-            ),
-            (  # slice
-                DictSearch(match_query={"containers": {"$slice": [":2", [data.COMPANY_COSCO, data.COMPANY_HL]]}}),
-                lambda x: x["containers"][:2] == [data.COMPANY_COSCO, data.COMPANY_HL] if len(
-                    x["containers"]) >= 2 else False
-            ),
-        ]
+    search_checks = [
+        (DictSearch(match_query={"containers": {"$slice": [":2", [data.COMPANY_COSCO, data.COMPANY_HL]]}}), lambda x: x["containers"][:2] == [data.COMPANY_COSCO, data.COMPANY_HL] if len(x["containers"]) >= 2 else False),  # slice equal
+        (DictSearch(match_query={"containers": {"$slice": [":2", [data.COMPANY_COSCO, data.COMPANY_HL]]}}), lambda x: x["containers"][:2] == [data.COMPANY_COSCO, data.COMPANY_HL] if len(x["containers"]) >= 2 else False),  # slice
+    ]
 
     def test_implementation(self):
         data = [0, 1, 2, 3]
@@ -155,14 +115,14 @@ class TestSlice(BaseTestOperators.TestOperatorMultipleSearch, BaseTestOperators.
         assert generator_match_count
 
 
-class TestWhere(BaseTestOperators.TestOperatorMultipleSearch, BaseTestOperators.ExceptionsMixin):
+class TestWhere(Base.SearchMixin, Base.ExceptionsMixin):
     exceptions = [
         (lambda: DictSearch({"port_route": {"$where": {1, 2}}}), exceptions.ArraySelectorFormatException),
     ]
 
     def setUp(self) -> None:
         super().setUp()
-        self.search = [
+        self.search_checks = [
             (  # where eq
                 DictSearch(
                     match_query={

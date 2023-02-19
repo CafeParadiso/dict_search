@@ -1,25 +1,28 @@
 from collections.abc import Iterator
 from src.dict_search.dict_search import DictSearch
+from datetime import datetime
 
-from test.utils import TestCase, read_fixtures
+from test.utils import BaseTestOperators as Base
+from test.new_fixtures.data import PROD_GR, PROD_CAR, PORT_VAL
 
 
-class TestArrayOperators(TestCase):
+class TestAll(Base.SearchMixin):
+    sub_query = {"product": PROD_GR, "due_date": datetime(2022, 7, 1), "cost": 10**6}
+    search_checks = [
+        (DictSearch(match_query={"products": {"$all": {"product": PROD_CAR}}}), lambda x: all(y["product"] == PROD_CAR for y in x["products"]) if x["products"] else False),
+        (DictSearch(match_query={"products": {"$all": sub_query}}), lambda x: all(y == TestAll.sub_query for y in x["products"]) if x["products"] else False),
+    ]
+
     def test_start_iterator(self):
-        q = {"port": "Shangai"}
-        search = DictSearch()
-        for op in search.array_operators:
-            for dp, original_dp in zip(self.data, read_fixtures()):
-                if "count" in op:
-                    search.match_query = {"ports": {op: {1: q}}}
-                else:
-                    search.match_query = {"ports": {op: q}}
-                search(dp)
-                assert isinstance(dp["ports"], Iterator) and isinstance(original_dp["ports"], Iterator)
-                original_ports = list(original_dp["ports"])
-                ports = list(dp["ports"])
-                if original_ports:
-                    assert ports != original_dp["ports"]
+        result_count = 0
+        search = DictSearch(match_query={"port_route": {"$all": PORT_VAL}})
+        for dp, original_dp in zip(self.data, self.data):
+            result = search(dp)
+            if result:
+                assert isinstance(result["port_route"], Iterator)
+                assert list(result["port_route"]) != list(original_dp["port_route"])
+                result_count += 1
+        assert result_count
 
     def test_emtpy_array_data(self):
         data = [{"values": [0, 1, 1]}, {"values": [1, 1, 1]}, {"values": []}, {"values": [0, 0, 2]}]
@@ -27,44 +30,29 @@ class TestArrayOperators(TestCase):
         for d_point in data:
             if search(d_point) is not None:
                 assert d_point["values"] != []
+
+
+class TestAny(Base.SearchMixin):
+    sub_query = {"product": PROD_GR, "due_date": datetime(2022, 7, 1), "cost": 10**6}
+    search_checks = [
+        (DictSearch(match_query={"products": {"$any": {"product": PROD_CAR}}}), lambda x: any(y["product"] == PROD_CAR for y in x["products"])),
+        (DictSearch(match_query={"products": {"$any": sub_query}}), lambda x: any(y == TestAll.sub_query for y in x["products"])),
+    ]
+
+    def test_start_iterator(self):
+        result_count = 0
+        search = DictSearch(match_query={"port_route": {"$any": PORT_VAL}})
+        for dp, original_dp in zip(self.data, self.data):
+            result = search(dp)
+            if result:
+                assert isinstance(result["port_route"], Iterator)
+                assert list(result["port_route"]) != list(original_dp["port_route"])
+                result_count += 1
+        assert result_count
+
+    def test_emtpy_array_data(self):
         data = [{"values": [0, 1, 1]}, {"values": [1, 1, 1]}, {"values": []}, {"values": [0, 0, 2]}]
         search = DictSearch(match_query={"values": {"$any": {"$inst": int}}})
         for d_point in data:
             if search(d_point) is not None:
                 assert d_point["values"] != []
-
-    def test_all(self):
-        q = "BMW"
-        values, other_values = self.matching_test(match_query={"cargo": {"products": {"$all": {"product": q}}}})
-        assert isinstance(values, list) and values
-        products = [prod["product"] for products in values for prod in products["cargo"]["products"]]
-        assert all(prod == q for prod in products)
-        other_products = [prod["product"] for products in other_values for prod in products["cargo"]["products"]]
-        assert not all(prod == q for prod in other_products)
-
-    def test_all_eq(self):
-        q = {"type": "Bribe", "value": 11}
-        values = self.matching_test(match_query={"taxes": {"$all": q}})[0]
-        assert values
-        other_values = self.matching_test(match_query={"taxes": {"$all": {"$eq": q}}})[0]
-        assert other_values
-        assert values != other_values
-
-    def test_any(self):
-        q = "BMW"
-        values, other_values = self.matching_test(match_query={"cargo": {"products": {"$any": {"product": q}}}})
-        assert isinstance(values, list) and values
-        for val in values:
-            products = [prod["product"] for prod in val["cargo"]["products"]]
-            assert q in products
-        for val in other_values:
-            products = [prod["product"] for prod in val["cargo"]["products"]]
-            assert q not in products
-
-    def test_any_eq(self):
-        q = 1
-        values, other_values = self.matching_test(match_query={"checksum": {"$any": 1}})
-        for val in values:
-            assert any(v == q for v in val["checksum"])
-        for val in other_values:
-            assert not any(v == q for v in val["checksum"])
